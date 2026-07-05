@@ -15,7 +15,7 @@ const NAV: NavGroup[] = [
     title: "People",
     items: [
       { href: "/employees", label: "Employees", ready: true },
-      { href: "/attendance", label: "Attendance" },
+      { href: "/attendance", label: "Attendance", ready: true },
       { href: "/leave", label: "WFH & Leave" },
       { href: "/payroll", label: "Payroll" },
     ],
