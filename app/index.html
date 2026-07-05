@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DOMS Global — Workforce Suite</title>
+<title>Merik — Workforce Suite</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--navy:#1B3A6B;--mid:#2563A8;--lblue:#D6E4F7;--orange:#E8682A;--bg:#F4F6FA;--green:#1E8449;--red:#C0392B;}
@@ -111,7 +111,7 @@ async function boot(){
 function renderNoOrg(user){
   $('root').innerHTML=`<div id="login" class="card"><h2 style="text-align:center">Create your company workspace</h2>
   <p style="font-size:13px;color:#667;margin:8px 0">Signed in as <b>${esc(user.email)}</b>. This email isn't linked to any company yet — create a new workspace (you'll be its admin), or ask your admin to add this email to their Employee list, then sign out and back in.</p>
-  <label>Company Name</label><input id="conm" placeholder="e.g. DOMS Global">
+  <label>Company Name</label><input id="conm" placeholder="e.g. Acme Inc.">
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" style="flex:1" onclick="createOrg()">Create Workspace</button>
   <button class="btn sec" onclick="logout()">Sign out</button></div>
   <p id="lerr" style="color:var(--red);margin-top:8px;font-size:12px"></p></div>`;
@@ -122,7 +122,7 @@ async function createOrg(){
 }
 function renderLogin(){
   $('root').innerHTML=`<div id="login" class="card">
-  <h2 style="text-align:center">DOMS GLOBAL</h2><p style="text-align:center;color:#667;margin-bottom:10px">Workforce Suite</p>
+  <h2 style="text-align:center">MERIK</h2><p style="text-align:center;color:#667;margin-bottom:10px">Workforce Suite</p>
   <label>Email</label><input id="lem" type="email"><label>Password</label><input id="lpw" type="password">
   <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" style="flex:1" onclick="doLogin()">Sign In</button>
   <button class="btn sec" style="flex:1" onclick="doSignup()">Employee Sign Up</button></div>
