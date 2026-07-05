@@ -55,8 +55,13 @@ tbody tr:hover td{background:#F1F6FD}
 .pchip{display:inline-flex;align-items:center;gap:6px;background:var(--lblue);color:var(--navy);font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;margin:0 6px 6px 0}
 
 /* ---- Layout ---- */
-#app{display:flex;min-height:100vh}
-#side{width:252px;background:linear-gradient(185deg,#0B1B36 0%,#0D2044 100%);color:#fff;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+#app{display:flex;height:100vh;overflow:hidden}
+#side{width:252px;background:linear-gradient(185deg,#0B1B36 0%,#0D2044 100%);color:#fff;flex-shrink:0;display:flex;flex-direction:column;height:100vh}
+#side .navscroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding-bottom:8px}
+#side .navscroll::-webkit-scrollbar{width:8px}
+#side .navscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:8px}
+#side .navscroll::-webkit-scrollbar-track{background:transparent}
+#side .navscroll{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
 #side .brand{display:flex;align-items:center;gap:12px;padding:22px 20px;font-size:20px;font-weight:800;letter-spacing:.4px;border-bottom:1px solid rgba(255,255,255,.09)}
 #side .brand img{height:34px;border-radius:8px}
 #side .grp{font-size:10.5px;font-weight:700;letter-spacing:1.6px;color:#6079A3;padding:16px 22px 6px;text-transform:uppercase}
@@ -70,8 +75,11 @@ tbody tr:hover td{background:#F1F6FD}
 #side .ufoot .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#24406e,#2f5290);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff}
 #side .ufoot .nm{font-size:12.5px;color:#EAF1FC;line-height:1.4;font-weight:600}
 #side .ufoot .rl{font-size:11px;color:#8298BC;font-weight:400}
-#main{flex:1;padding:26px 30px;overflow:auto}
+#main{flex:1;padding:26px 30px;overflow-y:auto;overflow-x:hidden;height:100vh}
 h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
+.btn[disabled]{opacity:.45;cursor:default;transform:none;box-shadow:none}
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap;margin:-4px 0 18px}
+.pager .pinfo{font-size:12.5px;color:var(--muted);font-weight:600}
 
 /* ---- Rows / status ---- */
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
@@ -191,10 +199,12 @@ function renderShell(){
   const nm=ME.employee?.full_name||ME.user.email;
   $('root').innerHTML=`<div id="app"><div id="side">
   <div class="brand"><img src="${ME.org?.logo||LOGO}">${esc(ME.org?.name||"Workspace")}</div>
+  <div class="navscroll">
   ${groups.map(([g,items])=>`${g?`<div class="grp">${g}</div>`:''}
     ${items.map(([k,ic,l])=>`<a href="#" id="nav-${k}" onclick="go('${k}');return false"><span class="ic">${ic}</span>${l}</a>`).join('')}
     <div class="sep"></div>`).join('')}
   <a href="#" class="sout" onclick="logout()"><span class="ic">🚪</span>Sign out</a>
+  </div>
   <div class="ufoot"><div class="av">${esc(nm[0].toUpperCase())}</div>
   <div><div class="nm">${esc(nm)}</div><div class="rl">${ME.profile?.role}</div></div></div>
   </div><div id="main"></div></div>`;
@@ -203,7 +213,29 @@ function renderShell(){
 function go(v){VIEW=v;document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
   ({dash,emp,att,mtr,hol,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,myslip})[v]();}
-const M=h=>{$('main').innerHTML=h};
+const M=h=>{$('main').innerHTML=h;paginateTables()};
+const PAGE_SIZE=10;
+function paginateTables(){
+  document.querySelectorAll('#main table').forEach(tb=>{
+    if(tb.classList.contains('grid-att')||tb.id==='ditems')return;
+    if(tb.closest('.payslip')||tb.closest('#docsheet')||tb.closest('.modal'))return;
+    const rows=[...tb.rows].filter(r=>r.cells[0]&&r.cells[0].tagName==='TD');
+    if(rows.length<=PAGE_SIZE)return;
+    const pages=Math.ceil(rows.length/PAGE_SIZE);let page=0;
+    const host=tb.closest('.card')||tb;
+    const pager=document.createElement('div');pager.className='pager noprint';
+    const draw=()=>{
+      rows.forEach((r,i)=>{r.style.display=(i>=page*PAGE_SIZE&&i<(page+1)*PAGE_SIZE)?'':'none'});
+      const from=page*PAGE_SIZE+1,to=Math.min((page+1)*PAGE_SIZE,rows.length);
+      pager.innerHTML=`<span class="pinfo">Showing ${from}–${to} of ${rows.length}</span>`+
+        `<button class="btn sm sec" data-a="prev"${page===0?' disabled':''}>‹ Prev</button>`+
+        `<button class="btn sm sec" data-a="next"${page===pages-1?' disabled':''}>Next ›</button>`;
+    };
+    pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+      if(b.dataset.a==='prev'&&page>0)page--;else if(b.dataset.a==='next'&&page<pages-1)page++;draw();});
+    host.after(pager);draw();
+  });
+}
 
 /* ---------- ADMIN: DASHBOARD ---------- */
 async function dash(){
