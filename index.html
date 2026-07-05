@@ -3,186 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Merik — Workforce Suite | Run your whole team in one place</title>
-<meta name="description" content="Merik Workforce Suite — a complete HR platform for employee management, attendance, leave, payroll, and daily task tracking. One workspace for your entire company.">
+<title>Merik — Workforce Suite | HR, Attendance, Payroll &amp; Task Software</title>
+<meta name="description" content="Merik is an all-in-one workforce management platform for small and growing businesses — employee management, attendance tracking, leave, payroll and daily task tracking in one secure company workspace.">
+<meta name="keywords" content="workforce management software, HR software, attendance tracking software, payroll software, leave management, employee management system, task tracking, Merik">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#14284B">
+<link rel="canonical" href="https://merik-orpin.vercel.app/">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%231B3A6B"/><text x="50" y="72" font-size="64" font-family="Arial,sans-serif" font-weight="bold" fill="white" text-anchor="middle">M</text></svg>'>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Merik — Workforce Suite for HR, Attendance, Payroll &amp; Tasks">
+<meta property="og:description" content="One secure workspace for employee management, attendance, leave, payroll and daily task tracking. Set up your company in minutes.">
+<meta property="og:url" content="https://merik-orpin.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Merik — Workforce Suite">
+<meta name="twitter:description" content="All-in-one HR, attendance, leave, payroll and task tracking in one company workspace.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-:root{
-  --navy:#1B3A6B; --deep:#14284B; --mid:#2563A8; --lblue:#D6E4F7;
-  --orange:#E8682A; --bg:#F4F6FA; --green:#1E8449;
-  --ink:#1a2438; --muted:#5b6b85; --line:#e4eaf3; --white:#fff;
-  --shadow:0 18px 50px rgba(20,40,75,.10);
-  --radius:18px;
+<link rel="stylesheet" href="assets/css/site.css">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"Organization","@id":"https://merik-orpin.vercel.app/#org","name":"Merik","url":"https://merik-orpin.vercel.app/","description":"Merik is an all-in-one workforce management platform for HR, attendance, leave, payroll and daily task tracking.","email":"maresolik@gmail.com","slogan":"Run your entire workforce from one workspace."},
+    {"@type":"WebSite","@id":"https://merik-orpin.vercel.app/#website","url":"https://merik-orpin.vercel.app/","name":"Merik — Workforce Suite","publisher":{"@id":"https://merik-orpin.vercel.app/#org"},"inLanguage":"en"},
+    {"@type":"SoftwareApplication","name":"Merik Workforce Suite","operatingSystem":"Web","applicationCategory":"BusinessApplication","description":"Merik combines employee management, attendance tracking, leave management, payroll and daily task tracking into a single secure company workspace.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Create a company workspace for free."},"featureList":["Employee management","Attendance tracking","Leave management","Payroll","Daily task tracking","Company workspaces"],"publisher":{"@id":"https://merik-orpin.vercel.app/#org"}}
+  ]
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,'Segoe UI',Arial,sans-serif;color:var(--ink);background:var(--white);line-height:1.55;-webkit-font-smoothing:antialiased}
-a{text-decoration:none;color:inherit}
-img{max-width:100%}
-.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
-.btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px;padding:13px 24px;border-radius:11px;border:none;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
-.btn:hover{transform:translateY(-2px)}
-.btn-primary{background:var(--orange);color:#fff;box-shadow:0 10px 24px rgba(232,104,42,.35)}
-.btn-primary:hover{background:#d75b20;box-shadow:0 14px 30px rgba(232,104,42,.45)}
-.btn-navy{background:var(--deep);color:#fff}
-.btn-navy:hover{background:#0f1f3c}
-.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28)}
-.btn-ghost:hover{background:rgba(255,255,255,.2)}
-.btn-outline{background:#fff;color:var(--navy);border:1.5px solid var(--line)}
-.btn-outline:hover{border-color:var(--mid);color:var(--mid)}
-
-/* ---------- Header ---------- */
-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.nav{display:flex;align-items:center;justify-content:space-between;height:70px}
-.brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:18px;color:var(--navy);letter-spacing:-.3px}
-.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--navy),var(--mid));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;box-shadow:0 6px 16px rgba(27,58,107,.3)}
-.brand small{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
-.nav-links{display:flex;align-items:center;gap:30px}
-.nav-links a.link{font-weight:500;font-size:15px;color:var(--muted)}
-.nav-links a.link:hover{color:var(--navy)}
-.nav-cta{display:flex;align-items:center;gap:12px}
-.menu-btn{display:none;background:none;border:none;font-size:26px;color:var(--navy);cursor:pointer}
-
-/* ---------- Hero ---------- */
-.hero{position:relative;overflow:hidden;background:radial-gradient(1200px 600px at 78% -10%,rgba(37,99,168,.18),transparent 60%),linear-gradient(180deg,#fbfcfe 0%,var(--bg) 100%)}
-.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:82px 0 90px}
-.pill{display:inline-flex;align-items:center;gap:8px;background:var(--lblue);color:var(--navy);font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px;margin-bottom:22px}
-.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
-h1{font-size:52px;line-height:1.08;letter-spacing:-1.4px;font-weight:800;color:var(--navy);margin-bottom:20px}
-h1 .accent{color:var(--orange)}
-.lead{font-size:18.5px;color:var(--muted);max-width:520px;margin-bottom:30px}
-.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:26px}
-.trust{display:flex;align-items:center;gap:22px;flex-wrap:wrap;color:var(--muted);font-size:13.5px;font-weight:500}
-.trust span{display:flex;align-items:center;gap:7px}
-.check{color:var(--green);font-weight:800}
-
-/* Hero mockup */
-.mock{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden;transform:perspective(1400px) rotateY(-6deg) rotateX(3deg)}
-.mock-top{background:var(--deep);padding:12px 16px;display:flex;align-items:center;gap:7px}
-.mock-top i{width:11px;height:11px;border-radius:50%;background:#4a5f85;display:inline-block}
-.mock-top i:first-child{background:#ff5f57}.mock-top i:nth-child(2){background:#febc2e}.mock-top i:nth-child(3){background:#28c840}
-.mock-top span{margin-left:12px;color:#9fb3d4;font-size:12px;font-weight:600}
-.mock-body{padding:18px}
-.mock-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:14px}
-.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.stat{background:var(--bg);border-radius:12px;padding:12px}
-.stat b{display:block;font-size:20px;color:var(--navy);font-weight:800}
-.stat small{font-size:11px;color:var(--muted);font-weight:600}
-.bar{height:9px;border-radius:6px;background:var(--lblue);margin:9px 0;overflow:hidden}
-.bar >i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--mid),var(--navy))}
-.mrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
-.mrow:last-child{border-bottom:none}
-.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0}
-.tag{margin-left:auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
-.tag.g{background:#e4f4ea;color:var(--green)}
-.tag.o{background:#fdeee6;color:var(--orange)}
-
-/* ---------- Logos strip ---------- */
-.strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}
-.strip .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 24px;flex-wrap:wrap}
-.strip p{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
-.strip .items{display:flex;gap:34px;flex-wrap:wrap;color:#9aa8bf;font-weight:800;font-size:17px;letter-spacing:-.3px}
-
-/* ---------- Sections ---------- */
-section{padding:88px 0}
-.sec-head{text-align:center;max-width:660px;margin:0 auto 54px}
-.eyebrow{color:var(--orange);font-weight:700;font-size:13.5px;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px}
-.sec-head h2{font-size:38px;letter-spacing:-1px;color:var(--navy);font-weight:800;margin-bottom:14px}
-.sec-head p{font-size:17px;color:var(--muted)}
-
-.features{background:var(--bg)}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px;transition:transform .2s ease,box-shadow .2s ease}
-.card:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
-.ficon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:18px}
-.card h3{font-size:19px;color:var(--navy);margin-bottom:8px;font-weight:700}
-.card p{font-size:14.5px;color:var(--muted)}
-
-/* ---------- How it works ---------- */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;counter-reset:step}
-.step{position:relative;padding:30px 26px;background:#fff;border:1px solid var(--line);border-radius:var(--radius)}
-.step::before{counter-increment:step;content:counter(step);position:absolute;top:-20px;left:26px;width:44px;height:44px;border-radius:12px;background:var(--deep);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;box-shadow:0 8px 18px rgba(20,40,75,.28)}
-.step h3{margin:14px 0 8px;font-size:19px;color:var(--navy)}
-.step p{font-size:14.5px;color:var(--muted)}
-
-/* ---------- Split feature ---------- */
-.split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
-.split.rev .txt{order:2}
-.split .txt h2{font-size:32px;color:var(--navy);letter-spacing:-.6px;margin-bottom:16px}
-.split .txt p{color:var(--muted);font-size:16px;margin-bottom:22px}
-.flist{list-style:none;display:grid;gap:13px}
-.flist li{display:flex;gap:12px;font-size:15px;font-weight:500;color:var(--ink)}
-.flist li .ok{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:#e4f4ea;color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
-.panel{background:linear-gradient(160deg,var(--navy),var(--mid));border-radius:var(--radius);padding:30px;color:#fff;box-shadow:var(--shadow)}
-.panel h4{font-size:14px;font-weight:600;color:#bcd2f2;margin-bottom:16px;letter-spacing:.4px}
-.pcard{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:16px;margin-bottom:12px}
-.pcard .r{display:flex;align-items:center;gap:10px;font-size:14px}
-.pcard b{font-size:15px}
-.pcard .num{margin-left:auto;font-weight:800;font-size:18px}
-
-/* ---------- Stats band ---------- */
-.band{background:var(--deep);color:#fff}
-.band .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center}
-.band .n{font-size:44px;font-weight:800;letter-spacing:-1.5px;color:#fff}
-.band .n span{color:var(--orange)}
-.band .l{color:#9fb3d4;font-size:14px;font-weight:500;margin-top:4px}
-
-/* ---------- CTA ---------- */
-.cta-wrap{text-align:center;background:linear-gradient(135deg,var(--navy),var(--mid));border-radius:26px;padding:64px 32px;color:#fff;position:relative;overflow:hidden}
-.cta-wrap::after{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:rgba(232,104,42,.25);filter:blur(90px);top:-140px;right:-80px}
-.cta-wrap h2{font-size:38px;letter-spacing:-1px;margin-bottom:14px;position:relative}
-.cta-wrap p{font-size:18px;color:#cfe0f6;max-width:520px;margin:0 auto 28px;position:relative}
-.cta-wrap .hero-cta{justify-content:center;position:relative}
-
-/* ---------- Footer ---------- */
-footer{background:#0f1f3c;color:#9fb3d4;padding:54px 0 30px}
-.foot{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:30px;margin-bottom:36px}
-.foot .brand{color:#fff}
-.foot .brand small{color:#7f93b6}
-.foot p.desc{margin-top:14px;font-size:14px;max-width:300px}
-.foot h5{color:#fff;font-size:14px;margin-bottom:14px;font-weight:700}
-.foot a{display:block;font-size:14px;margin-bottom:10px;color:#9fb3d4}
-.foot a:hover{color:#fff}
-.foot-bottom{border-top:1px solid rgba(255,255,255,.1);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;color:#7f93b6}
-
-/* ---------- Responsive ---------- */
-@media(max-width:900px){
-  .hero-grid{grid-template-columns:1fr;gap:44px;padding:56px 0 64px}
-  .mock{transform:none}
-  h1{font-size:40px}
-  .grid,.steps{grid-template-columns:1fr 1fr}
-  .split,.split.rev .txt{grid-template-columns:1fr;order:0}
-  .band .wrap{grid-template-columns:1fr 1fr;gap:34px}
-  .nav-links{position:fixed;inset:70px 0 auto 0;background:#fff;flex-direction:column;align-items:flex-start;gap:0;padding:12px 24px;border-bottom:1px solid var(--line);box-shadow:var(--shadow);display:none}
-  .nav-links.open{display:flex}
-  .nav-links a.link{padding:12px 0;width:100%;border-bottom:1px solid var(--line)}
-  .nav-links .nav-cta{flex-direction:column;align-items:stretch;width:100%;padding-top:12px;gap:10px}
-  .nav-links .nav-cta .btn{justify-content:center}
-  .menu-btn{display:block}
-  .foot{grid-template-columns:1fr 1fr}
-}
-@media(max-width:560px){
-  h1{font-size:33px}.sec-head h2,.cta-wrap h2{font-size:28px}
-  .grid,.steps,.band .wrap,.foot{grid-template-columns:1fr}
-  section{padding:60px 0}
-}
-</style>
+</script>
 </head>
 <body>
 
 <!-- ============ HEADER ============ -->
 <header>
   <div class="wrap nav">
-    <a href="#" class="brand">
+    <a href="/" class="brand">
       <span class="logo">M</span>
       <span>MERIK<small>Workforce Suite</small></span>
     </a>
     <nav class="nav-links" id="navLinks">
-      <a class="link" href="#features">Features</a>
-      <a class="link" href="#how">How it works</a>
-      <a class="link" href="#modules">Modules</a>
+      <a class="link" href="features.html">Features</a>
+      <a class="link" href="how-it-works.html">How it works</a>
+      <a class="link" href="modules.html">Modules</a>
       <div class="nav-cta">
         <a class="btn btn-outline" href="app/">Sign In</a>
         <a class="btn btn-primary" href="app/">Get Started</a>
@@ -201,7 +65,7 @@ footer{background:#0f1f3c;color:#9fb3d4;padding:54px 0 30px}
       <p class="lead">Merik brings employees, attendance, leave, payroll and daily task tracking together — so HR stops juggling spreadsheets and starts running the team.</p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="app/">Create your workspace →</a>
-        <a class="btn btn-navy" href="#how">See how it works</a>
+        <a class="btn btn-navy" href="how-it-works.html">See how it works</a>
       </div>
       <div class="trust">
         <span><span class="check">✓</span> No setup fee</span>
@@ -389,17 +253,17 @@ footer{background:#0f1f3c;color:#9fb3d4;padding:54px 0 30px}
       </div>
       <div>
         <h5>Product</h5>
-        <a href="#features">Features</a>
-        <a href="#modules">Modules</a>
-        <a href="#how">How it works</a>
+        <a href="features.html">Features</a>
+        <a href="modules.html">Modules</a>
+        <a href="how-it-works.html">How it works</a>
         <a href="app/">Sign in</a>
       </div>
       <div>
         <h5>Modules</h5>
-        <a href="#features">Employees</a>
-        <a href="#features">Attendance</a>
-        <a href="#features">Leave &amp; Payroll</a>
-        <a href="#features">Daily Tasks</a>
+        <a href="modules.html">Employees</a>
+        <a href="modules.html">Attendance</a>
+        <a href="modules.html">Leave &amp; Payroll</a>
+        <a href="modules.html">Daily Tasks</a>
       </div>
       <div>
         <h5>Get started</h5>
