@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Merik — Workforce Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -48,7 +49,10 @@ tbody tr:hover td{background:#F1F6FD}
 .pghead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;flex-wrap:wrap}
 .pghead h2{margin-bottom:3px;font-size:23px;letter-spacing:-.4px}
 .sub{color:var(--muted);font-size:13.5px}
-.kicon{width:52px;height:52px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:var(--shadow)}
+.kicon{width:52px;height:52px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:var(--shadow);color:#14284B}
+.kicon i{font-size:22px}
+#side a .ic i{font-size:15px}
+.btn i{font-size:12.5px}
 .av2{display:inline-flex;width:30px;height:30px;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:11.5px;margin-right:8px;vertical-align:middle;color:#fff;background:var(--mid)}
 .lgd{display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:12.5px;color:#4a5a72}
 .lgd b{display:inline-flex;width:22px;height:22px;border-radius:6px;align-items:center;justify-content:center;font-size:11px}
@@ -174,7 +178,7 @@ function renderLogin(){
   <label>Email</label><input id="lem" type="email"><label>Password</label><input id="lpw" type="password">
   <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" style="flex:1" onclick="doLogin()">Sign In</button>
   <button class="btn sec" style="flex:1" onclick="doSignup()">Employee Sign Up</button></div>
-  <div style="margin-top:10px;text-align:center"><a href="#" onclick="doSignup();return false" style="font-size:12.5px;color:#2563A8">🏢 New company? Sign up to create your workspace</a></div>
+  <div style="margin-top:10px;text-align:center"><a href="#" onclick="doSignup();return false" style="font-size:12.5px;color:#2563A8"><i class="fa-solid fa-building"></i> New company? Sign up to create your workspace</a></div>
   <p id="lerr" style="color:var(--red);margin-top:8px;font-size:12px"></p>
   <p style="font-size:11px;color:#889;margin-top:10px">Employees: sign up with the email your company added for you. New companies: sign up with any email, then create your workspace.</p></div>`;
 }
@@ -185,14 +189,14 @@ async function doSignup(){const{error}=await sb.auth.signUp({email:$('lem').valu
 async function logout(){await sb.auth.signOut();ME=null;renderLogin()}
 
 const ADMIN_GROUPS=[
- [null,[['dash','🔷','Dashboard']]],
- ['People',[['emp','👥','Employees'],['att','🗓️','Attendance'],['wfh','🏠','WFH & Leave'],['pay','💰','Payroll'],['perf','⭐','Performance']]],
- ['Tracking',[['mtr','📊','Monthly Tracker'],['task','✅','Task Log']]],
- ['Business',[['cli','🤝','Clients'],['prj','📁','Projects'],['quo','📄','Quotes'],['inv','🧾','Invoices']]],
- ['Organization',[['hol','📅','Holidays'],['orgset','⚙️','Company Settings']]]];
+ [null,[['dash','<i class="fa-solid fa-gauge-high"></i>','Dashboard']]],
+ ['People',[['emp','<i class="fa-solid fa-users"></i>','Employees'],['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['pay','<i class="fa-solid fa-money-bill-wave"></i>','Payroll'],['perf','<i class="fa-solid fa-star" style="color:#E8A200"></i>','Performance']]],
+ ['Tracking',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log']]],
+ ['Business',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
+ ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 const EMP_GROUPS=[
- [null,[['mydash','🔷','My Dashboard']]],
- ['My Work',[['myupd','✅','Task Log'],['myatt','🗓️','My Attendance'],['mywfh','🏠','WFH / Leave']]]];
+ [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
+ ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave']]]];
 function renderShell(){
   const groups=(ME.profile?.role==='admin'?ADMIN_GROUPS:EMP_GROUPS);
   const first=groups[0][1][0][0];
@@ -203,7 +207,7 @@ function renderShell(){
   ${groups.map(([g,items])=>`${g?`<div class="grp">${g}</div>`:''}
     ${items.map(([k,ic,l])=>`<a href="#" id="nav-${k}" onclick="go('${k}');return false"><span class="ic">${ic}</span>${l}</a>`).join('')}
     <div class="sep"></div>`).join('')}
-  <a href="#" class="sout" onclick="logout()"><span class="ic">🚪</span>Sign out</a>
+  <a href="#" class="sout" onclick="logout()"><span class="ic"><i class="fa-solid fa-right-from-bracket"></i></span>Sign out</a>
   </div>
   <div class="ufoot"><div class="av">${esc(nm[0].toUpperCase())}</div>
   <div><div class="nm">${esc(nm)}</div><div class="rl">${ME.profile?.role}</div></div></div>
@@ -252,12 +256,12 @@ async function dash(){
     <div style="border-top:1px solid #eef1f6;margin-top:12px;padding-top:10px"><a href="#" onclick="go('${fn}');return false" style="color:#2563A8;font-weight:600;font-size:13px;text-decoration:none">${link} ›</a></div></div>`;
   M(pgh('Dashboard',"Welcome back! Here's what's happening today.")+
   `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px">
-  ${card('👥','#E8EEFB',ne||0,'Active Employees','View Employees','emp')}
-  ${card('🟢','#E6F7EC',p,'Present Today','View Attendance','att')}
-  ${card('📋','#FFF2E2',(tu||[]).length,'Task Updates Today','View Task Log','task')}
-  ${card('🧾','#F3ECFB',inr((iv||[]).reduce((s,i)=>s+ +i.total,0)),'Outstanding Invoices','View Invoices','inv')}</div>
+  ${card('<i class="fa-solid fa-users"></i>','#E8EEFB',ne||0,'Active Employees','View Employees','emp')}
+  ${card('<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC',p,'Present Today','View Attendance','att')}
+  ${card('<i class="fa-solid fa-clipboard-list"></i>','#FFF2E2',(tu||[]).length,'Task Updates Today','View Task Log','task')}
+  ${card('<i class="fa-solid fa-file-invoice"></i>','#F3ECFB',inr((iv||[]).reduce((s,i)=>s+ +i.total,0)),'Outstanding Invoices','View Invoices','inv')}</div>
   <div class="card"><b>Quick Links</b><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
-  ${[['👤 Add Employee','emp'],['🗓️ Mark Attendance','att'],['✅ Add Task','task'],['🧾 New Invoice','inv'],['📊 View Reports','perf']].map(([l,v])=>`<button class="btn sec" style="padding:14px 20px" onclick="go('${v}')">${l}</button>`).join('')}
+  ${[['<i class="fa-solid fa-user-plus"></i> Add Employee','emp'],['<i class="fa-solid fa-calendar-check"></i> Mark Attendance','att'],['<i class="fa-solid fa-circle-check" style="color:#1E8449"></i> Add Task','task'],['<i class="fa-solid fa-file-invoice"></i> New Invoice','inv'],['<i class="fa-solid fa-chart-column"></i> View Reports','perf']].map(([l,v])=>`<button class="btn sec" style="padding:14px 20px" onclick="go('${v}')">${l}</button>`).join('')}
   </div></div>`);
 }
 
@@ -268,12 +272,12 @@ async function emp(){
   const depts=new Set((data||[]).map(e=>e.department).filter(Boolean)).size;
   const now=new Date();const join=(data||[]).filter(e=>e.doj&&e.doj.slice(0,7)===`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`).length;
   M(pgh('Employees','Manage your team members and their information','<button class="btn" onclick="empForm()">＋ Add Employee</button>')+
-  kpis([['👥','#FFE9DC','Total Employees',(data||[]).length,'Active team members'],['🏢','#E8EEFB','Departments',depts,'Across the organization'],['🟢','#E6F7EC','Active Employees',act,'Currently active'],['🗓️','#F3ECFB','This Month Joiners',join,'New additions']])+
+  kpis([['<i class="fa-solid fa-users"></i>','#FFE9DC','Total Employees',(data||[]).length,'Active team members'],['<i class="fa-solid fa-building"></i>','#E8EEFB','Departments',depts,'Across the organization'],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Active Employees',act,'Currently active'],['<i class="fa-solid fa-calendar-check"></i>','#F3ECFB','This Month Joiners',join,'New additions']])+
   `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Email</th><th>DOJ</th><th>PAN</th><th>UAN</th><th>Bank A/c</th><th>Monthly CTC</th><th>Annual CTC</th><th>Status</th><th></th></tr>
   ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.email)}</td><td>${e.doj||''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
   <td><span class="badge ${e.status==='Active'?'stP':'stA'}">${e.status}</span></td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick='empForm(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Edit</button>
-  <button class="btn sm" title="Create login credentials" onclick="mkLogin('${e.id}','${esc(e.email||'')}')">🔑 Login</button>
+  <button class="btn sm" title="Create login credentials" onclick="mkLogin('${e.id}','${esc(e.email||'')}')"><i class="fa-solid fa-key"></i> Login</button>
   <button class="btn sm warn" onclick="delEmp('${e.id}')">Del</button></td></tr>`).join('')}</table></div>`);
 }
 function empForm(e={}){
@@ -317,10 +321,10 @@ async function att(d){
     sb.from('holidays').select('*').eq('holiday_date',d)]);
   const map={};(rows||[]).forEach(r=>map[r.employee_id]=r);
   const dt=new Date(d+'T00:00:00');const wk=dt.getDay()===0||dt.getDay()===6;
-  M(pgh('Daily Attendance','Track and manage daily attendance for your team.',`<button class="btn" onclick="saveAtt('${d}')">💾 Save All</button>`)+
+  M(pgh('Daily Attendance','Track and manage daily attendance for your team.',`<button class="btn" onclick="saveAtt('${d}')"><i class="fa-solid fa-floppy-disk"></i> Save All</button>`)+
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Date</label><input type="date" value="${d}" onchange="att(this.value)"></div>
-  <div style="padding-top:20px"><span class="badge ${wk?'stOL':'stP'}">🗓 ${dt.toLocaleDateString('en-IN',{weekday:'long'})} ${wk?'— Weekend (still enterable)':'— Working day'}</span>
-  ${hols&&hols.length?`<span class="badge stA">🏖 ${esc(hols[0].name)}</span>`:''}</div></div>
+  <div style="padding-top:20px"><span class="badge ${wk?'stOL':'stP'}"><i class="fa-solid fa-calendar-day"></i> ${dt.toLocaleDateString('en-IN',{weekday:'long'})} ${wk?'— Weekend (still enterable)':'— Working day'}</span>
+  ${hols&&hols.length?`<span class="badge stA"><i class="fa-solid fa-umbrella-beach"></i> ${esc(hols[0].name)}</span>`:''}</div></div>
   <div class="card" style="overflow:auto"><table id="atbl"><tr><th>#</th><th>Name</th><th>ID</th><th>Dept</th><th>Entry</th><th>Exit</th><th>Hrs</th><th>Status</th><th>Remarks</th></tr>
   ${(emps||[]).map((e,i)=>{const r=map[e.id]||{};return`<tr data-eid="${e.id}"><td>${i+1}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${e.emp_code}</td><td>${esc(e.department)}</td>
   <td><input class="ai" data-k="entry_time" type="time" value="${r.entry_time?r.entry_time.slice(0,5):''}" style="width:95px"></td>
@@ -328,13 +332,13 @@ async function att(d){
   <td class="hrs"></td>
   <td><select class="ai" data-k="status" style="width:140px"><option value=""></option>${['P','A','L','H','W','OL','UL'].map(s=>`<option ${r.status===s?'selected':''} value="${s}">${{P:'P — Present',A:'A — Absent',L:'L — Late',H:'H — Half Day',W:'W — WFH',OL:'OL — Paid Leave',UL:'UL — Unpaid Leave'}[s]}</option>`).join('')}</select></td>
   <td><input class="ai" data-k="remarks" value="${esc(r.remarks||'')}" style="width:120px">
-  ${r.in_lat?`<a href="https://maps.google.com/?q=${r.in_lat},${r.in_lng}" target="_blank" title="${esc(r.in_loc||'')}">📍</a>`:''}</td></tr>`}).join('')}</table></div>
+  ${r.in_lat?`<a href="https://maps.google.com/?q=${r.in_lat},${r.in_lng}" target="_blank" title="${esc(r.in_loc||'')}"><i class="fa-solid fa-location-dot"></i></a>`:''}</td></tr>`}).join('')}</table></div>
   <div class="card" id="asum"></div>`);
   const upd=()=>{const c={P:0,A:0,L:0,H:0,W:0,OL:0,UL:0};document.querySelectorAll('#atbl tr[data-eid]').forEach(tr=>{
     const s=tr.querySelector('[data-k=status]').value;if(s)c[s]++;
     const a=tr.querySelector('[data-k=entry_time]').value,b=tr.querySelector('[data-k=exit_time]').value;
     tr.querySelector('.hrs').textContent=(a&&b)?(((new Date('1970-01-01T'+b)-new Date('1970-01-01T'+a))/3.6e6).toFixed(1)+'h'):'';});
-    $('asum').innerHTML=`Present ✅ ${c.P} &nbsp; Absent ❌ ${c.A} &nbsp; Late ⏰ ${c.L} &nbsp; Half ½ ${c.H} &nbsp; WFH 🏠 ${c.W} &nbsp; Paid Leave 🏖 ${c.OL} &nbsp; Unpaid Leave ⛔ ${c.UL}`;};
+    $('asum').innerHTML=`Present <i class="fa-solid fa-circle-check" style="color:#1E8449"></i> ${c.P} &nbsp; Absent <i class="fa-solid fa-circle-xmark" style="color:#C0392B"></i> ${c.A} &nbsp; Late <i class="fa-solid fa-clock" style="color:#D35400"></i> ${c.L} &nbsp; Half ½ ${c.H} &nbsp; WFH <i class="fa-solid fa-house"></i> ${c.W} &nbsp; Paid Leave <i class="fa-solid fa-umbrella-beach"></i> ${c.OL} &nbsp; Unpaid Leave <i class="fa-solid fa-ban" style="color:#7B241C"></i> ${c.UL}`;};
   document.querySelectorAll('.ai').forEach(el=>el.addEventListener('input',upd));upd();
 }
 async function saveAtt(d){
@@ -360,7 +364,7 @@ async function mtr(ym){
   let wdays=0;for(let d=1;d<=dim;d++){const w=new Date(y,m-1,d).getDay();if(w!==0&&w!==6&&!H.has(`${ym}-${String(d).padStart(2,'0')}`))wdays++}
   const hd=[];for(let d=1;d<=dim;d++){const dt=new Date(y,m-1,d);const wk=dt.getDay()===0||dt.getDay()===6;
     hd.push(`<th style="text-align:center;${wk?'background:#6B7FA3':''}">${d}<br><span style="font-weight:400;font-size:10px">${['Su','Mo','Tu','We','Th','Fr','Sa'][dt.getDay()]}</span></th>`)}
-  M(pgh(`Monthly Tracker — ${MONTHS[m-1]} ${y}`,'Track attendance and paid leave for the selected month.','<button class="btn" onclick="print()">⬇ Download</button>')+
+  M(pgh(`Monthly Tracker — ${MONTHS[m-1]} ${y}`,'Track attendance and paid leave for the selected month.','<button class="btn" onclick="print()"><i class="fa-solid fa-download"></i> Download</button>')+
   `<div class="row noprint" style="margin-bottom:12px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="mtr(this.value)"></div>
   <div style="padding-top:20px"><span class="badge stL">Working days: ${wdays} (excl. weekends & holidays)</span></div></div>
   <div class="card" style="padding:12px 16px">
@@ -382,7 +386,7 @@ async function hol(){
   const{data}=await sb.from('holidays').select('*').order('holiday_date');
   const nowd=today();
   M(pgh('Holidays','Add and manage national holidays.')+
-  kpis([['📅','#E8EEFB','Total Holidays',(data||[]).length],['🚩','#E6F7EC','National Holidays',(data||[]).filter(x=>x.type==='National Holiday').length],['🗓️','#FFF2E2','Upcoming',(data||[]).filter(x=>x.holiday_date>=nowd).length],['✅','#F3ECFB','This Year',(data||[]).filter(x=>x.holiday_date.slice(0,4)===nowd.slice(0,4)).length]])+
+  kpis([['<i class="fa-solid fa-calendar-days"></i>','#E8EEFB','Total Holidays',(data||[]).length],['<i class="fa-solid fa-flag" style="color:#C0392B"></i>','#E6F7EC','National Holidays',(data||[]).filter(x=>x.type==='National Holiday').length],['<i class="fa-solid fa-calendar-check"></i>','#FFF2E2','Upcoming',(data||[]).filter(x=>x.holiday_date>=nowd).length],['<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','#F3ECFB','This Year',(data||[]).filter(x=>x.holiday_date.slice(0,4)===nowd.slice(0,4)).length]])+
   `<div class="card"><div class="row"><div><label>Date</label><input id="hd" type="date"></div>
   <div><label>Name</label><input id="hn"></div><div><label>Type</label><select id="ht">${['National Holiday','State Holiday','Company Holiday','Optional Holiday'].map(t=>`<option>${t}</option>`).join('')}</select></div>
   <div><button class="btn" onclick="addHol()">+ Add</button></div></div></div>
@@ -403,9 +407,9 @@ async function task(d){
   const map={};(rows||[]).forEach(r=>map[r.employee_id]=r);
   const cnt={nu:0,sh:0};(emps||[]).forEach(e=>{const r=map[e.id];const s=r?r.update_status:'No Update';if(s==='Update Shared')cnt.sh++;else if(s==='No Update')cnt.nu++});
   M(pgh('Daily Task Log','Track and manage daily tasks and updates for your team.')+
-  `<div class="warnbar">⚠️ <b>Missing update = NO WORK DONE for the day.</b> Updates due before 5:30 PM daily.</div>
+  `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> <b>Missing update = NO WORK DONE for the day.</b> Updates due before 5:30 PM daily.</div>
   <div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Date</label><input type="date" value="${d}" onchange="task(this.value)"></div></div>`+
-  kpis([['🔴','#FDECEA','No Update',cnt.nu,'Employees'],['🟢','#E6F7EC','Update Shared',cnt.sh,'Employees'],['👥','#E8EEFB','Total Employees',(emps||[]).length,'Employees']])+`
+  kpis([['<i class="fa-solid fa-circle" style="color:#C0392B"></i>','#FDECEA','No Update',cnt.nu,'Employees'],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Update Shared',cnt.sh,'Employees'],['<i class="fa-solid fa-users"></i>','#E8EEFB','Total Employees',(emps||[]).length,'Employees']])+`
   <div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th></th></tr>
   ${(emps||[]).map(e=>{const r=map[e.id];const s=r?r.update_status:'No Update';
     const cls={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
@@ -462,25 +466,25 @@ async function perf(ym){
     else if(['Leave','Sick Leave'].includes(r.update_status))a.leave++;});
   const tots=(emps||[]).reduce((a,e)=>{const x=agg[e.id]||{shared:0,wfh:0,leave:0};a.sh+=x.shared;a.wf+=x.wfh;a.lv+=x.leave;a.ms+=Math.max(0,wdays-x.shared-x.wfh-x.leave);return a},{sh:0,wf:0,lv:0,ms:0});
   const avgr=(emps||[]).length&&wdays?Math.round(tots.sh/((emps||[]).length*wdays)*100):0;
-  M(pgh(`Performance Summary — ${MONTHS[m-1]} ${y}`,'Overview of team performance and productivity for the selected month.','<button class="btn" onclick="print()">🖨 Export</button>')+
+  M(pgh(`Performance Summary — ${MONTHS[m-1]} ${y}`,'Overview of team performance and productivity for the selected month.','<button class="btn" onclick="print()"><i class="fa-solid fa-print"></i> Export</button>')+
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="perf(this.value)"></div>
   <div style="padding-top:20px"><span class="badge stL">Working days: ${wdays}</span></div></div>`+
-  kpis([['👥','#E8EEFB','Total Employees',(emps||[]).length],['📤','#E6F7EC','Updates Shared',tots.sh],['🏠','#FFE9DC','WFH',tots.wf],['🌴','#F3ECFB','Leave',tots.lv],['⏰','#FDEBD0','Missed Updates',tots.ms],['📈','#E8F8F5','Average Update Rate',avgr+'%']])+`
+  kpis([['<i class="fa-solid fa-users"></i>','#E8EEFB','Total Employees',(emps||[]).length],['<i class="fa-solid fa-share-from-square"></i>','#E6F7EC','Updates Shared',tots.sh],['<i class="fa-solid fa-house"></i>','#FFE9DC','WFH',tots.wf],['<i class="fa-solid fa-umbrella-beach"></i>','#F3ECFB','Leave',tots.lv],['<i class="fa-solid fa-clock" style="color:#D35400"></i>','#FDEBD0','Missed Updates',tots.ms],['<i class="fa-solid fa-arrow-trend-up"></i>','#E8F8F5','Average Update Rate',avgr+'%']])+`
   <div class="card"><table><tr><th>ID</th><th>Name</th><th>Designation</th><th>Updates Shared</th><th>WFH</th><th>Leave</th><th>Missed</th><th>Update Rate</th><th>Rating</th></tr>
   ${(emps||[]).map(e=>{const a=agg[e.id]||{shared:0,wfh:0,leave:0};
     const rate=wdays?Math.round((a.shared+a.wfh)/wdays*100):0;
-    const rating=rate>=90?'⭐ Excellent':rate>=75?'✅ Good':rate>=50?'⚠️ Average':'❌ Poor';
+    const rating=rate>=90?'<i class="fa-solid fa-star" style="color:#E8A200"></i> Excellent':rate>=75?'<i class="fa-solid fa-circle-check" style="color:#1E8449"></i> Good':rate>=50?'<i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> Average':'<i class="fa-solid fa-circle-xmark" style="color:#C0392B"></i> Poor';
     return`<tr><td>${e.emp_code}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.designation)}</td>
     <td>${a.shared}</td><td>${a.wfh}</td><td>${a.leave}</td><td>${Math.max(0,wdays-a.shared-a.wfh-a.leave)}</td>
     <td style="font-weight:700;color:${rate>=75?'var(--green)':rate>=50?'#D35400':'var(--red)'}">${rate}%</td><td>${rating}</td></tr>`}).join('')}</table></div>
-  <button class="btn noprint" onclick="print()">🖨 Print / PDF</button>`);
+  <button class="btn noprint" onclick="print()"><i class="fa-solid fa-print"></i> Print / PDF</button>`);
 }
 
 /* ---------- WFH & LEAVE ---------- */
 async function wfh(){
   const{data}=await sb.from('wfh_leave').select('*,employees(full_name,emp_code)').order('req_date',{ascending:false}).limit(200);
   M(pgh('WFH & Leave Log','View and manage work from home and leave requests')+
-  `<div class="warnbar">⚠️ Only management-approved WFH/Leave is valid. Late intimation is NOT accepted (due before 8:00 AM).</div>
+  `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> Only management-approved WFH/Leave is valid. Late intimation is NOT accepted (due before 8:00 AM).</div>
   <div class="card"><table><tr><th>Date</th><th>Employee</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
   ${(data||[]).map(r=>`<tr><td>${r.req_date}</td><td>${esc(r.employees?.full_name)} (${r.employees?.emp_code})</td>
   <td>${r.status}</td><td>${esc(r.reason)}</td>
@@ -508,11 +512,11 @@ async function pay(ym){
   const ATT={};(arec||[]).forEach(r=>{const a=ATT[r.employee_id]=ATT[r.employee_id]||{unpaid:0};
     if(r.status==='A'||r.status==='UL')a.unpaid++;else if(r.status==='H')a.unpaid+=0.5;});
   const F=['total_days','paid_days','basic','hra','other_allowance','incentives','arrears','pt','lop'];
-  M(pgh(`Payroll — ${MONTHS[m-1]} ${y}`,'Manage employee payroll and salary details for the selected month.',`<button class="btn" onclick="savePay(${y},${m})">💾 Save All</button>`)+
+  M(pgh(`Payroll — ${MONTHS[m-1]} ${y}`,'Manage employee payroll and salary details for the selected month.',`<button class="btn" onclick="savePay(${y},${m})"><i class="fa-solid fa-floppy-disk"></i> Save All</button>`)+
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="pay(this.value)"></div></div>`+
-  kpis([['💵','#E8EEFB','Total Gross Pay','—','', 'kgross'],['🧾','#E6F7EC','Total Deductions','—','','kded'],['💰','#FFE9DC','Net Pay (Take Home)','—','','knet'],['👥','#F3ECFB','Employees',(emps||[]).length,'','kemp']])+`
+  kpis([['<i class="fa-solid fa-money-bills"></i>','#E8EEFB','Total Gross Pay','—','', 'kgross'],['<i class="fa-solid fa-file-invoice"></i>','#E6F7EC','Total Deductions','—','','kded'],['<i class="fa-solid fa-money-bill-wave"></i>','#FFE9DC','Net Pay (Take Home)','—','','knet'],['<i class="fa-solid fa-users"></i>','#F3ECFB','Employees',(emps||[]).length,'','kemp']])+`
   <div class="card" style="overflow:auto"><table id="ptbl"><tr><th>ID</th><th>Name</th><th>Days</th><th>Paid</th><th>Basic</th><th>HRA</th><th>Other Allow</th><th>Incentives</th><th>Arrears</th><th>PT</th><th>LOP</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Salary Status</th><th></th></tr>
-  ${(emps||[]).map(e=>{const r=map[e.id]||autoPay(e,y,m,ATT[e.id]);return`<tr data-eid="${e.id}" data-ctc="${e.ctc||''}"><td>${e.emp_code}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b>${!map[e.id]&&e.ctc?' <span title="auto-filled from CTC + attendance">⚡</span>':''}</td>
+  ${(emps||[]).map(e=>{const r=map[e.id]||autoPay(e,y,m,ATT[e.id]);return`<tr data-eid="${e.id}" data-ctc="${e.ctc||''}"><td>${e.emp_code}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b>${!map[e.id]&&e.ctc?' <span title="auto-filled from CTC + attendance"><i class="fa-solid fa-bolt" style="color:#E8A200"></i></span>':''}</td>
   ${F.map(k=>`<td><input class="pi" data-k="${k}" type="number" step="0.01" value="${r[k]??''}" style="width:78px"></td>`).join('')}
   <td class="cg"></td><td class="cd"></td><td class="cn" style="font-weight:700"></td>
   <td><select class="pi" data-k="pay_status" style="width:95px;background:${r.pay_status==='Paid'?'#D5F5E3':'#FADBD8'}" onchange="this.style.background=this.value==='Paid'?'#D5F5E3':'#FADBD8'">
@@ -560,8 +564,8 @@ async function slip(eid,y,m){
   const th=`background:${DK};color:#fff;font-weight:700;border:1px solid #999;text-align:center`;
   const gh=`background:${GY};color:#fff;font-weight:700;border:1px solid #999`;
   const amt='text-align:right';
-  M(`<button class="btn sec noprint" onclick="${back}">← Back</button>
-  <button class="btn noprint" onclick="print()">🖨 Print / PDF</button><br><br>
+  M(`<button class="btn sec noprint" onclick="${back}"><i class="fa-solid fa-arrow-left"></i> Back</button>
+  <button class="btn noprint" onclick="print()"><i class="fa-solid fa-print"></i> Print / PDF</button><br><br>
   <div class="payslip" style="border:none">
   <div style="background:${OR};color:#fff;text-align:center;font-weight:800;padding:10px;font-size:20px;letter-spacing:1px">SALARY SLIP</div>
   <table style="border-collapse:collapse"><tr>
@@ -592,7 +596,7 @@ async function cli(){
   const{data}=await sb.from('clients').select('*').order('name');
   const st={em:(data||[]).filter(c=>c.email).length,ph:(data||[]).filter(c=>c.phone).length};
   M(pgh('Clients','Manage all client information in one place.','<button class="btn" onclick="cliForm()">＋ Add Client</button>')+
-  kpis([['👥','#E8EEFB','Total Clients',(data||[]).length],['🏢','#E6F7EC','Active Clients',(data||[]).length],['✉️','#F3ECFB','With Email',st.em],['📞','#FFE9DC','With Phone',st.ph]])+
+  kpis([['<i class="fa-solid fa-users"></i>','#E8EEFB','Total Clients',(data||[]).length],['<i class="fa-solid fa-building"></i>','#E6F7EC','Active Clients',(data||[]).length],['<i class="fa-solid fa-envelope"></i>','#F3ECFB','With Email',st.em],['<i class="fa-solid fa-phone"></i>','#FFE9DC','With Phone',st.ph]])+
   `<div class="card"><table><tr><th>Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>GSTIN</th><th>Address</th><th></th></tr>
   ${(data||[]).map(c=>`<tr><td style="white-space:nowrap">${av(c.name)}<b>${esc(c.name)}</b></td><td>${esc(c.contact_person)}</td><td>${esc(c.email)}</td><td>${esc(c.phone)}</td><td>${esc(c.gstin)}</td><td style="max-width:260px;font-size:12px">${esc(c.address)}</td>
   <td><button class="btn sm sec" onclick='cliForm(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Edit</button>
@@ -639,7 +643,7 @@ async function orgset(){
   const o=ME.org||{};
   const f=(k,l)=>`<label>${l}</label><input id="o_${k}" value="${esc(o[k]||'')}">`;
   const ta=(k,l)=>`<label>${l}</label><textarea id="o_${k}" rows="3">${esc((o[k]||'').replaceAll('<br>','\n'))}</textarea>`;
-  M(pgh('Company Settings','Branding and document details used across payslips, quotes and invoices.','<button class="btn" onclick="saveOrg()">💾 Save</button>')+
+  M(pgh('Company Settings','Branding and document details used across payslips, quotes and invoices.','<button class="btn" onclick="saveOrg()"><i class="fa-solid fa-floppy-disk"></i> Save</button>')+
   `<div class="card"><div class="row"><div>${f('name','Company Name')}</div><div>${f('website','Website')}</div><div>${f('gstin','GSTIN')}</div></div>
   ${ta('address','Address (shown on invoices)')}
   <div class="row"><div>${f('place_of_supply','Place of Supply')}</div></div>
@@ -671,15 +675,15 @@ async function docList(t){
     else if(x.status==='Partially Paid'){sm.part++;sm.partv+=+x.total}
     else{sm.unp++;sm.unpv+=+x.total}});
   M(pgh(isQ?'Quotes':'Invoices',isQ?'Create, manage and track all your quotes.':'Create, manage and track all your invoices.',`<button class="btn" onclick="docForm('${t}')">＋ New ${isQ?'Quote':'Invoice'}</button>`)+
-  kpis(isQ?[['📄','#E8EEFB','Total Quotes',(data||[]).length],['🟢','#E6F7EC','Accepted',sm.paid,inr(sm.paidv)],['🟠','#FFF2E2','Other',sm.part+sm.unp]]
-    :[['🧾','#E8EEFB','Total Invoices',(data||[]).length],['🟢','#E6F7EC','Paid',sm.paid,inr(sm.paidv)],['🟠','#FFF2E2','Partially Paid',sm.part,inr(sm.partv)],['🔴','#FDECEA','Unpaid',sm.unp,inr(sm.unpv)]])+
+  kpis(isQ?[['<i class="fa-solid fa-file-lines"></i>','#E8EEFB','Total Quotes',(data||[]).length],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Accepted',sm.paid,inr(sm.paidv)],['<i class="fa-solid fa-circle" style="color:#E8682A"></i>','#FFF2E2','Other',sm.part+sm.unp]]
+    :[['<i class="fa-solid fa-file-invoice"></i>','#E8EEFB','Total Invoices',(data||[]).length],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Paid',sm.paid,inr(sm.paidv)],['<i class="fa-solid fa-circle" style="color:#E8682A"></i>','#FFF2E2','Partially Paid',sm.part,inr(sm.partv)],['<i class="fa-solid fa-circle" style="color:#C0392B"></i>','#FDECEA','Unpaid',sm.unp,inr(sm.unpv)]])+
   `<div class="card"><table><tr><th>No.</th><th>Client</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr>
   ${(data||[]).map(d=>`<tr><td><b>${esc(isQ?d.quote_no:d.invoice_no)}</b></td><td style="white-space:nowrap">${av(d.clients?.name)}${esc(d.clients?.name)}</td>
   <td>${isQ?d.quote_date:d.invoice_date}</td><td>${inr(d.total)}</td>
   <td><span class="badge ${['Paid','Accepted'].includes(d.status)?'stP':['Unpaid','Rejected','Overdue'].includes(d.status)?'stA':'stL'}">${d.status}</span></td>
   <td><button class="btn sm sec" onclick='docForm("${t}",${JSON.stringify(d).replace(/'/g,"&#39;")})'>Edit</button>
   <button class="btn sm" onclick='docPrint("${t}","${d.id}")'>View/Print</button>
-  ${isQ?`<button class="btn sm" onclick='quoteToInvoice("${d.id}")'>→ Invoice</button>`:''}
+  ${isQ?`<button class="btn sm" onclick='quoteToInvoice("${d.id}")'><i class="fa-solid fa-arrow-right"></i> Invoice</button>`:''}
   <button class="btn sm warn" onclick="delDoc('${t}','${d.id}')">Del</button></td></tr>`).join('')}</table></div>`);
 }
 async function docForm(t,d={}){
@@ -744,10 +748,10 @@ async function docPrint(t,id){
   const bx='border:1px solid #333;padding:8px;vertical-align:top;font-size:12.5px';
   const gh='background:#efefef;border:1px solid #bbb;padding:7px;font-weight:600';
   const cell='border:1px solid #bbb;padding:9px;font-size:13px';
-  M(`<button class="btn sec noprint" onclick="docList('${t}')">← Back</button>
-  <button class="btn noprint" onclick="print()">🖨 Print / PDF</button>
-  <button class="btn noprint" onclick="saveDocHtml('${t}','${id}')">💾 Save edits</button>
-  <button class="btn warn noprint" onclick="resetDocHtml('${t}','${id}')">↺ Reset to auto</button>
+  M(`<button class="btn sec noprint" onclick="docList('${t}')"><i class="fa-solid fa-arrow-left"></i> Back</button>
+  <button class="btn noprint" onclick="print()"><i class="fa-solid fa-print"></i> Print / PDF</button>
+  <button class="btn noprint" onclick="saveDocHtml('${t}','${id}')"><i class="fa-solid fa-floppy-disk"></i> Save edits</button>
+  <button class="btn warn noprint" onclick="resetDocHtml('${t}','${id}')"><i class="fa-solid fa-rotate-left"></i> Reset to auto</button>
   <span class="noprint" style="font-size:12px;color:#667;margin-left:8px">Click any text on the invoice to edit it before printing.</span><br><br>
   <div id="docsheet" contenteditable="true" spellcheck="false" style="background:#fff;max-width:840px;margin:auto;padding:34px;font-family:Helvetica,Arial,sans-serif;color:#111;outline:2px dashed #cfd8ea;outline-offset:4px">
   <table style="border:none"><tr>
@@ -798,21 +802,21 @@ async function mydash(){
     sb.from('task_updates').select('id').eq('employee_id',ME.employee.id).eq('upd_date',d),
     sb.from('attendance').select('*').eq('employee_id',ME.employee.id).eq('att_date',d)]);
   const rec=(a||[])[0]||{};
-  const locLink=(lat,lng,label)=>lat?`<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" style="font-size:12px">📍 ${label}</a>`:'';
+  const locLink=(lat,lng,label)=>lat?`<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" style="font-size:12px"><i class="fa-solid fa-location-dot"></i> ${label}</a>`:'';
   M(pgh(`Hi, ${esc(ME.employee.full_name)}`,new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+
   `<div class="kpi" style="margin-bottom:16px">
   <div class="card" style="margin:0;text-align:center">
     <div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Check In</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.entry_time?rec.entry_time.slice(0,5):'—'}</div>
     ${locLink(rec.in_lat,rec.in_lng,esc(rec.in_loc||'Location'))}
-    <div style="margin-top:10px">${rec.entry_time?'<span class="badge stP">Checked in ✔</span>':`<button class="btn" style="background:#1E8449" onclick="checkIn()">🟢 Check In</button>`}</div></div>
+    <div style="margin-top:10px">${rec.entry_time?'<span class="badge stP">Checked in <i class="fa-solid fa-check"></i></span>':`<button class="btn" style="background:#1E8449" onclick="checkIn()"><i class="fa-solid fa-arrow-right-to-bracket"></i> Check In</button>`}</div></div>
   <div class="card" style="margin:0;text-align:center">
     <div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Check Out</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.exit_time?rec.exit_time.slice(0,5):'—'}</div>
     ${locLink(rec.out_lat,rec.out_lng,esc(rec.out_loc||'Location'))}
-    <div style="margin-top:10px">${rec.exit_time?'<span class="badge stA">Checked out ✔</span>':(rec.entry_time?`<button class="btn" style="background:#C0392B" onclick="checkOut()">🔴 Check Out</button>`:'<span style="font-size:12px;color:#889">Check in first</span>')}</div></div>
+    <div style="margin-top:10px">${rec.exit_time?'<span class="badge stA">Checked out <i class="fa-solid fa-check"></i></span>':(rec.entry_time?`<button class="btn" style="background:#C0392B" onclick="checkOut()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Check Out</button>`:'<span style="font-size:12px;color:#889">Check in first</span>')}</div></div>
   <div class="card" style="margin:0;text-align:center"><div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Today's Update</div>
-    <div style="font-size:24px">${t&&t.length?'✅':'❌'}</div>
+    <div style="font-size:24px">${t&&t.length?'<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>':'<i class="fa-solid fa-circle-xmark" style="color:#C0392B"></i>'}</div>
     <div style="font-size:12px;color:#6b7a90">${t&&t.length?'Shared':'PENDING (due 5:30 PM)'}</div></div>
   <div class="card" style="margin:0;text-align:center"><div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Status</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.status||'—'}</div></div></div>
@@ -851,7 +855,7 @@ async function myupd(){
   const{data}=await sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).order('upd_date',{ascending:false}).limit(15);
   const t=(data||[]).find(r=>r.upd_date===d);
   M(`<h2>My Daily Update — ${d}</h2>
-  <button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'✏️ Edit today\'s update':'+ Post today\'s update'}</button>
+  <button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'<i class="fa-solid fa-pen"></i> Edit today\'s update':'+ Post today\'s update'}</button>
   <div class="card" style="margin-top:12px"><table><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Completed</th><th>Blocker</th><th>Next Task</th></tr>
   ${(data||[]).map(r=>`<tr><td>${r.upd_date}</td><td>${r.update_status}</td><td>${esc(r.project)}</td><td>${esc(r.completed)}</td><td>${esc(r.blocker)}</td><td>${esc(r.next_task)}</td></tr>`).join('')}</table></div>`);
 }
@@ -869,7 +873,7 @@ async function mywfh(){
   if(!ME.employee)return mydash();
   const{data}=await sb.from('wfh_leave').select('*').eq('employee_id',ME.employee.id).order('req_date',{ascending:false});
   M(`<h2>WFH / Leave Requests</h2>
-  <div class="warnbar">⚠️ Intimate before 8:00 AM. Only approved requests are valid.</div>
+  <div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> Intimate before 8:00 AM. Only approved requests are valid.</div>
   <div class="card"><div class="row"><div><label>Date</label><input id="w_date" type="date" value="${today()}"></div>
   <div><label>Type</label><select id="w_status">${['WFH','Leave','Sick Leave','Emergency Leave','Half Day'].map(s=>`<option>${s}</option>`).join('')}</select></div>
   <div><label>Reason</label><input id="w_reason"></div><div><button class="btn" onclick="reqWfh()">Submit</button></div></div></div>
