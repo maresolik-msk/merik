@@ -26,7 +26,8 @@ const NAV: NavGroup[] = [
       { href: "/tasks", label: "Task Log", ready: true },
       { href: "/clients", label: "Clients", ready: true },
       { href: "/projects", label: "Projects", ready: true },
-      { href: "/invoices", label: "Invoices" },
+      { href: "/quotes", label: "Quotes", ready: true },
+      { href: "/invoices", label: "Invoices", ready: true },
     ],
   },
 ];
