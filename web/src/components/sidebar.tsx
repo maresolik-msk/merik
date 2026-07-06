@@ -23,7 +23,7 @@ const NAV: NavGroup[] = [
   {
     title: "Business",
     items: [
-      { href: "/tasks", label: "Task Log" },
+      { href: "/tasks", label: "Task Log", ready: true },
       { href: "/clients", label: "Clients" },
       { href: "/invoices", label: "Invoices" },
     ],
