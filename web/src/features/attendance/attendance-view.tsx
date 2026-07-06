@@ -58,6 +58,8 @@ export function AttendanceView() {
         remarks: a?.remarks ?? "",
       };
     }
+    // Reseed the editable draft whenever the selected date's data loads.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft(seed);
   }, [data]);
 
