@@ -509,12 +509,13 @@ async function wfh(){
   const{data}=await sb.from('wfh_leave').select('*,employees(full_name,emp_code)').order('req_date',{ascending:false}).limit(200);
   M(pgh('WFH & Leave Log','View and manage work from home and leave requests')+
   `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> Only management-approved WFH/Leave is valid. Late intimation is NOT accepted (due before 8:00 AM).</div>
-  <div class="card"><table><tr><th>Date</th><th>Employee</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
-  ${(data||[]).map(r=>`<tr><td>${r.req_date}</td><td>${esc(r.employees?.full_name)} (${r.employees?.emp_code})</td>
+  <div class="card"><table><tr><th>Dates</th><th>Days</th><th>Employee</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
+  ${(data||[]).map(r=>{const e=r.end_date||r.req_date;const days=Math.round((new Date(e)-new Date(r.req_date))/864e5)+1;
+  return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td><td>${days}</td><td>${esc(r.employees?.full_name)} (${r.employees?.emp_code})</td>
   <td>${r.status}</td><td>${esc(r.reason)}</td>
   <td><span class="badge ${r.approved==='Yes'?'stP':r.approved==='No'?'stA':'stL'}">${r.approved}</span></td>
   <td class="noprint">${r.approved==='Pending'?`<button class="btn sm" onclick="apprWfh('${r.id}','Yes')">Approve</button>
-  <button class="btn sm warn" onclick="apprWfh('${r.id}','No')">Reject</button>`:''}</td></tr>`).join('')}</table></div>`);
+  <button class="btn sm warn" onclick="apprWfh('${r.id}','No')">Reject</button>`:''}</td></tr>`}).join('')}</table></div>`);
 }
 async function apprWfh(id,v){await sb.from('wfh_leave').update({approved:v}).eq('id',id);wfh()}
 
@@ -925,14 +926,20 @@ async function mywfh(){
   const{data}=await sb.from('wfh_leave').select('*').eq('employee_id',ME.employee.id).order('req_date',{ascending:false});
   M(`<h2>WFH / Leave Requests</h2>
   <div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> Intimate before 8:00 AM. Only approved requests are valid.</div>
-  <div class="card"><div class="row"><div><label>Date</label><input id="w_date" type="date" value="${today()}"></div>
+  <div class="card"><div class="row"><div><label>From</label><input id="w_date" type="date" value="${today()}" onchange="if($('w_end').value<this.value)$('w_end').value=this.value"></div>
+  <div><label>To</label><input id="w_end" type="date" value="${today()}"></div>
   <div><label>Type</label><select id="w_status">${['WFH','Leave','Sick Leave','Emergency Leave','Half Day'].map(s=>`<option>${s}</option>`).join('')}</select></div>
   <div><label>Reason</label><input id="w_reason"></div><div><button class="btn" onclick="reqWfh()">Submit</button></div></div></div>
-  <div class="card"><table><tr><th>Date</th><th>Type</th><th>Reason</th><th>Approved</th></tr>
-  ${(data||[]).map(r=>`<tr><td>${r.req_date}</td><td>${r.status}</td><td>${esc(r.reason)}</td>
-  <td><span class="badge ${r.approved==='Yes'?'stP':r.approved==='No'?'stA':'stL'}">${r.approved}</span></td></tr>`).join('')}</table></div>`);
+  <div class="card"><table><tr><th>Dates</th><th>Days</th><th>Type</th><th>Reason</th><th>Approved</th></tr>
+  ${(data||[]).map(r=>{const e=r.end_date||r.req_date;const days=Math.round((new Date(e)-new Date(r.req_date))/864e5)+1;
+  return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td><td>${days}</td><td>${r.status}</td><td>${esc(r.reason)}</td>
+  <td><span class="badge ${r.approved==='Yes'?'stP':r.approved==='No'?'stA':'stL'}">${r.approved}</span></td></tr>`}).join('')}</table></div>`);
 }
-async function reqWfh(){const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:$('w_date').value,status:$('w_status').value,reason:$('w_reason').value||null});
+async function reqWfh(){
+  const from=$('w_date').value,to=$('w_end').value||from;
+  if(!from)return alert('Please choose a start date.');
+  if(to<from)return alert('The "To" date cannot be before the "From" date.');
+  const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:from,end_date:to,status:$('w_status').value,reason:$('w_reason').value||null});
   error?alert(error.message):mywfh()}
 async function mynotes(){
   if(!ME.employee)return mydash();
