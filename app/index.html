@@ -308,7 +308,9 @@ const ADMIN_GROUPS=[
  ['Business',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
-const SUPER_GROUPS=[[null,[['signups','<i class="fa-solid fa-user-plus" style="color:#1E8449"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Product Feedback']]]];
+const SUPER_GROUPS=[
+ [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview']]],
+ ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus" style="color:#1E8449"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
@@ -340,7 +342,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,signups,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,signups,suoverview,sutenants,suusers,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -1322,6 +1324,167 @@ async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return alert(
   const{error}=await sb.from('feedback').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,category:$('fb_cat').value,message:msg});
   error?alert(error.message):myfb()}
 // ---- Admin: review feedback ----
+/* ================= MERIK SUPER ADMIN — product management ================= */
+const suStat=(ic,bg,col,label,val,sub)=>`<div class="card" style="margin:0;flex:1;min-width:190px"><div style="display:flex;gap:14px;align-items:flex-start">
+  <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
+  <div><div style="font-size:12.5px;color:#6b7a90">${label}</div><div style="font-size:26px;font-weight:800;color:#14284B;line-height:1.15">${val}</div>
+  ${sub?`<div style="font-size:11.5px;color:#9aa8bc;font-weight:600;margin-top:2px">${sub}</div>`:''}</div></div></div>`;
+async function suoverview(){
+  const [{data:orgs},{data:emps},{data:sr},{data:fbk},ures]=await Promise.all([
+    sb.from('orgs').select('id,name,status,created_at').order('created_at',{ascending:false}),
+    sb.from('employees').select('id,org_id,status'),
+    sb.from('signup_requests').select('id,status'),
+    sb.from('feedback').select('id,status'),
+    sb.functions.invoke('su-manage',{body:{action:'list_users'}})]);
+  const users=(ures&&ures.data&&ures.data.users)||[];
+  const empByOrg={};(emps||[]).forEach(e=>{empByOrg[e.org_id]=(empByOrg[e.org_id]||0)+1});
+  const usrByOrg={};users.forEach(u=>{if(u.org_id)usrByOrg[u.org_id]=(usrByOrg[u.org_id]||0)+1});
+  const pend=(sr||[]).filter(r=>r.status==='Pending').length;
+  const openFb=(fbk||[]).filter(r=>r.status!=='Done').length;
+  const active=(orgs||[]).filter(o=>o.status!=='Suspended').length;
+  M(pgh('Merik — Product Overview','Everything across every tenant, at a glance.')+
+  `<div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-building"></i>','#E8EEFB','#2563A8','Tenants',(orgs||[]).length,active+' active')}
+   ${suStat('<i class="fa-solid fa-users"></i>','#F3ECFB','#7B3FE4','Users',users.length,'across all tenants')}
+   ${suStat('<i class="fa-solid fa-id-badge"></i>','#E6F7EC','#1E8449','Employees',(emps||[]).length,'')}
+   ${suStat('<i class="fa-solid fa-user-plus"></i>','#FFE9DC','#D35400','Pending Signups',pend,'awaiting review')}
+   ${suStat('<i class="fa-solid fa-comment-dots"></i>','#FDECEA','#C0392B','Open Feedback',openFb,'')}
+  </div>
+  <div class="pghead"><div><h2 style="font-size:17px">Tenants</h2></div><div class="noprint"><button class="btn" onclick="suAddTenant()"><i class="fa-solid fa-plus"></i> New Tenant</button></div></div>
+  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Tenant</th><th>Status</th><th>Employees</th><th>Users</th><th>Created</th><th></th></tr>
+  ${(orgs||[]).map(o=>`<tr><td><b>${esc(o.name)}</b></td><td><span class="badge ${o.status==='Suspended'?'stA':'stP'}">${esc(o.status||'Active')}</span></td>
+  <td>${empByOrg[o.id]||0}</td><td>${usrByOrg[o.id]||0}</td><td style="white-space:nowrap">${fmtDate(o.created_at.slice(0,10))}</td>
+  <td class="noprint"><button class="tl-go" title="Open tenant" onclick="suTenant('${o.id}')"><i class="fa-solid fa-chevron-right"></i></button></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
+}
+async function sutenants(){
+  const [{data:orgs},{data:emps},ures]=await Promise.all([
+    sb.from('orgs').select('*').order('created_at',{ascending:false}),
+    sb.from('employees').select('id,org_id'),
+    sb.functions.invoke('su-manage',{body:{action:'list_users'}})]);
+  const users=(ures&&ures.data&&ures.data.users)||[];
+  const empByOrg={};(emps||[]).forEach(e=>{empByOrg[e.org_id]=(empByOrg[e.org_id]||0)+1});
+  const usrByOrg={};users.forEach(u=>{if(u.org_id)usrByOrg[u.org_id]=(usrByOrg[u.org_id]||0)+1});
+  M(pgh('Tenants','Every company using Merik.','<button class="btn" onclick="suAddTenant()"><i class="fa-solid fa-plus"></i> New Tenant</button>')+
+  `<div class="card" style="overflow:auto;padding:0"><table><tr><th>Tenant</th><th>Status</th><th>Plan</th><th>Employees</th><th>Users</th><th>Created</th><th></th></tr>
+  ${(orgs||[]).map(o=>`<tr><td><b>${esc(o.name)}</b></td><td><span class="badge ${o.status==='Suspended'?'stA':'stP'}">${esc(o.status||'Active')}</span></td>
+  <td>${esc(o.plan||'—')}</td><td>${empByOrg[o.id]||0}</td><td>${usrByOrg[o.id]||0}</td><td style="white-space:nowrap">${fmtDate(o.created_at.slice(0,10))}</td>
+  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick='suEditTenant(${JSON.stringify(o).replace(/'/g,"&#39;")})'>Edit</button>
+  <button class="btn sm ${o.status==='Suspended'?'':'sec'}" onclick="suSetTenantStatus('${o.id}','${o.status==='Suspended'?'Active':'Suspended'}')">${o.status==='Suspended'?'Activate':'Suspend'}</button>
+  <button class="tl-go" title="Open" onclick="suTenant('${o.id}')"><i class="fa-solid fa-chevron-right"></i></button></td></tr>`).join('')||'<tr><td colspan="7" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
+}
+function suAddTenant(){
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New Tenant</h2>
+  <label>Company name</label><input id="ten_name" placeholder="Acme Inc.">
+  <label>Plan (optional)</label><input id="ten_plan" placeholder="Free / Pro / Enterprise">
+  <div class="warnbar" style="margin-top:12px">Optionally create the tenant's first admin login now.</div>
+  <div class="row"><div><label>Admin email (optional)</label><input id="ten_email" type="email"></div><div><label>Admin password</label><input id="ten_pw" placeholder="min 6 chars"></div></div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveNewTenant()">Create</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function suSaveNewTenant(){
+  const name=$('ten_name').value.trim();if(!name)return alert('Company name is required.');
+  const{data:org,error}=await sb.from('orgs').insert({name,plan:$('ten_plan').value.trim()||null}).select('id').single();
+  if(error)return alert(error.message);
+  const email=$('ten_email').value.trim(),pw=$('ten_pw').value;
+  if(email&&pw){if(pw.length<6)return alert('Admin password must be at least 6 characters.');
+    const{data,error:e2}=await sb.functions.invoke('su-manage',{body:{action:'create_user',email,password:pw,role:'admin',org_id:org.id}});
+    if(e2||data?.error)return alert('Tenant created, but admin login failed: '+(data?.error||e2.message));
+    alert(`✔ Tenant created.\n\nAdmin login:\nEmail: ${email}\nPassword: ${pw}`);}
+  document.querySelector('.modal').remove();sutenants();
+}
+function suEditTenant(o){
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Edit Tenant</h2>
+  <label>Company name</label><input id="ten_name" value="${esc(o.name||'')}">
+  <div class="row"><div><label>Plan</label><input id="ten_plan" value="${esc(o.plan||'')}"></div>
+  <div><label>Status</label><select id="ten_status">${['Active','Suspended'].map(s=>`<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div>
+  <label>GSTIN</label><input id="ten_gstin" value="${esc(o.gstin||'')}">
+  <label>Address</label><textarea id="ten_address" rows="2">${esc(o.address||'')}</textarea>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveTenant('${o.id}')">Save</button>
+  <button class="btn warn" onclick="suDelTenant('${o.id}','${esc(o.name)}')">Delete tenant</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function suSaveTenant(id){
+  const o={name:$('ten_name').value.trim(),plan:$('ten_plan').value.trim()||null,status:$('ten_status').value,gstin:$('ten_gstin').value.trim()||null,address:$('ten_address').value.trim()||null};
+  const{error}=await sb.from('orgs').update(o).eq('id',id);if(error)return alert(error.message);
+  document.querySelector('.modal').remove();sutenants();
+}
+async function suSetTenantStatus(id,status){const{error}=await sb.from('orgs').update({status}).eq('id',id);if(error)return alert(error.message);sutenants();}
+async function suDelTenant(id,name){
+  if(!confirm(`Delete tenant "${name}"?\n\nThis removes the org and all its data (employees, attendance, payroll, etc.). This cannot be undone.`))return;
+  const{error}=await sb.from('orgs').delete().eq('id',id);if(error)return alert(error.message);
+  document.querySelector('.modal')?.remove();sutenants();
+}
+// Tenant drill-down: show all of one tenant's data.
+async function suTenant(id){
+  const [{data:org},{data:emps},{data:att},{data:tasks},{data:pay},{data:cls},{data:pjs},{data:wl}]=await Promise.all([
+    sb.from('orgs').select('*').eq('id',id).single(),
+    sb.from('employees').select('*').eq('org_id',id).order('emp_code'),
+    sb.from('attendance').select('id').eq('org_id',id),
+    sb.from('task_updates').select('id,employee_id,upd_date,update_status,project').eq('org_id',id).order('upd_date',{ascending:false}).limit(50),
+    sb.from('payroll').select('id,net,pay_status').eq('org_id',id),
+    sb.from('clients').select('id,name').eq('org_id',id),
+    sb.from('projects').select('id,name').eq('org_id',id),
+    sb.from('wfh_leave').select('id').eq('org_id',id)]);
+  const empName={};(emps||[]).forEach(e=>empName[e.id]=e.full_name);
+  const paidNet=(pay||[]).filter(p=>p.pay_status==='Paid').reduce((a,p)=>a+ +(p.net||0),0);
+  M(pgh(esc(org?.name||'Tenant'),`Full data for this tenant. <span class="badge ${org?.status==='Suspended'?'stA':'stP'}">${esc(org?.status||'Active')}</span>`,`<button class="btn sec" onclick="sutenants()">‹ All tenants</button> <button class="btn" onclick='suEditTenant(${JSON.stringify(org||{}).replace(/'/g,"&#39;")})'><i class="fa-solid fa-pen"></i> Edit</button>`)+
+  `<div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-id-badge"></i>','#E8EEFB','#2563A8','Employees',(emps||[]).length,(emps||[]).filter(e=>e.status==='Active').length+' active')}
+   ${suStat('<i class="fa-solid fa-calendar-check"></i>','#E6F7EC','#1E8449','Attendance rows',(att||[]).length,'')}
+   ${suStat('<i class="fa-solid fa-circle-check"></i>','#F3ECFB','#7B3FE4','Task updates',(tasks||[]).length,'recent 50 shown')}
+   ${suStat('<i class="fa-solid fa-money-bill-wave"></i>','#FFF6E5','#B45309','Payroll (paid)',inr(paidNet),(pay||[]).length+' records')}
+   ${suStat('<i class="fa-solid fa-handshake"></i>','#FDECEA','#C0392B','Clients / Projects',(cls||[]).length+' / '+(pjs||[]).length,'')}
+  </div>
+  <div class="pghead"><div><h2 style="font-size:17px">Employees</h2></div></div>
+  <div class="card" style="overflow:auto;padding:0"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Type</th><th>Status</th></tr>
+  ${(emps||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td><span class="badge ${e.status==='Active'?'stP':'stA'}">${esc(e.status)}</span></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No employees.</td></tr>'}</table></div>
+  <div class="pghead" style="margin-top:8px"><div><h2 style="font-size:17px">Recent task updates</h2></div></div>
+  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Date</th><th>Employee</th><th>Status</th><th>Project</th></tr>
+  ${(tasks||[]).map(t=>`<tr><td style="white-space:nowrap">${fmtDate(t.upd_date)}</td><td>${esc(empName[t.employee_id]||'—')}</td><td>${esc(t.update_status)}</td><td>${esc(t.project)}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#889">No task updates.</td></tr>'}</table></div>`);
+}
+// ---- Super admin: all users across tenants ----
+let SU_USERS=[];
+async function suusers(){
+  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'list_users'}});
+  if(error||data?.error)return M(`<h2>Users</h2><div class="warnbar">${esc(data?.error||error.message)}</div>`);
+  SU_USERS=data.users||[];
+  const roleBadge=r=>({superadmin:'stW',admin:'stP',employee:'stL'}[r]||'stL');
+  M(pgh('Users','Every account across all tenants.','<button class="btn" onclick="suCreateUser()"><i class="fa-solid fa-plus"></i> New User</button>')+
+  `<div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-user-shield"></i>','#F3ECFB','#7B3FE4','Super Admins',SU_USERS.filter(u=>u.role==='superadmin').length,'')}
+   ${suStat('<i class="fa-solid fa-user-tie"></i>','#E8EEFB','#2563A8','Tenant Admins',SU_USERS.filter(u=>u.role==='admin').length,'')}
+   ${suStat('<i class="fa-solid fa-user"></i>','#E6F7EC','#1E8449','Employees',SU_USERS.filter(u=>u.role==='employee').length,'')}
+  </div>
+  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Email</th><th>Name</th><th>Tenant</th><th>Role</th><th></th></tr>
+  ${SU_USERS.map(u=>`<tr><td>${esc(u.email||'—')}</td><td>${esc(u.employee||'—')}</td><td>${esc(u.org_name||'—')}</td>
+  <td><select onchange="suSetRole('${u.id}',this.value)" style="width:130px">${['employee','admin','superadmin'].map(r=>`<option ${u.role===r?'selected':''}>${r}</option>`).join('')}</select></td>
+  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suResetPw('${u.id}','${esc(u.email)}')">Reset password</button>
+  <button class="btn sm warn" onclick="suDelUser('${u.id}','${esc(u.email)}')">Delete</button></td></tr>`).join('')}</table></div>`);
+}
+async function suCreateUser(){
+  const{data:orgs}=await sb.from('orgs').select('id,name').order('name');
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New User</h2>
+  <div class="row"><div><label>Email</label><input id="nu_email" type="email"></div><div><label>Password</label><input id="nu_pw" placeholder="min 6 chars"></div></div>
+  <div class="row"><div><label>Role</label><select id="nu_role">${['admin','employee','superadmin'].map(r=>`<option>${r}</option>`).join('')}</select></div>
+  <div><label>Tenant</label><select id="nu_org"><option value="">— none (super admin) —</option>${(orgs||[]).map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')}</select></div></div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveUser()">Create</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function suSaveUser(){
+  const email=$('nu_email').value.trim(),pw=$('nu_pw').value,role=$('nu_role').value,org_id=$('nu_org').value||null;
+  if(!email||pw.length<6)return alert('Email and a password (min 6 chars) are required.');
+  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'create_user',email,password:pw,role,org_id}});
+  if(error||data?.error)return alert('Create failed: '+(data?.error||error.message));
+  alert(`✔ User created.\n\nEmail: ${email}\nPassword: ${pw}`);document.querySelector('.modal').remove();suusers();
+}
+async function suSetRole(id,role){const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_role',user_id:id,role}});if(error||data?.error)alert('Failed: '+(data?.error||error.message));}
+async function suResetPw(id,email){const pw=prompt(`Set a new password for ${email} (min 6 chars):`);if(pw===null)return;if(pw.length<6)return alert('Too short.');
+  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_password',user_id:id,password:pw}});
+  if(error||data?.error)return alert('Failed: '+(data?.error||error.message));alert(`✔ Password updated.\n\nEmail: ${email}\nPassword: ${pw}`);}
+async function suDelUser(id,email){if(!confirm(`Delete user ${email}? This removes their login permanently.`))return;
+  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'delete_user',user_id:id}});
+  if(error||data?.error)return alert('Failed: '+(data?.error||error.message));suusers();}
 // ---- Super admin: review company signup requests ----
 async function signups(){
   const{data,error}=await sb.from('signup_requests').select('*').order('created_at',{ascending:false});
