@@ -309,8 +309,8 @@ const ADMIN_GROUPS=[
  ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
- [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview']]],
- ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus" style="color:#1E8449"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
+ [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview'],['suanalytics','<i class="fa-solid fa-chart-line"></i>','Analytics']]],
+ ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus" style="color:#1E8449"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback'],['suann','<i class="fa-solid fa-bullhorn" style="color:#D35400"></i>','Announcements']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
@@ -342,7 +342,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,signups,suoverview,sutenants,suusers,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -407,7 +407,8 @@ async function dash(){
     <div style="display:flex;gap:14px;align-items:center"><div class="kicon" style="background:${bg}">${ic}</div>
     <div><div style="font-size:24px;font-weight:800;color:#14284B">${v}</div><div style="font-size:13px;color:#6b7a90">${l}</div></div></div>
     <div style="border-top:1px solid #eef1f6;margin-top:12px;padding-top:10px"><a href="#" onclick="go('${fn}');return false" style="color:#2563A8;font-weight:600;font-size:13px;text-decoration:none">${link} ›</a></div></div>`;
-  M(pgh('Dashboard',"Welcome back! Here's what's happening today.")+
+  const ann=await annBanner();
+  M(pgh('Dashboard',"Welcome back! Here's what's happening today.")+ann+
   `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px">
   ${card('<i class="fa-solid fa-users"></i>','#E8EEFB',ne||0,'Active Employees','View Employees','emp')}
   ${card('<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC',p,'Present Today','View Attendance','att')}
@@ -1083,7 +1084,8 @@ async function mydash(){
   const slip=(slips||[])[0];
   const slipNote=slip?`<div class="warnbar" style="background:#E6F7EC;border-color:#B7E4C7"><i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i> Your payslip for <b>${MONTHS[slip.pay_month-1]} ${slip.pay_year}</b> is available. <a href="#" onclick="go('myslip');return false" style="color:#1E8449;font-weight:700">Download now ›</a></div>`:'';
   const locLink=(lat,lng,label)=>lat?`<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" style="font-size:12px"><i class="fa-solid fa-location-dot"></i> ${label}</a>`:'';
-  M(pgh(`Hi, ${esc(ME.employee.full_name)}`,new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+
+  const ann=await annBanner();
+  M(pgh(`Hi, ${esc(ME.employee.full_name)}`,new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+ann+
   `<div class="kpi" style="margin-bottom:16px">
   <div class="card" style="margin:0;text-align:center">
     <div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Check In</div>
@@ -1493,6 +1495,81 @@ async function suResetPw(id,email){const pw=prompt(`Set a new password for ${ema
 async function suDelUser(id,email){if(!confirm(`Delete user ${email}? This removes their login permanently.`))return;
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'delete_user',user_id:id}});
   if(error||data?.error)return alert('Failed: '+(data?.error||error.message));suusers();}
+// ---- Super admin: platform analytics ----
+function suBars(rows,color){const max=Math.max(1,...rows.map(r=>r.v));
+  return `<div style="display:flex;align-items:flex-end;gap:10px;height:160px;padding:8px 4px">${rows.map(r=>`
+   <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%">
+     <div style="font-size:11px;font-weight:700;color:#41506a">${r.v||''}</div>
+     <div title="${esc(r.l)}: ${r.v}" style="width:100%;max-width:46px;border-radius:7px 7px 0 0;background:${color};height:${Math.round(r.v/max*120)}px;min-height:${r.v?4:0}px"></div>
+     <div class="tl-sub" style="text-align:center">${esc(r.l)}</div>
+   </div>`).join('')}</div>`;}
+async function suanalytics(){
+  const [{data:orgs},{data:emps},{data:sr},{data:fbk}]=await Promise.all([
+    sb.from('orgs').select('created_at,status'),
+    sb.from('employees').select('created_at,status'),
+    sb.from('signup_requests').select('status,created_at'),
+    sb.from('feedback').select('category,status')]);
+  const months=[];const now=new Date();
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,l:d.toLocaleDateString('en-IN',{month:'short'})});}
+  const byMonth=(arr)=>months.map(m=>({l:m.l,v:(arr||[]).filter(x=>(x.created_at||'').slice(0,7)===m.key).length}));
+  const tenantsM=byMonth(orgs),empM=byMonth(emps);
+  const srPend=(sr||[]).filter(r=>r.status==='Pending').length,srApp=(sr||[]).filter(r=>r.status==='Approved').length,srRej=(sr||[]).filter(r=>r.status==='Rejected').length;
+  const fbCats={};(fbk||[]).forEach(f=>{fbCats[f.category]=(fbCats[f.category]||0)+1});
+  const card=(title,inner)=>`<div class="card"><div style="font-weight:700;color:#14284B;margin-bottom:6px">${title}</div>${inner}</div>`;
+  M(pgh('Platform Analytics','Growth and engagement across all tenants.')+
+  `<div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-building"></i>','#E8EEFB','#2563A8','Total Tenants',(orgs||[]).length,(orgs||[]).filter(o=>o.status!=='Suspended').length+' active')}
+   ${suStat('<i class="fa-solid fa-id-badge"></i>','#E6F7EC','#1E8449','Total Employees',(emps||[]).length,(emps||[]).filter(e=>e.status==='Active').length+' active')}
+   ${suStat('<i class="fa-solid fa-user-plus"></i>','#FFE9DC','#D35400','Signups',(sr||[]).length,srApp+' approved')}
+   ${suStat('<i class="fa-solid fa-percent"></i>','#F3ECFB','#7B3FE4','Approval Rate',(sr||[]).length?Math.round(srApp/(sr||[]).length*100)+'%':'—','of all requests')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+   ${card('New tenants / month',suBars(tenantsM,'#2563A8'))}
+   ${card('New employees / month',suBars(empM,'#1E8449'))}
+   ${card('Signup funnel',suBars([{l:'Pending',v:srPend},{l:'Approved',v:srApp},{l:'Rejected',v:srRej}],'#D35400'))}
+   ${card('Feedback by category',suBars(Object.keys(fbCats).length?Object.entries(fbCats).map(([l,v])=>({l,v})):[{l:'None',v:0}],'#7B3FE4'))}
+  </div>`);
+}
+// ---- Super admin: announcements broadcast to tenants ----
+async function suann(){
+  const{data,error}=await sb.from('announcements').select('*').order('created_at',{ascending:false});
+  if(error)return M(`<h2>Announcements</h2><div class="warnbar">${esc(error.message)}</div>`);
+  const kb=k=>({info:'stL',warning:'stH',success:'stP'}[k]||'stL');
+  M(pgh('Announcements','Broadcast product news to your tenants.','<button class="btn" onclick="suAnnForm()"><i class="fa-solid fa-plus"></i> New Announcement</button>')+
+  `<div class="warnbar"><i class="fa-solid fa-circle-info" style="color:#2563A8"></i> Active announcements appear as a banner inside every tenant's portal (all users, or admins only).</div>
+  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Title</th><th>Audience</th><th>Type</th><th>Active</th><th>Created</th><th></th></tr>
+  ${(data||[]).map(r=>`<tr><td><b>${esc(r.title)}</b><div class="tl-sub">${esc((r.body||'').slice(0,80))}</div></td>
+  <td>${r.audience==='admins'?'Admins':'Everyone'}</td><td><span class="badge ${kb(r.kind)}">${esc(r.kind)}</span></td>
+  <td><span class="badge ${r.active?'stP':'stA'}">${r.active?'Live':'Off'}</span></td>
+  <td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td>
+  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suAnnToggle('${r.id}',${r.active?'false':'true'})">${r.active?'Turn off':'Turn on'}</button>
+  <button class="btn sm warn" onclick="suAnnDel('${r.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No announcements yet.</td></tr>'}</table></div>`);
+}
+function suAnnForm(){
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New Announcement</h2>
+  <label>Title</label><input id="an_title" placeholder="e.g. New payroll export is live">
+  <label>Message</label><textarea id="an_body" rows="3" placeholder="What's new…"></textarea>
+  <div class="row"><div><label>Audience</label><select id="an_audience"><option value="all">Everyone</option><option value="admins">Admins only</option></select></div>
+  <div><label>Type</label><select id="an_kind"><option value="info">Info</option><option value="success">Success</option><option value="warning">Warning</option></select></div></div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suAnnSave()">Publish</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function suAnnSave(){
+  const title=$('an_title').value.trim();if(!title)return alert('Title is required.');
+  const{error}=await sb.from('announcements').insert({title,body:$('an_body').value.trim()||null,audience:$('an_audience').value,kind:$('an_kind').value});
+  if(error)return alert(error.message);document.querySelector('.modal').remove();suann();
+}
+async function suAnnToggle(id,active){const{error}=await sb.from('announcements').update({active}).eq('id',id);if(error)return alert(error.message);suann();}
+async function suAnnDel(id){if(!confirm('Delete this announcement?'))return;const{error}=await sb.from('announcements').delete().eq('id',id);if(error)return alert(error.message);suann();}
+// Active announcements banner shown inside tenant portals.
+async function annBanner(){
+  if(!ME.employee&&ME.profile?.role!=='admin')return '';
+  const{data}=await sb.from('announcements').select('*').eq('active',true).order('created_at',{ascending:false});
+  const role=ME.profile?.role;
+  const list=(data||[]).filter(a=>a.audience==='all'||(a.audience==='admins'&&role==='admin'));
+  const bg={info:'#EAF2FE',success:'#E6F7EC',warning:'#FFF3E5'},bd={info:'#2563A8',success:'#1E8449',warning:'#D35400'};
+  return list.map(a=>`<div class="warnbar" style="background:${bg[a.kind]||'#EAF2FE'};border-left-color:${bd[a.kind]||'#2563A8'}"><i class="fa-solid fa-bullhorn" style="color:${bd[a.kind]||'#2563A8'}"></i> <b>${esc(a.title)}</b>${a.body?' — '+esc(a.body):''}</div>`).join('');
+}
 // ---- Super admin: review company signup requests ----
 async function signups(){
   const{data,error}=await sb.from('signup_requests').select('*').order('created_at',{ascending:false});
