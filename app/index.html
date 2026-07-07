@@ -350,6 +350,12 @@ function pgBtns(pages,cur){const b=(i,l,dis,on)=>`<button class="pg-btn ${on?'on
   if(pages<=7){for(let i=0;i<pages;i++)win.push(i);}else{win.push(0);const s=Math.max(1,cur-1),e=Math.min(pages-2,cur+1);if(s>1)win.push('…');for(let i=s;i<=e;i++)win.push(i);if(e<pages-2)win.push('…');win.push(pages-1);}
   win.forEach(i=>out+=(i==='…'?'<span class="pg-dot">…</span>':b(i,i+1,false,i===cur)));
   return out+b(cur+1,'›',cur>=pages-1);}
+// Numbered page buttons that call a named setter, for custom (re-rendering) views.
+function pageBtnsFn(pages,cur,fn){const b=(i,l,dis,on)=>`<button class="pg-btn ${on?'on':''}" ${dis?'disabled':''} onclick="${fn}(${i})">${l}</button>`;
+  let out=b(cur-1,'‹',cur===0);let win=[];
+  if(pages<=7){for(let i=0;i<pages;i++)win.push(i);}else{win.push(0);const s=Math.max(1,cur-1),e=Math.min(pages-2,cur+1);if(s>1)win.push('…');for(let i=s;i<=e;i++)win.push(i);if(e<pages-2)win.push('…');win.push(pages-1);}
+  win.forEach(i=>out+=(i==='…'?'<span class="pg-dot">…</span>':b(i,i+1,false,i===cur)));
+  return out+b(cur+1,'›',cur>=pages-1);}
 function paginateTables(){
   document.querySelectorAll('#main table').forEach(tb=>{
     if(tb.classList.contains('grid-att')||tb.id==='ditems'||tb.id==='tasktbl')return;
@@ -1145,18 +1151,83 @@ async function checkOut(ev){
     mydash();
   }catch(e){if(g){g.style.color='var(--red)';g.textContent='Check-out failed: '+e.message;}if(btn){btn.disabled=false;btn.style.opacity=1;}}
 }
-async function myupd(){
+let MY_TASK={period:'monthly',date:today(),search:'',page:0,pageSize:10,_focus:false};
+function setMyPeriod(p){MY_TASK.period=p;MY_TASK.page=0;myupd()}
+function setMySearch(v){MY_TASK.search=v;MY_TASK.page=0;MY_TASK._focus=true;myupd()}
+function setMyPage(i){MY_TASK.page=i;myupd()}
+function setMyPageSize(n){MY_TASK.pageSize=+n;MY_TASK.page=0;myupd()}
+async function myupd(dstr){
   if(!ME.employee)return mydash();
-  const d=today();
-  const{data}=await sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).order('upd_date',{ascending:false}).limit(15);
+  if(typeof dstr==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(dstr)){MY_TASK.date=dstr;MY_TASK.page=0;}
+  const st=MY_TASK,a=st.date||today(),d=today();
+  let from,to;
+  if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
+  else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
+  else{from=to=a;}
+  const{data}=await sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false});
   const t=(data||[]).find(r=>r.upd_date===d);
-  const stBadge=s=>({'Update Shared':'stP','No Update':'stA','WFH':'stW','Leave':'stOL','Sick Leave':'stOL','Holiday':'stL'}[s]||'stL');
-  M(`<h2>My Daily Update — ${fmtDate(d)}</h2>
-  <button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'<i class="fa-solid fa-pen"></i> Edit today\'s update':'+ Post today\'s update'}</button>
-  <div class="warnbar" style="margin-top:12px"><i class="fa-solid fa-lock" style="color:#E8682A"></i> You can only edit <b>today's</b> update. Once the day ends it's locked — any day left without an update is automatically recorded as <b>“No Update”</b>.</div>
-  <div class="card" style="overflow:auto"><table><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
-  ${(data||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.upd_date)}</td><td><span class="badge ${stBadge(r.update_status)}">${esc(r.update_status)}</span></td><td>${esc(r.project)}</td><td>${esc(r.task_assigned)}</td><td>${esc(r.completed)}</td><td>${esc(r.not_working)}</td><td>${esc(r.blocker)}</td><td>${r.proof_link?`<a href="${esc(r.proof_link)}" target="_blank">link</a>`:''}</td><td>${esc(r.next_task)}</td><td>${esc(r.remarks)}</td>
-  <td>${r.upd_date===d?'':'<i class="fa-solid fa-lock" style="color:#aab" title="Locked — past day"></i>'}</td></tr>`).join('')}</table></div>`);
+  const list=(data||[]);
+  const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
+  const pct=(cnt.sh+cnt.nu)?Math.round(cnt.sh/(cnt.sh+cnt.nu)*100):0;
+  let display=list;
+  if(st.search){const q=st.search.toLowerCase();display=list.filter(r=>[r.project,r.task_assigned,r.completed,r.next_task,r.blocker,r.not_working,r.update_status].some(x=>(x||'').toLowerCase().includes(q)));}
+  const total=display.length,ps=st.pageSize,pages=Math.max(1,Math.ceil(total/ps));
+  if(st.page>=pages)st.page=pages-1;if(st.page<0)st.page=0;
+  const start=st.page*ps,pageRows=display.slice(start,start+ps);
+  const segBtn=(p,l)=>`<button class="btn sm ${st.period===p?'':'sec'}" onclick="setMyPeriod('${p}')">${l}</button>`;
+  const stat=(ic,bg,col,label,val,sub,subcol)=>`<div class="card" style="margin:0;flex:1;min-width:200px"><div style="display:flex;gap:14px;align-items:flex-start">
+    <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
+    <div><div style="font-size:12.5px;color:#6b7a90">${label}</div><div style="font-size:26px;font-weight:800;color:#14284B;line-height:1.15">${val}</div>
+    ${sub?`<div style="font-size:11.5px;color:${subcol||'#9aa8bc'};font-weight:600;margin-top:2px">${sub}</div>`:''}</div></div></div>`;
+  const R=22,C=2*Math.PI*R;
+  const donut=`<div class="card" style="margin:0;flex:1;min-width:200px"><div style="display:flex;gap:14px;align-items:center">
+    <svg width="62" height="62" viewBox="0 0 60 60" style="flex:none"><circle cx="30" cy="30" r="${R}" fill="none" stroke="#E6ECF5" stroke-width="7"/>
+    <circle cx="30" cy="30" r="${R}" fill="none" stroke="#2563A8" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct/100)).toFixed(1)}" transform="rotate(-90 30 30)"/>
+    <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="#14284B">${pct}%</text></svg>
+    <div><div style="font-size:12.5px;color:#6b7a90">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${cnt.sh} of ${cnt.sh+cnt.nu} logged</div></div></div></div>`;
+  const cell=(v)=>v?esc(v):'<span class="tl-dash">—</span>';
+  M(pgh('My Daily Update','Post today’s update and review your history.',`<button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'<i class="fa-solid fa-pen"></i> Edit today’s update':'<i class="fa-solid fa-plus"></i> Post today’s update'}</button>`)+
+  `<div class="warnbar"><i class="fa-solid fa-lock" style="color:#E8682A"></i> You can only edit <b>today's</b> update. Past days are locked — any day left without an update is automatically recorded as <b>“No Update”</b>.</div>
+  <div class="row noprint" style="margin-bottom:14px;align-items:flex-end;gap:12px">
+   <div><label>View</label><div style="display:flex;gap:6px">${segBtn('daily','Daily')}${segBtn('weekly','Weekly')}${segBtn('monthly','Monthly')}</div></div>
+   <div style="max-width:180px"><label>${st.period==='monthly'?'Month':'Date'}</label><input type="${st.period==='monthly'?'month':'date'}" value="${st.period==='monthly'?a.slice(0,7):a}" onchange="myupd(this.value+'${st.period==='monthly'?'-01':''}')"></div>
+  </div>
+  <div class="kpi" style="margin-bottom:8px">
+   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','#C0392B','No Update',cnt.nu,cnt.nu?'Needs attention':'All clear','#C0392B')}
+   ${stat('<i class="fa-solid fa-arrow-up"></i>','#E6F7EC','#1E8449','Update Shared',cnt.sh,'On track','#1E8449')}
+   ${stat('<i class="fa-solid fa-list-check"></i>','#E8EEFB','#2563A8','Total Entries',list.length,st.period==='daily'?'Selected day':'This '+st.period.replace('ly',''))}
+   ${donut}
+  </div>
+  <div class="tl-toolbar noprint">
+   <div class="tl-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="mysearch" placeholder="Search my updates…" value="${esc(st.search)}" oninput="setMySearch(this.value)"></div>
+  </div>
+  <div class="card" style="overflow:auto;padding:0">
+  <table id="tasktbl"><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
+  ${pageRows.map(r=>{const s=r.update_status||'No Update';
+    const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
+    const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
+    const done=r.completed?`<i class="fa-solid fa-circle-check" style="color:#1E8449;font-size:17px" title="${esc(r.completed)}"></i>`:'<span class="tl-dash">—</span>';
+    const nw=s==='No Update'?'<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> No update</span>':(r.not_working?`<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc((r.not_working+'').slice(0,36))}</span>`:'<span class="tl-dash">—</span>');
+    const bl=r.blocker?`<span class="tl-chip-warn">${esc((r.blocker+'').slice(0,32))}</span>`:'<span class="tl-dash">—</span>';
+    const urls=(r.proof_link||'').split(/[\s,]+/).filter(Boolean);
+    const proof=urls.length?`<span style="display:inline-flex;align-items:center"><a class="tl-thumb" href="${esc(urls[0])}" target="_blank" title="${esc(urls[0])}"><i class="fa-regular fa-image"></i></a>${urls.length>1?`<span class="tl-plus">+${urls.length-1}</span>`:''}</span>`:'<span class="tl-dash">—</span>';
+    const nt=r.next_task?esc(r.next_task):(s==='No Update'?'<span class="tl-next-red">Please submit daily update</span>':'<span class="tl-dash">—</span>');
+    const rj=JSON.stringify(r).replace(/'/g,"&#39;");
+    const action=r.upd_date===d?`<button class="tl-go" title="Edit today" onclick='taskForm("${ME.employee.id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button>`:'<i class="fa-solid fa-lock tl-dash" title="Locked — past day"></i>';
+    return`<tr><td style="white-space:nowrap"><div style="font-weight:600;color:#14284B">${fmtDate(r.upd_date)}</div>${tm?`<div class="tl-sub">${tm}</div>`:''}</td>
+    <td><span class="badge ${cls2}">${s}</span></td>
+    <td style="max-width:170px">${cell(r.project)}</td>
+    <td style="max-width:240px;font-size:12.5px">${cell(r.task_assigned)}</td>
+    <td style="text-align:center">${done}</td><td>${nw}</td><td>${bl}</td><td style="text-align:center">${proof}</td>
+    <td style="max-width:170px;font-size:12.5px">${nt}</td>
+    <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
+    <td class="noprint">${action}</td></tr>`}).join('')||'<tr><td colspan="11" style="text-align:center;color:#889;padding:30px">No updates in this period.</td></tr>'}</table></div>
+  <div class="tl-foot noprint">
+   <span>Showing ${total?start+1:0} to ${Math.min(start+ps,total)} of ${total} entries</span>
+   <div class="tl-pages">${pageBtnsFn(pages,st.page,'setMyPage')}</div>
+   <select class="tl-ps" onchange="setMyPageSize(this.value)">${[10,25,50].map(n=>`<option ${ps===n?'selected':''} value="${n}">${n} / page</option>`).join('')}</select>
+  </div>`);
+  if(MY_TASK._focus){const si=$('mysearch');if(si){si.focus();const v=si.value;si.value='';si.value=v;}MY_TASK._focus=false;}
 }
 async function myatt(ym){
   if(!ME.employee)return mydash();
