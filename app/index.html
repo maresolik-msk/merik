@@ -526,12 +526,12 @@ async function task(d){
   `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> <b>Missing update = NO WORK DONE for the day.</b> Updates due before 5:30 PM daily.</div>
   <div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Date</label><input type="date" value="${d}" onchange="task(this.value)"></div></div>`+
   kpis([['<i class="fa-solid fa-circle" style="color:#C0392B"></i>','#FDECEA','No Update',cnt.nu,'Employees'],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Update Shared',cnt.sh,'Employees'],['<i class="fa-solid fa-users"></i>','#E8EEFB','Total Employees',(emps||[]).length,'Employees']])+`
-  <div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th></th></tr>
+  <div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
   ${(emps||[]).map(e=>{const r=map[e.id];const s=r?r.update_status:'No Update';
     const cls={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
     return`<tr><td>${e.emp_code}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td><span class="badge ${cls}">${s}</span></td>
-    <td>${esc(r?.project)}</td><td>${esc(r?.task_assigned)}</td><td>${esc(r?.completed)}</td><td>${esc(r?.blocker)}</td>
-    <td>${r?.proof_link?`<a href="${esc(r.proof_link)}" target="_blank">link</a>`:''}</td><td>${esc(r?.next_task)}</td>
+    <td>${esc(r?.project)}</td><td>${esc(r?.task_assigned)}</td><td>${esc(r?.completed)}</td><td>${esc(r?.not_working)}</td><td>${esc(r?.blocker)}</td>
+    <td>${r?.proof_link?`<a href="${esc(r.proof_link)}" target="_blank">link</a>`:''}</td><td>${esc(r?.next_task)}</td><td>${esc(r?.remarks)}</td>
     <td class="noprint"><button class="btn sm sec" onclick='taskForm("${e.id}","${d}",${JSON.stringify(r||{}).replace(/'/g,"&#39;")})'>${r?'Edit':'Log'}</button></td></tr>`}).join('')}</table></div>`);
 }
 async function taskForm(eid,d,r){
@@ -1028,8 +1028,8 @@ async function myupd(){
   M(`<h2>My Daily Update — ${fmtDate(d)}</h2>
   <button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'<i class="fa-solid fa-pen"></i> Edit today\'s update':'+ Post today\'s update'}</button>
   <div class="warnbar" style="margin-top:12px"><i class="fa-solid fa-lock" style="color:#E8682A"></i> You can only edit <b>today's</b> update. Once the day ends it's locked — any day left without an update is automatically recorded as <b>“No Update”</b>.</div>
-  <div class="card" style="margin-top:12px"><table><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Completed</th><th>Blocker</th><th>Next Task</th><th></th></tr>
-  ${(data||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.upd_date)}</td><td><span class="badge ${stBadge(r.update_status)}">${esc(r.update_status)}</span></td><td>${esc(r.project)}</td><td>${esc(r.completed)}</td><td>${esc(r.blocker)}</td><td>${esc(r.next_task)}</td>
+  <div class="card" style="overflow:auto"><table><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
+  ${(data||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.upd_date)}</td><td><span class="badge ${stBadge(r.update_status)}">${esc(r.update_status)}</span></td><td>${esc(r.project)}</td><td>${esc(r.task_assigned)}</td><td>${esc(r.completed)}</td><td>${esc(r.not_working)}</td><td>${esc(r.blocker)}</td><td>${r.proof_link?`<a href="${esc(r.proof_link)}" target="_blank">link</a>`:''}</td><td>${esc(r.next_task)}</td><td>${esc(r.remarks)}</td>
   <td>${r.upd_date===d?'':'<i class="fa-solid fa-lock" style="color:#aab" title="Locked — past day"></i>'}</td></tr>`).join('')}</table></div>`);
 }
 async function myatt(ym){
