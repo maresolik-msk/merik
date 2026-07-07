@@ -326,14 +326,16 @@ async function att(d){
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Date</label><input type="date" value="${d}" onchange="att(this.value)"></div>
   <div style="padding-top:20px"><span class="badge ${wk?'stOL':'stP'}"><i class="fa-solid fa-calendar-day"></i> ${dt.toLocaleDateString('en-IN',{weekday:'long'})} ${wk?'— Weekend (still enterable)':'— Working day'}</span>
   ${hols&&hols.length?`<span class="badge stA"><i class="fa-solid fa-umbrella-beach"></i> ${esc(hols[0].name)}</span>`:''}</div></div>
-  <div class="card" style="overflow:auto"><table id="atbl"><tr><th>#</th><th>Name</th><th>ID</th><th>Dept</th><th>Entry</th><th>Exit</th><th>Hrs</th><th>Status</th><th>Remarks</th></tr>
+  <div class="card" style="overflow:auto"><table id="atbl"><tr><th>#</th><th>Name</th><th>ID</th><th>Dept</th><th>Entry</th><th>Exit</th><th>Hrs</th><th>Status</th><th>Remarks</th><th>Location</th></tr>
   ${(emps||[]).map((e,i)=>{const r=map[e.id]||{};return`<tr data-eid="${e.id}"><td>${i+1}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${e.emp_code}</td><td>${esc(e.department)}</td>
   <td><input class="ai" data-k="entry_time" type="time" value="${r.entry_time?r.entry_time.slice(0,5):''}" style="width:95px"></td>
   <td><input class="ai" data-k="exit_time" type="time" value="${r.exit_time?r.exit_time.slice(0,5):''}" style="width:95px"></td>
   <td class="hrs"></td>
   <td><select class="ai" data-k="status" style="width:140px"><option value=""></option>${['P','A','L','H','W','OL','UL'].map(s=>`<option ${r.status===s?'selected':''} value="${s}">${{P:'P — Present',A:'A — Absent',L:'L — Late',H:'H — Half Day',W:'W — WFH',OL:'OL — Paid Leave',UL:'UL — Unpaid Leave'}[s]}</option>`).join('')}</select></td>
-  <td><input class="ai" data-k="remarks" value="${esc(r.remarks||'')}" style="width:120px">
-  ${r.in_lat?`<a href="https://maps.google.com/?q=${r.in_lat},${r.in_lng}" target="_blank" title="${esc(r.in_loc||'')}"><i class="fa-solid fa-location-dot"></i></a>`:''}</td></tr>`}).join('')}</table></div>
+  <td><input class="ai" data-k="remarks" value="${esc(r.remarks||'')}" style="width:120px"></td>
+  <td style="white-space:nowrap;font-size:12px">
+  ${r.in_lat?`<a href="https://maps.google.com/?q=${r.in_lat},${r.in_lng}" target="_blank" title="Checked-in location"><i class="fa-solid fa-location-dot" style="color:#1E8449"></i> ${esc(r.in_loc||'In')}</a>`:'<span style="color:#aab">—</span>'}
+  ${r.out_lat?`<br><a href="https://maps.google.com/?q=${r.out_lat},${r.out_lng}" target="_blank" title="Checked-out location"><i class="fa-solid fa-location-dot" style="color:#C0392B"></i> ${esc(r.out_loc||'Out')}</a>`:''}</td></tr>`}).join('')}</table></div>
   <div class="card" id="asum"></div>`);
   const upd=()=>{const c={P:0,A:0,L:0,H:0,W:0,OL:0,UL:0};document.querySelectorAll('#atbl tr[data-eid]').forEach(tr=>{
     const s=tr.querySelector('[data-k=status]').value;if(s)c[s]++;
@@ -810,45 +812,68 @@ async function mydash(){
     <div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Check In</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.entry_time?rec.entry_time.slice(0,5):'—'}</div>
     ${locLink(rec.in_lat,rec.in_lng,esc(rec.in_loc||'Location'))}
-    <div style="margin-top:10px">${rec.entry_time?'<span class="badge stP">Checked in <i class="fa-solid fa-check"></i></span>':`<button class="btn" style="background:#1E8449" onclick="checkIn()"><i class="fa-solid fa-arrow-right-to-bracket"></i> Check In</button>`}</div></div>
+    <div style="margin-top:10px">${rec.entry_time?'<span class="badge stP">Checked in <i class="fa-solid fa-check"></i></span>':`<button class="btn" style="background:#1E8449" onclick="checkIn(event)"><i class="fa-solid fa-arrow-right-to-bracket"></i> Check In</button>`}</div></div>
   <div class="card" style="margin:0;text-align:center">
     <div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Check Out</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.exit_time?rec.exit_time.slice(0,5):'—'}</div>
     ${locLink(rec.out_lat,rec.out_lng,esc(rec.out_loc||'Location'))}
-    <div style="margin-top:10px">${rec.exit_time?'<span class="badge stA">Checked out <i class="fa-solid fa-check"></i></span>':(rec.entry_time?`<button class="btn" style="background:#C0392B" onclick="checkOut()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Check Out</button>`:'<span style="font-size:12px;color:#889">Check in first</span>')}</div></div>
+    <div style="margin-top:10px">${rec.exit_time?'<span class="badge stA">Checked out <i class="fa-solid fa-check"></i></span>':(rec.entry_time?`<button class="btn" style="background:#C0392B" onclick="checkOut(event)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Check Out</button>`:'<span style="font-size:12px;color:#889">Check in first</span>')}</div></div>
   <div class="card" style="margin:0;text-align:center"><div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Today's Update</div>
     <div style="font-size:24px">${t&&t.length?'<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>':'<i class="fa-solid fa-circle-xmark" style="color:#C0392B"></i>'}</div>
     <div style="font-size:12px;color:#6b7a90">${t&&t.length?'Shared':'PENDING (due 5:30 PM)'}</div></div>
   <div class="card" style="margin:0;text-align:center"><div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Status</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.status||'—'}</div></div></div>
   <div class="warnbar">Daily update format: Task Assigned · Completed (with proof) · Not working · Exact blocker · Proof link · Next task. Missing update = no work done for the day.</div>
-  <p id="geoerr" style="color:var(--red);font-size:13px"></p>`);
+  <p id="geoerr" style="color:${FLASH&&FLASH.ok?'#1E8449':'var(--red)'};font-size:13px">${FLASH?esc(FLASH.msg):''}</p>`);
+  FLASH=null;
 }
-function getPos(){return new Promise((res,rej)=>{
-  if(!navigator.geolocation)return rej(new Error('Geolocation not supported on this device/browser.'));
-  navigator.geolocation.getCurrentPosition(p=>res(p.coords),e=>rej(new Error(e.message+' — allow location access and use the https app link (not a local file).')),{enableHighAccuracy:true,timeout:12000})})}
+let FLASH=null;// {msg,ok} shown once after a mydash() re-render
+// Best-effort location: never rejects. Tries high accuracy, then falls back to a
+// low-accuracy/cached fix so a slow or blocked GPS can't stop the employee checking in.
+function getPos(){return new Promise(res=>{
+  if(!navigator.geolocation||!window.isSecureContext)
+    return res({coords:null,err:window.isSecureContext?'Location is not supported on this device/browser.':'Open the secure https app link (not a local file) to record location.'});
+  const done=p=>res({coords:p.coords,err:null});
+  navigator.geolocation.getCurrentPosition(done,
+    ()=>navigator.geolocation.getCurrentPosition(done,
+      e=>res({coords:null,err:e.message+' — allow location access for this site in your browser settings.'}),
+      {enableHighAccuracy:false,timeout:15000,maximumAge:60000}),
+    {enableHighAccuracy:true,timeout:12000});
+})}
 async function geoName(lat,lng){try{
   const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16`,{headers:{'Accept':'application/json'}});
   const j=await r.json();const a=j.address||{};
   return [a.suburb||a.neighbourhood||a.village,a.city||a.town||a.county,a.state].filter(Boolean).slice(0,2).join(', ')||j.display_name?.split(',').slice(0,2).join(', ')||'';
 }catch(e){return ''}}
-async function checkIn(){
+async function checkIn(ev){
+  const btn=ev&&ev.target?ev.target.closest('button'):null;
+  if(btn){btn.disabled=true;btn.style.opacity=.6;}
+  const g=$('geoerr');if(g){g.style.color='#6b7a90';g.textContent='Getting your location…';}
   try{
-    const c=await getPos();const loc=await geoName(c.latitude,c.longitude);
+    const {coords,err}=await getPos();
+    const loc=coords?await geoName(coords.latitude,coords.longitude):'';
     const t=new Date().toTimeString().slice(0,5);
     const{error}=await sb.from('attendance').upsert({employee_id:ME.employee.id,att_date:today(),entry_time:t,status:'P',
-      in_lat:c.latitude,in_lng:c.longitude,in_loc:loc||null},{onConflict:'employee_id,att_date'});
-    if(error)throw error;mydash();
-  }catch(e){$('geoerr').textContent='Check-in failed: '+e.message}
+      in_lat:coords?coords.latitude:null,in_lng:coords?coords.longitude:null,in_loc:loc||null},{onConflict:'employee_id,att_date'});
+    if(error)throw error;
+    FLASH=coords?{msg:'Checked in'+(loc?' — '+loc:'')+'.',ok:true}:{msg:'Checked in, but location was unavailable ('+err+')',ok:false};
+    mydash();
+  }catch(e){if(g){g.style.color='var(--red)';g.textContent='Check-in failed: '+e.message;}if(btn){btn.disabled=false;btn.style.opacity=1;}}
 }
-async function checkOut(){
+async function checkOut(ev){
+  const btn=ev&&ev.target?ev.target.closest('button'):null;
+  if(btn){btn.disabled=true;btn.style.opacity=.6;}
+  const g=$('geoerr');if(g){g.style.color='#6b7a90';g.textContent='Getting your location…';}
   try{
-    const c=await getPos();const loc=await geoName(c.latitude,c.longitude);
+    const {coords,err}=await getPos();
+    const loc=coords?await geoName(coords.latitude,coords.longitude):'';
     const t=new Date().toTimeString().slice(0,5);
-    const{error}=await sb.from('attendance').update({exit_time:t,out_lat:c.latitude,out_lng:c.longitude,out_loc:loc||null})
+    const{error}=await sb.from('attendance').update({exit_time:t,out_lat:coords?coords.latitude:null,out_lng:coords?coords.longitude:null,out_loc:loc||null})
       .eq('employee_id',ME.employee.id).eq('att_date',today());
-    if(error)throw error;mydash();
-  }catch(e){$('geoerr').textContent='Check-out failed: '+e.message}
+    if(error)throw error;
+    FLASH=coords?{msg:'Checked out'+(loc?' — '+loc:'')+'.',ok:true}:{msg:'Checked out, but location was unavailable ('+err+')',ok:false};
+    mydash();
+  }catch(e){if(g){g.style.color='var(--red)';g.textContent='Check-out failed: '+e.message;}if(btn){btn.disabled=false;btn.style.opacity=1;}}
 }
 async function myupd(){
   if(!ME.employee)return mydash();
