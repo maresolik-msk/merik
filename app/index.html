@@ -1457,8 +1457,8 @@ async function suusers(){
    ${suStat('<i class="fa-solid fa-user"></i>','#E6F7EC','#1E8449','Employees',SU_USERS.filter(u=>u.role==='employee').length,'')}
   </div>
   <div class="card" style="overflow:auto;padding:0"><table><tr><th>Email</th><th>Name</th><th>Tenant</th><th>Role</th><th></th></tr>
-  ${SU_USERS.map(u=>`<tr><td>${esc(u.email||'—')}</td><td>${esc(u.employee||'—')}</td><td>${esc(u.org_name||'—')}</td>
-  <td><select onchange="suSetRole('${u.id}',this.value)" style="width:130px">${['employee','admin','superadmin'].map(r=>`<option ${u.role===r?'selected':''}>${r}</option>`).join('')}</select></td>
+  ${SU_USERS.map(u=>`<tr><td>${esc(u.email||'—')}</td><td>${esc(u.employee||'—')}</td><td>${esc(u.org_name||'<span style="color:#7B3FE4;font-weight:700">Merik (product)</span>')}</td>
+  <td>${u.org_id?`<select onchange="suSetRole('${u.id}',this.value)" style="width:130px">${['employee','admin'].map(r=>`<option ${u.role===r?'selected':''}>${r}</option>`).join('')}</select>`:'<span class="badge stW">superadmin</span>'}</td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suResetPw('${u.id}','${esc(u.email)}')">Reset password</button>
   <button class="btn sm warn" onclick="suDelUser('${u.id}','${esc(u.email)}')">Delete</button></td></tr>`).join('')}</table></div>`);
 }
@@ -1466,19 +1466,27 @@ async function suCreateUser(){
   const{data:orgs}=await sb.from('orgs').select('id,name').order('name');
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New User</h2>
   <div class="row"><div><label>Email</label><input id="nu_email" type="email"></div><div><label>Password</label><input id="nu_pw" placeholder="min 6 chars"></div></div>
-  <div class="row"><div><label>Role</label><select id="nu_role">${['admin','employee','superadmin'].map(r=>`<option>${r}</option>`).join('')}</select></div>
-  <div><label>Tenant</label><select id="nu_org"><option value="">— none (super admin) —</option>${(orgs||[]).map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')}</select></div></div>
+  <div class="row"><div><label>Tenant</label><select id="nu_org" onchange="suRoleOpts()"><option value="">— Merik (product owner) —</option>${(orgs||[]).map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')}</select></div>
+  <div><label>Role</label><select id="nu_role"></select></div></div>
+  <p style="font-size:12px;color:#889;margin-top:4px">A tenant user is an <b>admin</b> or <b>employee</b>. <b>Super admin</b> is a Merik product-owner account with no tenant.</p>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveUser()">Create</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  document.body.appendChild(div);suRoleOpts();
 }
+// Role options depend on whether a tenant is chosen: tenants get admin/employee, product owner gets superadmin.
+function suRoleOpts(){const org=$('nu_org').value;const roles=org?['admin','employee']:['superadmin'];
+  $('nu_role').innerHTML=roles.map(r=>`<option>${r}</option>`).join('');}
 async function suSaveUser(){
   const email=$('nu_email').value.trim(),pw=$('nu_pw').value,role=$('nu_role').value,org_id=$('nu_org').value||null;
   if(!email||pw.length<6)return alert('Email and a password (min 6 chars) are required.');
+  if(org_id&&role==='superadmin')return alert('Super admin is a Merik-only role and cannot belong to a tenant.');
+  if(!org_id&&role!=='superadmin')return alert('A tenant account needs a tenant. Pick a tenant, or leave it blank for a super admin.');
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'create_user',email,password:pw,role,org_id}});
   if(error||data?.error)return alert('Create failed: '+(data?.error||error.message));
   alert(`✔ User created.\n\nEmail: ${email}\nPassword: ${pw}`);document.querySelector('.modal').remove();suusers();
 }
-async function suSetRole(id,role){const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_role',user_id:id,role}});if(error||data?.error)alert('Failed: '+(data?.error||error.message));}
+async function suSetRole(id,role){
+  if(role==='superadmin')return alert('A tenant user cannot be made super admin — that role is Merik-only.');
+  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_role',user_id:id,role}});if(error||data?.error)alert('Failed: '+(data?.error||error.message));}
 async function suResetPw(id,email){const pw=prompt(`Set a new password for ${email} (min 6 chars):`);if(pw===null)return;if(pw.length<6)return alert('Too short.');
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_password',user_id:id,password:pw}});
   if(error||data?.error)return alert('Failed: '+(data?.error||error.message));alert(`✔ Password updated.\n\nEmail: ${email}\nPassword: ${pw}`);}

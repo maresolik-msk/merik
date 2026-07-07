@@ -41,6 +41,9 @@ Deno.serve(async (req) => {
     if (action === 'create_user') {
       const { email, password, role, org_id } = body;
       if (!email || !password || password.length < 6) throw new Error('Email and password (min 6 chars) required');
+      // superadmin is a Merik product-owner role and must NOT belong to a tenant.
+      if (role === 'superadmin' && org_id) throw new Error('Super admin cannot belong to a tenant');
+      if (role !== 'superadmin' && !org_id) throw new Error('A tenant account requires a tenant (org_id)');
       let userId: string;
       const { data: created, error: cErr } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
       if (cErr) {
@@ -64,6 +67,10 @@ Deno.serve(async (req) => {
     if (action === 'set_role') {
       const { user_id, role } = body;
       if (!user_id || !role) throw new Error('user_id and role required');
+      const { data: target } = await admin.from('profiles').select('org_id').eq('id', user_id).single();
+      // A tenant user can only be admin/employee; superadmin is Merik-only (no tenant).
+      if (role === 'superadmin' && target?.org_id) throw new Error('A tenant user cannot be made super admin');
+      if (role !== 'superadmin' && !target?.org_id) throw new Error('A Merik product-owner account stays super admin');
       await admin.from('profiles').update({ role }).eq('id', user_id);
       return json({ ok: true });
     }
