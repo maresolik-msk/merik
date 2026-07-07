@@ -226,25 +226,40 @@ function go(v){VIEW=v;document.querySelectorAll('#side a').forEach(a=>a.classLis
   ({dash,emp,att,mtr,hol,fb,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
+const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
 function paginateTables(){
   document.querySelectorAll('#main table').forEach(tb=>{
     if(tb.classList.contains('grid-att')||tb.id==='ditems')return;
     if(tb.closest('.payslip')||tb.closest('#docsheet')||tb.closest('.modal'))return;
     const rows=[...tb.rows].filter(r=>r.cells[0]&&r.cells[0].tagName==='TD');
-    if(rows.length<=PAGE_SIZE)return;
-    const pages=Math.ceil(rows.length/PAGE_SIZE);let page=0;
+    if(rows.length<FILTER_MIN)return;
     const host=tb.closest('.card')||tb;
+    let filter='',page=0;
+    // Match on visible text plus any input/select/textarea values in the row.
+    const rowText=r=>{let t=r.textContent.toLowerCase();
+      r.querySelectorAll('input,select,textarea').forEach(el=>{const v=el.value||(el.selectedOptions&&el.selectedOptions[0]?.text)||'';t+=' '+v.toLowerCase()});return t};
+    const visible=()=>filter?rows.filter(r=>rowText(r).includes(filter)):rows;
+    const fbox=document.createElement('div');fbox.className='tfilter noprint';
+    fbox.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    fbox.innerHTML=`<span style="color:#8896aa"><i class="fa-solid fa-magnifying-glass"></i></span>`+
+      `<input type="search" placeholder="Filter…" style="max-width:280px;margin:0">`;
+    const input=fbox.querySelector('input');
     const pager=document.createElement('div');pager.className='pager noprint';
     const draw=()=>{
-      rows.forEach((r,i)=>{r.style.display=(i>=page*PAGE_SIZE&&i<(page+1)*PAGE_SIZE)?'':'none'});
-      const from=page*PAGE_SIZE+1,to=Math.min((page+1)*PAGE_SIZE,rows.length);
-      pager.innerHTML=`<span class="pinfo">Showing ${from}–${to} of ${rows.length}</span>`+
+      const vis=visible();const pages=Math.max(1,Math.ceil(vis.length/PAGE_SIZE));
+      if(page>=pages)page=pages-1;if(page<0)page=0;
+      rows.forEach(r=>r.style.display='none');
+      vis.forEach((r,i)=>{if(i>=page*PAGE_SIZE&&i<(page+1)*PAGE_SIZE)r.style.display=''});
+      const from=vis.length?page*PAGE_SIZE+1:0,to=Math.min((page+1)*PAGE_SIZE,vis.length);
+      pager.innerHTML=`<span class="pinfo">Showing ${from}–${to} of ${vis.length}${filter?` (filtered from ${rows.length})`:''}</span>`+
         `<button class="btn sm sec" data-a="prev"${page===0?' disabled':''}>‹ Prev</button>`+
-        `<button class="btn sm sec" data-a="next"${page===pages-1?' disabled':''}>Next ›</button>`;
+        `<button class="btn sm sec" data-a="next"${page>=pages-1?' disabled':''}>Next ›</button>`;
+      pager.style.display=vis.length>PAGE_SIZE?'':'none';
     };
+    input.addEventListener('input',()=>{filter=input.value.trim().toLowerCase();page=0;draw()});
     pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-      if(b.dataset.a==='prev'&&page>0)page--;else if(b.dataset.a==='next'&&page<pages-1)page++;draw();});
-    host.after(pager);draw();
+      if(b.dataset.a==='prev')page--;else if(b.dataset.a==='next')page++;draw();});
+    host.before(fbox);host.after(pager);draw();
   });
 }
 
