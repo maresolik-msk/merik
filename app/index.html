@@ -631,16 +631,20 @@ async function prj(){
   <div><label>Project Name</label><input id="pj_name"></div>
   <div><label>Client</label><select id="pj_client"><option value="">— Internal —</option>${(cls||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
   <div><label>Status</label><select id="pj_status">${['Active','On Hold','Completed'].map(s=>`<option>${s}</option>`).join('')}</select></div>
-  <div><button class="btn" onclick="addPrj()">+ Add Project</button></div></div></div>
-  <div class="card"><table><tr><th>Project</th><th>Client</th><th>Start Date</th><th>Status</th><th></th></tr>
-  ${(ps||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.clients?.name||'Internal')}</td><td style="white-space:nowrap">${fmtDate(x.start_date)}</td>
+  </div><label>Description</label><textarea id="pj_desc" rows="2" placeholder="What is this project about?"></textarea>
+  <div style="margin-top:10px"><button class="btn" onclick="addPrj()">+ Add Project</button></div></div>
+  <div class="card"><table><tr><th>Project</th><th>Client</th><th>Description</th><th>Start Date</th><th>Status</th><th></th></tr>
+  ${(ps||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.clients?.name||'Internal')}</td>
+  <td style="min-width:220px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Add description…" onblur="updDesc('${x.id}',this.value)">${esc(x.description||'')}</textarea></td>
+  <td style="white-space:nowrap">${fmtDate(x.start_date)}</td>
   <td><select onchange="updPrj('${x.id}',this.value)" style="width:120px">${['Active','On Hold','Completed'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
   <td><button class="btn sm warn" onclick="delPrj('${x.id}')">Del</button></td></tr>`).join('')}</table></div>
-  <p style="font-size:12px;color:#667">Active projects appear as selectable chips in the Daily Task Log — employees can pick several at once.</p>`);
+  <p style="font-size:12px;color:#667">Edit a description inline — it saves when you click away. Active projects appear as selectable chips in the Daily Task Log.</p>`);
 }
-async function addPrj(){const{error}=await sb.from('projects').insert({name:$('pj_name').value,client_id:$('pj_client').value||null,status:$('pj_status').value});
+async function addPrj(){const{error}=await sb.from('projects').insert({name:$('pj_name').value,client_id:$('pj_client').value||null,status:$('pj_status').value,description:$('pj_desc').value||null});
   error?alert(error.message):prj()}
 async function updPrj(id,v){await sb.from('projects').update({status:v}).eq('id',id)}
+async function updDesc(id,v){const{error}=await sb.from('projects').update({description:v||null}).eq('id',id);if(error)alert(error.message)}
 async function delPrj(id){if(confirm('Delete project?')){await sb.from('projects').delete().eq('id',id);prj()}}
 
 async function orgset(){
