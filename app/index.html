@@ -1024,10 +1024,13 @@ async function myupd(){
   const d=today();
   const{data}=await sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).order('upd_date',{ascending:false}).limit(15);
   const t=(data||[]).find(r=>r.upd_date===d);
-  M(`<h2>My Daily Update — ${d}</h2>
+  const stBadge=s=>({'Update Shared':'stP','No Update':'stA','WFH':'stW','Leave':'stOL','Sick Leave':'stOL','Holiday':'stL'}[s]||'stL');
+  M(`<h2>My Daily Update — ${fmtDate(d)}</h2>
   <button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'<i class="fa-solid fa-pen"></i> Edit today\'s update':'+ Post today\'s update'}</button>
-  <div class="card" style="margin-top:12px"><table><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Completed</th><th>Blocker</th><th>Next Task</th></tr>
-  ${(data||[]).map(r=>`<tr><td>${r.upd_date}</td><td>${r.update_status}</td><td>${esc(r.project)}</td><td>${esc(r.completed)}</td><td>${esc(r.blocker)}</td><td>${esc(r.next_task)}</td></tr>`).join('')}</table></div>`);
+  <div class="warnbar" style="margin-top:12px"><i class="fa-solid fa-lock" style="color:#E8682A"></i> You can only edit <b>today's</b> update. Once the day ends it's locked — any day left without an update is automatically recorded as <b>“No Update”</b>.</div>
+  <div class="card" style="margin-top:12px"><table><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Completed</th><th>Blocker</th><th>Next Task</th><th></th></tr>
+  ${(data||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.upd_date)}</td><td><span class="badge ${stBadge(r.update_status)}">${esc(r.update_status)}</span></td><td>${esc(r.project)}</td><td>${esc(r.completed)}</td><td>${esc(r.blocker)}</td><td>${esc(r.next_task)}</td>
+  <td>${r.upd_date===d?'':'<i class="fa-solid fa-lock" style="color:#aab" title="Locked — past day"></i>'}</td></tr>`).join('')}</table></div>`);
 }
 async function myatt(ym){
   if(!ME.employee)return mydash();
