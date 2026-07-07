@@ -344,6 +344,12 @@ function go(v){VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
+// Numbered page buttons (‹ 1 2 … N ›) for the generic table pager; buttons carry data-p.
+function pgBtns(pages,cur){const b=(i,l,dis,on)=>`<button class="pg-btn ${on?'on':''}" ${dis?'disabled':''} data-p="${i}">${l}</button>`;
+  let out=b(cur-1,'‹',cur===0);let win=[];
+  if(pages<=7){for(let i=0;i<pages;i++)win.push(i);}else{win.push(0);const s=Math.max(1,cur-1),e=Math.min(pages-2,cur+1);if(s>1)win.push('…');for(let i=s;i<=e;i++)win.push(i);if(e<pages-2)win.push('…');win.push(pages-1);}
+  win.forEach(i=>out+=(i==='…'?'<span class="pg-dot">…</span>':b(i,i+1,false,i===cur)));
+  return out+b(cur+1,'›',cur>=pages-1);}
 function paginateTables(){
   document.querySelectorAll('#main table').forEach(tb=>{
     if(tb.classList.contains('grid-att')||tb.id==='ditems'||tb.id==='tasktbl')return;
@@ -361,21 +367,21 @@ function paginateTables(){
     fbox.innerHTML=`<span style="color:#8896aa"><i class="fa-solid fa-magnifying-glass"></i></span>`+
       `<input type="search" placeholder="Filter…" style="max-width:280px;margin:0">`;
     const input=fbox.querySelector('input');
-    const pager=document.createElement('div');pager.className='pager noprint';
+    let pageSize=PAGE_SIZE;
+    const pager=document.createElement('div');pager.className='tl-foot noprint';
     const draw=()=>{
-      const vis=visible();const pages=Math.max(1,Math.ceil(vis.length/PAGE_SIZE));
+      const vis=visible();const pages=Math.max(1,Math.ceil(vis.length/pageSize));
       if(page>=pages)page=pages-1;if(page<0)page=0;
       rows.forEach(r=>r.style.display='none');
-      vis.forEach((r,i)=>{if(i>=page*PAGE_SIZE&&i<(page+1)*PAGE_SIZE)r.style.display=''});
-      const from=vis.length?page*PAGE_SIZE+1:0,to=Math.min((page+1)*PAGE_SIZE,vis.length);
-      pager.innerHTML=`<span class="pinfo">Showing ${from}–${to} of ${vis.length}${filter?` (filtered from ${rows.length})`:''}</span>`+
-        `<button class="btn sm sec" data-a="prev"${page===0?' disabled':''}>‹ Prev</button>`+
-        `<button class="btn sm sec" data-a="next"${page>=pages-1?' disabled':''}>Next ›</button>`;
-      pager.style.display=vis.length>PAGE_SIZE?'':'none';
+      vis.forEach((r,i)=>{if(i>=page*pageSize&&i<(page+1)*pageSize)r.style.display=''});
+      const from=vis.length?page*pageSize+1:0,to=Math.min((page+1)*pageSize,vis.length);
+      pager.innerHTML=`<span>Showing ${from} to ${to} of ${vis.length} entries${filter?` (filtered from ${rows.length})`:''}</span>`+
+        `<div class="tl-pages">${pgBtns(pages,page)}</div>`+
+        `<select class="tl-ps">${[10,25,50].map(n=>`<option ${pageSize===n?'selected':''} value="${n}">${n} / page</option>`).join('')}</select>`;
     };
     input.addEventListener('input',()=>{filter=input.value.trim().toLowerCase();page=0;draw()});
-    pager.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-      if(b.dataset.a==='prev')page--;else if(b.dataset.a==='next')page++;draw();});
+    pager.addEventListener('click',e=>{const b=e.target.closest('.pg-btn');if(!b||b.disabled)return;page=+b.dataset.p;draw();});
+    pager.addEventListener('change',e=>{if(e.target.matches('.tl-ps')){pageSize=+e.target.value;page=0;draw();}});
     host.before(fbox);host.after(pager);draw();
   });
 }
