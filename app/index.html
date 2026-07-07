@@ -198,7 +198,7 @@ const ADMIN_GROUPS=[
  ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
- ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave']]]];
+ ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do']]]];
 function renderShell(){
   const groups=(ME.profile?.role==='admin'?ADMIN_GROUPS:EMP_GROUPS);
   const first=groups[0][1][0][0];
@@ -218,7 +218,7 @@ function renderShell(){
 }
 function go(v){VIEW=v;document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 function paginateTables(){
@@ -914,6 +914,46 @@ async function mywfh(){
 }
 async function reqWfh(){const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:$('w_date').value,status:$('w_status').value,reason:$('w_reason').value||null});
   error?alert(error.message):mywfh()}
+async function mynotes(){
+  if(!ME.employee)return mydash();
+  const{data,error}=await sb.from('emp_notes').select('*').eq('employee_id',ME.employee.id).order('created_at',{ascending:false});
+  if(error)return M(`<h2>Notes & To-Do</h2><div class="warnbar">${esc(error.message)}</div>`);
+  const notes=(data||[]).filter(n=>n.kind==='note');
+  const todos=(data||[]).filter(n=>n.kind==='todo');
+  const pend=todos.filter(t=>!t.done).length;
+  M(`<h2>Notes &amp; To-Do</h2>
+  <div class="row" style="align-items:flex-start;gap:16px">
+  <div style="flex:1;min-width:280px"><div class="card">
+    <label>Add a note</label>
+    <textarea id="nt_new" rows="3" placeholder="Write a note…"></textarea>
+    <div style="margin-top:8px"><button class="btn" onclick="addNote()"><i class="fa-solid fa-plus"></i> Add Note</button></div>
+  </div>
+  ${notes.length?notes.map(n=>`<div class="card" style="background:#FFFDF3;border-left:4px solid #E8A200">
+    <textarea rows="3" style="width:100%;background:transparent;border:none;font-size:14px;resize:vertical" onblur="saveNote('${n.id}',this.value)">${esc(n.content||'')}</textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+      <span style="font-size:11px;color:#889">${fmtDate((n.updated_at||n.created_at).slice(0,10))}</span>
+      <button class="btn sm warn" onclick="delNote('${n.id}')">Delete</button></div></div>`).join(''):'<p style="font-size:13px;color:#889">No notes yet.</p>'}
+  </div>
+  <div style="flex:1;min-width:280px"><div class="card">
+    <label>Add a to-do (${pend} pending)</label>
+    <div class="row"><div style="flex:1"><input id="td_new" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')addTodo()"></div>
+    <div><button class="btn" onclick="addTodo()"><i class="fa-solid fa-plus"></i> Add</button></div></div>
+  </div>
+  <div class="card">${todos.length?todos.map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)">
+    <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo('${t.id}',this.checked)" style="width:18px;height:18px;flex:none">
+    <span style="flex:1;font-size:14px;${t.done?'text-decoration:line-through;color:#99a':''}">${esc(t.content||'')}</span>
+    <button class="btn sm warn" onclick="delNote('${t.id}')">Del</button></div>`).join(''):'<p style="font-size:13px;color:#889">Nothing to do yet.</p>'}</div>
+  </div></div>`);
+}
+async function addNote(){const v=$('nt_new').value.trim();if(!v)return;
+  const{error}=await sb.from('emp_notes').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,kind:'note',content:v});
+  error?alert(error.message):mynotes()}
+async function saveNote(id,v){const{error}=await sb.from('emp_notes').update({content:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message)}
+async function addTodo(){const v=$('td_new').value.trim();if(!v)return;
+  const{error}=await sb.from('emp_notes').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,kind:'todo',content:v});
+  error?alert(error.message):mynotes()}
+async function toggleTodo(id,done){const{error}=await sb.from('emp_notes').update({done,updated_at:new Date().toISOString()}).eq('id',id);error?alert(error.message):mynotes()}
+async function delNote(id){const{error}=await sb.from('emp_notes').delete().eq('id',id);error?alert(error.message):mynotes()}
 async function myslip(){
   if(!ME.employee)return mydash();
   const{data}=await sb.from('payroll').select('*').eq('employee_id',ME.employee.id).order('pay_year',{ascending:false}).order('pay_month',{ascending:false});
