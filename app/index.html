@@ -123,6 +123,8 @@ h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
 .auth-feat div{display:flex;align-items:center;gap:12px;font-size:14.5px;color:#eaf1fb}
 .auth-feat i{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
 .auth-panel{width:min(460px,100%);background:#fff;padding:48px 44px;display:flex;flex-direction:column;justify-content:center;box-shadow:-20px 0 60px rgba(20,40,75,.08)}
+.auth-back{display:inline-flex;align-items:center;gap:7px;color:#6b7a90;font-size:13px;font-weight:600;text-decoration:none;margin-bottom:18px;transition:color .15s ease}
+.auth-back:hover{color:var(--navy)}
 .auth-tabs{display:flex;background:#EEF2F9;border-radius:12px;padding:5px;margin-bottom:24px}
 .auth-tabs button{flex:1;background:transparent;border:none;padding:10px;border-radius:9px;font-weight:700;font-size:14px;color:#6b7a90;cursor:pointer;transition:all .15s ease;box-shadow:none}
 .auth-tabs button.on{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(20,40,75,.12)}
@@ -211,7 +213,8 @@ function renderLogin(tab){
       <div><i class="fa-solid fa-money-bill-wave"></i> Automated payroll &amp; payslips</div>
       <div><i class="fa-solid fa-diagram-project"></i> Projects, clients &amp; task logs</div>
     </div></div></div>`;
-  const tabs=`<div class="auth-tabs">
+  const tabs=`<a href="../index.html" class="auth-back"><i class="fa-solid fa-arrow-left"></i> Back to home</a>
+  <div class="auth-tabs">
     <button class="${AUTH_TAB==='login'?'on':''}" onclick="renderLogin('login')">Sign In</button>
     <button class="${AUTH_TAB==='signup'?'on':''}" onclick="renderLogin('signup')">Request Access</button></div>`;
   const login=`<h2>Welcome back</h2><div class="sub">Sign in to your Merik workspace.</div>
