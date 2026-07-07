@@ -111,6 +111,29 @@ h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
 
 /* ---- Login ---- */
 #login{max-width:380px;margin:90px auto;padding:32px;border-radius:18px;box-shadow:var(--shadow-lg);border-top:4px solid var(--orange)}
+/* ---- Auth (login / signup) ---- */
+.auth-wrap{min-height:100vh;display:flex;align-items:stretch;background:#F4F7FC}
+.auth-brand{flex:1;background:linear-gradient(150deg,#14284B 0%,#1B3A6B 55%,#2563A8 100%);color:#fff;padding:56px 48px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.auth-brand:before{content:"";position:absolute;top:-120px;right:-120px;width:340px;height:340px;border-radius:50%;background:rgba(217,58,49,.22)}
+.auth-brand:after{content:"";position:absolute;bottom:-140px;left:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.06)}
+.auth-brand .inner{position:relative;z-index:1;max-width:440px}
+.auth-brand h1{color:#fff;font-size:38px;line-height:1.15;letter-spacing:-.6px;margin:18px 0 14px}
+.auth-brand p{color:#cfe0f5;font-size:15px;line-height:1.6}
+.auth-feat{margin-top:28px;display:flex;flex-direction:column;gap:14px}
+.auth-feat div{display:flex;align-items:center;gap:12px;font-size:14.5px;color:#eaf1fb}
+.auth-feat i{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.auth-panel{width:min(460px,100%);background:#fff;padding:48px 44px;display:flex;flex-direction:column;justify-content:center;box-shadow:-20px 0 60px rgba(20,40,75,.08)}
+.auth-tabs{display:flex;background:#EEF2F9;border-radius:12px;padding:5px;margin-bottom:24px}
+.auth-tabs button{flex:1;background:transparent;border:none;padding:10px;border-radius:9px;font-weight:700;font-size:14px;color:#6b7a90;cursor:pointer;transition:all .15s ease;box-shadow:none}
+.auth-tabs button.on{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(20,40,75,.12)}
+.auth-panel h2{font-size:23px;margin-bottom:4px}
+.auth-panel .sub{color:#6b7a90;font-size:13.5px;margin-bottom:22px}
+.auth-panel label{margin-top:14px}
+.auth-msg{margin-top:14px;font-size:13px;padding:11px 14px;border-radius:9px;display:none}
+.auth-msg.err{display:block;background:#FDECEA;color:#B42318;border-left:4px solid var(--orange)}
+.auth-msg.ok{display:block;background:#E6F7EC;color:#1E6B3A;border-left:4px solid #1E8449}
+.auth-full{width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:22px}
+@media(max-width:840px){.auth-brand{display:none}.auth-panel{width:100%;box-shadow:none;margin:0 auto}}
 .warnbar{background:#FFF3E5;color:#A34A00;border-left:4px solid var(--orange);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
 
 /* ---- Print ---- */
@@ -176,20 +199,56 @@ async function createOrg(){
   const{error}=await sb.rpc('create_org',{org_name:$('conm').value.trim()||'My Company'});
   if(error){$('lerr').textContent=error.message;return}boot();
 }
-function renderLogin(){
-  $('root').innerHTML=`<div id="login" class="card">
-  <div style="text-align:center;margin-bottom:10px"><img src="${LOGO}" alt="Merik" style="height:48px"></div><h2 style="text-align:center;margin-bottom:2px">MERIK</h2><p style="text-align:center;color:#667;margin-bottom:10px">Workforce Suite</p>
-  <label>Email</label><input id="lem" type="email"><label>Password</label><input id="lpw" type="password">
-  <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" style="flex:1" onclick="doLogin()">Sign In</button>
-  <button class="btn sec" style="flex:1" onclick="doSignup()">Employee Sign Up</button></div>
-  <div style="margin-top:10px;text-align:center"><a href="#" onclick="doSignup();return false" style="font-size:12.5px;color:#2563A8"><i class="fa-solid fa-building"></i> New company? Sign up to create your workspace</a></div>
-  <p id="lerr" style="color:var(--red);margin-top:8px;font-size:12px"></p>
-  <p style="font-size:11px;color:#889;margin-top:10px">Employees: sign up with the email your company added for you. New companies: sign up with any email, then create your workspace.</p></div>`;
+let AUTH_TAB='login';
+function renderLogin(tab){
+  AUTH_TAB=tab||AUTH_TAB||'login';
+  const brand=`<div class="auth-brand"><div class="inner">
+    <img src="${LOGO}" alt="Merik" style="height:52px;filter:brightness(0) invert(1)">
+    <h1>The complete workforce suite for growing teams.</h1>
+    <p>Attendance, payroll, projects, feedback and more — all in one clean workspace built for your company.</p>
+    <div class="auth-feat">
+      <div><i class="fa-solid fa-fingerprint"></i> Geo check-in &amp; attendance tracking</div>
+      <div><i class="fa-solid fa-money-bill-wave"></i> Automated payroll &amp; payslips</div>
+      <div><i class="fa-solid fa-diagram-project"></i> Projects, clients &amp; task logs</div>
+    </div></div></div>`;
+  const tabs=`<div class="auth-tabs">
+    <button class="${AUTH_TAB==='login'?'on':''}" onclick="renderLogin('login')">Sign In</button>
+    <button class="${AUTH_TAB==='signup'?'on':''}" onclick="renderLogin('signup')">Request Access</button></div>`;
+  const login=`<h2>Welcome back</h2><div class="sub">Sign in to your Merik workspace.</div>
+    <label>Email</label><input id="lem" type="email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doLogin()">
+    <label>Password</label><input id="lpw" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn auth-full" onclick="doLogin()">Sign In <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+    <div id="lerr" class="auth-msg"></div>
+    <p style="font-size:12px;color:#889;margin-top:16px">Employees: use the email &amp; password your admin created for you.</p>`;
+  const signup=`<h2>Register your company</h2><div class="sub">Tell us about your business — the Merik team will review and approve your workspace.</div>
+    <div class="row"><div><label>Company name</label><input id="su_company" placeholder="Acme Inc."></div>
+    <div><label>Your name</label><input id="su_contact" placeholder="Jane Doe"></div></div>
+    <div class="row"><div><label>Work email</label><input id="su_email" type="email" placeholder="jane@acme.com"></div>
+    <div><label>Phone (optional)</label><input id="su_phone" placeholder="+91 …"></div></div>
+    <label>Anything we should know? (optional)</label><textarea id="su_msg" rows="2" placeholder="Team size, what you need Merik for…"></textarea>
+    <button class="btn auth-full" onclick="submitSignup()"><i class="fa-solid fa-paper-plane"></i> Submit for approval</button>
+    <div id="serr" class="auth-msg"></div>
+    <p style="font-size:12px;color:#889;margin-top:16px">After approval, you'll receive your admin login credentials from the Merik team.</p>`;
+  $('root').innerHTML=`<div class="auth-wrap">${brand}<div class="auth-panel">${tabs}${AUTH_TAB==='login'?login:signup}</div></div>`;
 }
-async function doLogin(){const{error}=await sb.auth.signInWithPassword({email:$('lem').value.trim(),password:$('lpw').value});
-  if(error){$('lerr').textContent=error.message;return}boot()}
-async function doSignup(){const{error}=await sb.auth.signUp({email:$('lem').value.trim(),password:$('lpw').value});
-  $('lerr').textContent=error?error.message:'Account created. Sign in now.';if(!error)doLogin()}
+function authMsg(id,type,text){const el=$(id);if(!el)return;el.className='auth-msg '+type;el.textContent=text}
+async function doLogin(){
+  const email=($('lem').value||'').trim();const pw=$('lpw').value||'';
+  if(!email||!pw)return authMsg('lerr','err','Enter your email and password.');
+  const{error}=await sb.auth.signInWithPassword({email,password:pw});
+  if(error)return authMsg('lerr','err',error.message);boot()}
+async function submitSignup(){
+  const o={company_name:($('su_company').value||'').trim(),contact_name:($('su_contact').value||'').trim(),
+    email:($('su_email').value||'').trim(),phone:($('su_phone').value||'').trim()||null,message:($('su_msg').value||'').trim()||null,status:'Pending'};
+  if(!o.company_name||!o.contact_name||!o.email)return authMsg('serr','err','Company, your name and email are required.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email))return authMsg('serr','err','Please enter a valid email address.');
+  const{error}=await sb.from('signup_requests').insert(o);
+  if(error)return authMsg('serr','err',error.message);
+  $('root').querySelector('.auth-panel').innerHTML=`<div style="text-align:center">
+    <div style="width:66px;height:66px;border-radius:50%;background:#E6F7EC;display:flex;align-items:center;justify-content:center;margin:0 auto 18px"><i class="fa-solid fa-check" style="color:#1E8449;font-size:28px"></i></div>
+    <h2>Request submitted</h2><div class="sub" style="margin-bottom:22px">Thanks, ${esc(o.contact_name)}! The Merik team will review your request for <b>${esc(o.company_name)}</b> and send your login credentials once approved.</div>
+    <button class="btn sec auth-full" style="margin-top:0" onclick="renderLogin('login')">Back to sign in</button></div>`;
+}
 async function logout(){await sb.auth.signOut();ME=null;renderLogin()}
 
 const ADMIN_GROUPS=[
@@ -199,7 +258,7 @@ const ADMIN_GROUPS=[
  ['Business',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
-const SUPER_GROUPS=[[null,[['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Product Feedback']]]];
+const SUPER_GROUPS=[[null,[['signups','<i class="fa-solid fa-user-plus" style="color:#1E8449"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Product Feedback']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
@@ -223,7 +282,7 @@ function renderShell(){
 }
 function go(v){VIEW=v;document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,signups,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -1031,6 +1090,37 @@ async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return alert(
   const{error}=await sb.from('feedback').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,category:$('fb_cat').value,message:msg});
   error?alert(error.message):myfb()}
 // ---- Admin: review feedback ----
+// ---- Super admin: review company signup requests ----
+async function signups(){
+  const{data,error}=await sb.from('signup_requests').select('*').order('created_at',{ascending:false});
+  if(error)return M(`<h2>Signup Requests</h2><div class="warnbar">${esc(error.message)}</div>`);
+  const rows=data||[];const pend=rows.filter(r=>r.status==='Pending').length;
+  const badge=s=>({Pending:'stL',Approved:'stP',Rejected:'stA'}[s]||'stL');
+  M(pgh('Signup Requests','New companies requesting a Merik workspace.')+
+  kpis([['<i class="fa-solid fa-user-plus"></i>','#E8EEFB','Total',rows.length],['<i class="fa-solid fa-hourglass-half"></i>','#FFE9DC','Pending',pend],['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Approved',rows.filter(r=>r.status==='Approved').length]])+
+  `<div class="card"><table><tr><th>Date</th><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Message</th><th>Status</th><th></th></tr>
+  ${rows.map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td><td><b>${esc(r.company_name)}</b></td>
+  <td>${esc(r.contact_name)}</td><td>${esc(r.email)}</td><td>${esc(r.phone||'—')}</td>
+  <td style="max-width:240px;font-size:12px">${esc(r.message||'—')}${r.review_notes?`<br><span style="color:#889">Note: ${esc(r.review_notes)}</span>`:''}</td>
+  <td><span class="badge ${badge(r.status)}">${esc(r.status)}</span></td>
+  <td class="noprint" style="white-space:nowrap">${r.status==='Pending'?`<button class="btn sm" style="background:#1E8449" onclick="approveSignup('${r.id}','${esc(r.email)}','${esc(r.company_name)}')">Approve</button> <button class="btn sm warn" onclick="rejectSignup('${r.id}')">Reject</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="color:#889">No signup requests yet.</td></tr>'}</table></div>`);
+}
+async function approveSignup(id,email,company){
+  const pw=prompt(`Approve "${company}" (${email}).\n\nSet an admin password for this account (min 6 characters):`);
+  if(pw===null)return;
+  if(pw.length<6)return alert('Password must be at least 6 characters.');
+  const{data,error}=await sb.functions.invoke('review-signup',{body:{request_id:id,action:'approve',password:pw}});
+  if(error||data?.error)return alert('Approve failed: '+(data?.error||error.message));
+  alert(`✔ Approved.\n\nShare these credentials with ${company}:\n\nEmail: ${email}\nPassword: ${pw}`);
+  signups();
+}
+async function rejectSignup(id){
+  const notes=prompt('Reject this request?\n\nOptional reason (shown in the log):');
+  if(notes===null)return;
+  const{data,error}=await sb.functions.invoke('review-signup',{body:{request_id:id,action:'reject',notes:notes||null}});
+  if(error||data?.error)return alert('Reject failed: '+(data?.error||error.message));
+  signups();
+}
 async function fb(){
   const{data,error}=await sb.from('feedback').select('*,employees(full_name,emp_code),orgs(name)').order('created_at',{ascending:false});
   if(error)return M(`<h2>Feedback</h2><div class="warnbar">${esc(error.message)}</div>`);
