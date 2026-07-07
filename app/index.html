@@ -515,10 +515,11 @@ async function addHol(){const{error}=await sb.from('holidays').insert({holiday_d
 async function delHol(id){await sb.from('holidays').delete().eq('id',id);hol()}
 
 /* ---------- TASK LOG (admin) ---------- */
-let TASK_STATE={period:'daily',date:today(),client:''};
+let TASK_STATE={period:'daily',date:today(),client:'',employee:''};
 const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
 function setTaskPeriod(p){TASK_STATE.period=p;task()}
 function setTaskClient(c){TASK_STATE.client=c;task()}
+function setTaskEmp(e){TASK_STATE.employee=e;task()}
 async function task(d){
   if(typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d))TASK_STATE.date=d;
   const st=TASK_STATE;const a=st.date||today();
@@ -534,12 +535,14 @@ async function task(d){
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e);
   const clientOfProject={};(pjs||[]).forEach(p=>{clientOfProject[p.name]=p.client_id||''});
   let list=(rows||[]).slice();
+  // Employee filter.
+  if(st.employee)list=list.filter(r=>r.employee_id===st.employee);
   // Client filter: match rows whose project(s) belong to the chosen client ('' = all, 'internal' = no client).
   if(st.client){const target=st.client==='internal'?'':st.client;
     list=list.filter(r=>(r.project||'').split(',').map(s=>s.trim()).filter(Boolean).some(n=>(clientOfProject[n]||'')===target));}
   // Daily + all clients: surface employees who did not log, as "No Update".
   if(st.period==='daily'&&!st.client){const have=new Set(list.map(r=>r.employee_id));
-    (emps||[]).forEach(e=>{if(!have.has(e.id))list.push({employee_id:e.id,upd_date:from,update_status:'No Update'})});}
+    (emps||[]).filter(e=>!st.employee||e.id===st.employee).forEach(e=>{if(!have.has(e.id))list.push({employee_id:e.id,upd_date:from,update_status:'No Update'})});}
   const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
   const segBtn=(p,l)=>`<button class="btn sm ${st.period===p?'':'sec'}" onclick="setTaskPeriod('${p}')">${l}</button>`;
   M(pgh('Task Log',`Tasks & updates — ${label}.`)+
@@ -547,6 +550,7 @@ async function task(d){
   <div class="row noprint" style="margin-bottom:14px;align-items:flex-end;gap:12px">
    <div><label>View</label><div style="display:flex;gap:6px">${segBtn('daily','Daily')}${segBtn('weekly','Weekly')}${segBtn('monthly','Monthly')}</div></div>
    <div style="max-width:180px"><label>${st.period==='monthly'?'Month':'Date'}</label><input type="${st.period==='monthly'?'month':'date'}" value="${st.period==='monthly'?a.slice(0,7):a}" onchange="task(this.value+'${st.period==='monthly'?'-01':''}')"></div>
+   <div style="max-width:220px"><label>Employee</label><select onchange="setTaskEmp(this.value)"><option value="">All employees</option>${(emps||[]).map(e=>`<option value="${e.id}" ${st.employee===e.id?'selected':''}>${esc(e.full_name)}</option>`).join('')}</select></div>
    <div style="max-width:220px"><label>Client</label><select onchange="setTaskClient(this.value)"><option value="">All clients</option><option value="internal" ${st.client==='internal'?'selected':''}>Internal (no client)</option>${(cls||[]).map(c=>`<option value="${c.id}" ${st.client===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
   </div>`+
   kpis([['<i class="fa-solid fa-circle" style="color:#C0392B"></i>','#FDECEA','No Update',cnt.nu,''],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Update Shared',cnt.sh,''],['<i class="fa-solid fa-list-check"></i>','#E8EEFB','Entries',list.length,'']])+`
