@@ -102,6 +102,32 @@ tbody tr:hover td{background:#F1F6FD}
   table{font-size:12.5px}
 }
 @media(max-width:440px){.kpi .card{min-width:100%}}
+/* ---- Task Log redesign ---- */
+.tl-sub{font-size:11.5px;color:#94a3b8;font-weight:500;line-height:1.3}
+.tl-name{font-weight:700;color:#14284B;line-height:1.3}
+.tl-toolbar{display:flex;align-items:center;gap:10px;margin:16px 0 4px}
+.tl-search{flex:1;position:relative}
+.tl-search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px}
+.tl-search input{padding-left:38px;margin:0}
+.tl-icon-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;color:#41506a;padding:10px 15px;border-radius:11px;font-weight:600;font-size:13.5px;cursor:pointer;box-shadow:none;white-space:nowrap}
+.tl-icon-btn:hover{background:#F1F5FC}
+.tl-thumb{width:32px;height:32px;border-radius:8px;background:#E8EEFB;color:#2563A8;display:inline-flex;align-items:center;justify-content:center;font-size:13px;border:1px solid #D6E0F0;text-decoration:none}
+.tl-plus{font-size:11px;color:#6b7a90;font-weight:700;margin-left:2px}
+.tl-chip-warn{background:#FFF3E5;color:#B45309;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.tl-next-red{color:#C0392B;font-weight:600}
+.tl-go{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:#fff;color:#2563A8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none;padding:0}
+.tl-go:hover{background:#EEF4FF;border-color:#c7d6ef}
+.tl-dash{color:#c2ccda}
+.tl-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 4px 2px;font-size:13px;color:#6b7a90}
+.tl-pages{display:flex;align-items:center;gap:6px}
+.pg-btn{min-width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:600;color:#41506a;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;box-shadow:none;padding:0}
+.pg-btn:hover:not(:disabled){background:#F1F5FC}
+.pg-btn.on{background:var(--deep);color:#fff;border-color:var(--deep)}
+.pg-btn:disabled{opacity:.4;cursor:default}
+.pg-dot{color:#9aa8bc;padding:0 2px}
+.tl-ps{width:auto;margin:0;padding:8px 10px}
+#tasktbl td{vertical-align:middle;padding:14px 12px}
+#tasktbl tr:hover td{background:#FAFBFE}
 h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
 .btn[disabled]{opacity:.45;cursor:default;transform:none;box-shadow:none}
 .pager{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap;margin:-4px 0 18px}
@@ -320,7 +346,7 @@ const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
 function paginateTables(){
   document.querySelectorAll('#main table').forEach(tb=>{
-    if(tb.classList.contains('grid-att')||tb.id==='ditems')return;
+    if(tb.classList.contains('grid-att')||tb.id==='ditems'||tb.id==='tasktbl')return;
     if(tb.closest('.payslip')||tb.closest('#docsheet')||tb.closest('.modal'))return;
     const rows=[...tb.rows].filter(r=>r.cells[0]&&r.cells[0].tagName==='TD');
     if(rows.length<FILTER_MIN)return;
@@ -515,52 +541,113 @@ async function addHol(){const{error}=await sb.from('holidays').insert({holiday_d
 async function delHol(id){await sb.from('holidays').delete().eq('id',id);hol()}
 
 /* ---------- TASK LOG (admin) ---------- */
-let TASK_STATE={period:'daily',date:today(),client:'',employee:''};
+let TASK_STATE={period:'daily',date:today(),client:'',employee:'',search:'',page:0,pageSize:10,_focus:false};
 const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
-function setTaskPeriod(p){TASK_STATE.period=p;task()}
-function setTaskClient(c){TASK_STATE.client=c;task()}
-function setTaskEmp(e){TASK_STATE.employee=e;task()}
+function setTaskPeriod(p){TASK_STATE.period=p;TASK_STATE.page=0;task()}
+function setTaskClient(c){TASK_STATE.client=c;TASK_STATE.page=0;task()}
+function setTaskEmp(e){TASK_STATE.employee=e;TASK_STATE.page=0;task()}
+function setTaskSearch(v){TASK_STATE.search=v;TASK_STATE.page=0;TASK_STATE._focus=true;task()}
+function setTaskPage(i){TASK_STATE.page=i;task()}
+function setTaskPageSize(n){TASK_STATE.pageSize=+n;TASK_STATE.page=0;task()}
+function newTaskUpdate(){if(TASK_STATE.employee)return taskForm(TASK_STATE.employee,today(),{});alert('Pick an employee in the filter to log a new update, or use the › button on any row.')}
+function taskPageBtns(pages,cur){const b=(i,l,dis,on)=>`<button class="pg-btn ${on?'on':''}" ${dis?'disabled':''} onclick="setTaskPage(${i})">${l}</button>`;
+  let out=b(cur-1,'‹',cur===0);const win=[];
+  if(pages<=7){for(let i=0;i<pages;i++)win.push(i);} else {win.push(0);const s=Math.max(1,cur-1),e=Math.min(pages-2,cur+1);if(s>1)win.push('…');for(let i=s;i<=e;i++)win.push(i);if(e<pages-2)win.push('…');win.push(pages-1);}
+  win.forEach(i=>out+=(i==='…'?'<span class="pg-dot">…</span>':b(i,i+1,false,i===cur)));
+  return out+b(cur+1,'›',cur>=pages-1);}
 async function task(d){
-  if(typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d))TASK_STATE.date=d;
+  if(typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)){TASK_STATE.date=d;TASK_STATE.page=0;}
   const st=TASK_STATE;const a=st.date||today();
-  let from,to,label;
-  if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);label=`Week of ${fmtDate(from)} – ${fmtDate(to)}`;}
-  else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;label=new Date(from+'T00:00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'});}
-  else{from=to=a;label=fmtDate(a);}
+  let from,to;
+  if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
+  else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
+  else{from=to=a;}
   const [{data:emps},{data:rows},{data:cls},{data:pjs}]=await Promise.all([
-    sb.from('employees').select('id,emp_code,full_name').eq('status','Active').order('emp_code'),
-    sb.from('task_updates').select('*').gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}),
+    sb.from('employees').select('id,emp_code,full_name,designation').eq('status','Active').order('emp_code'),
+    sb.from('task_updates').select('*').gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('clients').select('id,name').order('name'),
     sb.from('projects').select('name,client_id')]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e);
   const clientOfProject={};(pjs||[]).forEach(p=>{clientOfProject[p.name]=p.client_id||''});
   let list=(rows||[]).slice();
-  // Employee filter.
   if(st.employee)list=list.filter(r=>r.employee_id===st.employee);
-  // Client filter: match rows whose project(s) belong to the chosen client ('' = all, 'internal' = no client).
   if(st.client){const target=st.client==='internal'?'':st.client;
     list=list.filter(r=>(r.project||'').split(',').map(s=>s.trim()).filter(Boolean).some(n=>(clientOfProject[n]||'')===target));}
-  // Daily + all clients: surface employees who did not log, as "No Update".
   if(st.period==='daily'&&!st.client){const have=new Set(list.map(r=>r.employee_id));
     (emps||[]).filter(e=>!st.employee||e.id===st.employee).forEach(e=>{if(!have.has(e.id))list.push({employee_id:e.id,upd_date:from,update_status:'No Update'})});}
   const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
+  const pct=(cnt.sh+cnt.nu)?Math.round(cnt.sh/(cnt.sh+cnt.nu)*100):0;
+  // Search over the filtered set (name / id / project / text / status).
+  let display=list;
+  if(st.search){const q=st.search.toLowerCase();display=list.filter(r=>{const e=empName[r.employee_id]||{};
+    return [e.full_name,e.emp_code,r.project,r.task_assigned,r.completed,r.next_task,r.blocker,r.not_working,r.update_status].some(x=>(x||'').toLowerCase().includes(q))});}
+  const total=display.length;const ps=st.pageSize;const pages=Math.max(1,Math.ceil(total/ps));
+  if(st.page>=pages)st.page=pages-1;if(st.page<0)st.page=0;
+  const start=st.page*ps;const pageRows=display.slice(start,start+ps);
   const segBtn=(p,l)=>`<button class="btn sm ${st.period===p?'':'sec'}" onclick="setTaskPeriod('${p}')">${l}</button>`;
-  M(pgh('Task Log',`Tasks & updates — ${label}.`)+
+  // Stat cards
+  const stat=(ic,bg,col,label,val,sub,subcol)=>`<div class="card" style="margin:0;flex:1;min-width:210px"><div style="display:flex;gap:14px;align-items:flex-start">
+    <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
+    <div><div style="font-size:12.5px;color:#6b7a90">${label}</div><div style="font-size:26px;font-weight:800;color:#14284B;line-height:1.15">${val}</div>
+    ${sub?`<div style="font-size:11.5px;color:${subcol||'#9aa8bc'};font-weight:600;margin-top:2px">${sub}</div>`:''}</div></div></div>`;
+  const R=22,C=2*Math.PI*R;
+  const donut=`<div class="card" style="margin:0;flex:1;min-width:210px"><div style="display:flex;gap:14px;align-items:center">
+    <svg width="62" height="62" viewBox="0 0 60 60" style="flex:none"><circle cx="30" cy="30" r="${R}" fill="none" stroke="#E6ECF5" stroke-width="7"/>
+    <circle cx="30" cy="30" r="${R}" fill="none" stroke="#2563A8" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct/100)).toFixed(1)}" transform="rotate(-90 30 30)"/>
+    <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="#14284B">${pct}%</text></svg>
+    <div><div style="font-size:12.5px;color:#6b7a90">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${cnt.sh} of ${cnt.sh+cnt.nu} logged</div></div></div></div>`;
+  const cell=(v)=>v?esc(v):'<span class="tl-dash">—</span>';
+  M(pgh('Task Log','Track all task updates and activities in one place.','<button class="btn" onclick="newTaskUpdate()"><i class="fa-solid fa-plus"></i> New Update</button>')+
   `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> <b>Missing update = NO WORK DONE for the day.</b> Updates due before 5:30 PM daily.</div>
   <div class="row noprint" style="margin-bottom:14px;align-items:flex-end;gap:12px">
    <div><label>View</label><div style="display:flex;gap:6px">${segBtn('daily','Daily')}${segBtn('weekly','Weekly')}${segBtn('monthly','Monthly')}</div></div>
    <div style="max-width:180px"><label>${st.period==='monthly'?'Month':'Date'}</label><input type="${st.period==='monthly'?'month':'date'}" value="${st.period==='monthly'?a.slice(0,7):a}" onchange="task(this.value+'${st.period==='monthly'?'-01':''}')"></div>
    <div style="max-width:220px"><label>Employee</label><select onchange="setTaskEmp(this.value)"><option value="">All employees</option>${(emps||[]).map(e=>`<option value="${e.id}" ${st.employee===e.id?'selected':''}>${esc(e.full_name)}</option>`).join('')}</select></div>
    <div style="max-width:220px"><label>Client</label><select onchange="setTaskClient(this.value)"><option value="">All clients</option><option value="internal" ${st.client==='internal'?'selected':''}>Internal (no client)</option>${(cls||[]).map(c=>`<option value="${c.id}" ${st.client===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
-  </div>`+
-  kpis([['<i class="fa-solid fa-circle" style="color:#C0392B"></i>','#FDECEA','No Update',cnt.nu,''],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Update Shared',cnt.sh,''],['<i class="fa-solid fa-list-check"></i>','#E8EEFB','Entries',list.length,'']])+`
-  <div class="card" style="overflow:auto"><table><tr><th>Date</th><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
-  ${list.map(r=>{const e=empName[r.employee_id]||{};const s=r.update_status||'No Update';
+  </div>
+  <div class="kpi" style="margin-bottom:8px">
+   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','#C0392B','No Update',cnt.nu,cnt.nu?'Needs attention':'All clear','#C0392B')}
+   ${stat('<i class="fa-solid fa-arrow-up"></i>','#E6F7EC','#1E8449','Update Shared',cnt.sh,'On track','#1E8449')}
+   ${stat('<i class="fa-solid fa-list-check"></i>','#E8EEFB','#2563A8','Total Entries',total,st.period==='daily'?'Today':'This '+st.period.replace('ly',''))}
+   ${donut}
+  </div>
+  <div class="tl-toolbar noprint">
+   <div class="tl-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="tlsearch" placeholder="Search updates, name, project…" value="${esc(st.search)}" oninput="setTaskSearch(this.value)"></div>
+   <button class="tl-icon-btn" onclick="exportTasks()"><i class="fa-solid fa-download"></i> Export</button>
+  </div>
+  <div class="card" style="overflow:auto;padding:0">
+  <table id="tasktbl"><tr><th>Date</th><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
+  ${pageRows.map(r=>{const e=empName[r.employee_id]||{};const s=r.update_status||'No Update';
     const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
-    return`<tr><td style="white-space:nowrap">${fmtDate(r.upd_date)}</td><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name||'')}<b>${esc(e.full_name)}</b></td><td><span class="badge ${cls2}">${s}</span></td>
-    <td>${esc(r.project)}</td><td>${esc(r.task_assigned)}</td><td>${esc(r.completed)}</td><td>${esc(r.not_working)}</td><td>${esc(r.blocker)}</td>
-    <td>${r.proof_link?`<a href="${esc(r.proof_link)}" target="_blank">link</a>`:''}</td><td>${esc(r.next_task)}</td><td>${esc(r.remarks)}</td>
-    <td class="noprint"><button class="btn sm sec" onclick='taskForm("${r.employee_id}","${r.upd_date}",${JSON.stringify(r.id?r:{}).replace(/'/g,"&#39;")})'>${r.id?'Edit':'Log'}</button></td></tr>`}).join('')}</table></div>`);
+    const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
+    const done=r.completed?`<i class="fa-solid fa-circle-check" style="color:#1E8449;font-size:17px" title="${esc(r.completed)}"></i>`:'<span class="tl-dash">—</span>';
+    const nw=s==='No Update'?'<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> No update</span>':(r.not_working?`<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc((r.not_working+'').slice(0,36))}</span>`:'<span class="tl-dash">—</span>');
+    const bl=r.blocker?`<span class="tl-chip-warn">${esc((r.blocker+'').slice(0,32))}</span>`:'<span class="tl-dash">—</span>';
+    const urls=(r.proof_link||'').split(/[\s,]+/).filter(Boolean);
+    const proof=urls.length?`<span style="display:inline-flex;align-items:center"><a class="tl-thumb" href="${esc(urls[0])}" target="_blank" title="${esc(urls[0])}"><i class="fa-regular fa-image"></i></a>${urls.length>1?`<span class="tl-plus">+${urls.length-1}</span>`:''}</span>`:'<span class="tl-dash">—</span>';
+    const nt=r.next_task?esc(r.next_task):(s==='No Update'?'<span class="tl-next-red">Please submit daily update</span>':'<span class="tl-dash">—</span>');
+    const rj=JSON.stringify(r.id?r:{}).replace(/'/g,"&#39;");
+    return`<tr><td style="white-space:nowrap"><div style="font-weight:600;color:#14284B">${fmtDate(r.upd_date)}</div>${tm?`<div class="tl-sub">${tm}</div>`:''}</td>
+    <td>${cell(e.emp_code)}</td>
+    <td><div style="display:flex;align-items:center;gap:10px">${av(e.full_name||'')}<div><div class="tl-name" style="white-space:nowrap">${esc(e.full_name)}</div>${e.designation?`<div class="tl-sub">${esc(e.designation)}</div>`:''}</div></div></td>
+    <td><span class="badge ${cls2}">${s}</span></td>
+    <td style="max-width:170px">${cell(r.project)}</td>
+    <td style="max-width:240px;font-size:12.5px">${cell(r.task_assigned)}</td>
+    <td style="text-align:center">${done}</td><td>${nw}</td><td>${bl}</td><td style="text-align:center">${proof}</td>
+    <td style="max-width:170px;font-size:12.5px">${nt}</td>
+    <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
+    <td class="noprint"><button class="tl-go" title="Open / edit" onclick='taskForm("${r.employee_id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button></td></tr>`}).join('')||'<tr><td colspan="13" style="text-align:center;color:#889;padding:30px">No updates match your filters.</td></tr>'}</table></div>
+  <div class="tl-foot noprint">
+   <span>Showing ${total?start+1:0} to ${Math.min(start+ps,total)} of ${total} entries</span>
+   <div class="tl-pages">${taskPageBtns(pages,st.page)}</div>
+   <select class="tl-ps" onchange="setTaskPageSize(this.value)">${[10,25,50].map(n=>`<option ${ps===n?'selected':''} value="${n}">${n} / page</option>`).join('')}</select>
+  </div>`);
+  if(TASK_STATE._focus){const si=$('tlsearch');if(si){si.focus();const v=si.value;si.value='';si.value=v;}TASK_STATE._focus=false;}
+}
+function exportTasks(){
+  const st=TASK_STATE;const rows=[...document.querySelectorAll('#tasktbl tr')];
+  const csv=rows.map(tr=>[...tr.children].slice(0,12).map(td=>`"${(td.innerText||'').replace(/"/g,'""').replace(/\s+/g,' ').trim()}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`task-log-${st.date}.csv`;a.click();
 }
 async function taskForm(eid,d,r){
   const{data:pjs}=await sb.from('projects').select('name,status').order('name');
