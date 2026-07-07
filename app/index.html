@@ -295,8 +295,8 @@ async function emp(){
   const now=new Date();const join=(data||[]).filter(e=>e.doj&&e.doj.slice(0,7)===`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`).length;
   M(pgh('Employees','Manage your team members and their information','<button class="btn" onclick="empForm()">＋ Add Employee</button>')+
   kpis([['<i class="fa-solid fa-users"></i>','#FFE9DC','Total Employees',(data||[]).length,'Active team members'],['<i class="fa-solid fa-building"></i>','#E8EEFB','Departments',depts,'Across the organization'],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Active Employees',act,'Currently active'],['<i class="fa-solid fa-calendar-check"></i>','#F3ECFB','This Month Joiners',join,'New additions']])+
-  `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Email</th><th>DOJ</th><th>PAN</th><th>UAN</th><th>Bank A/c</th><th>Monthly CTC</th><th>Annual CTC</th><th>Status</th><th></th></tr>
-  ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.email)}</td><td>${e.doj||''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
+  `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Type</th><th>Email</th><th>DOJ</th><th>PAN</th><th>UAN</th><th>Bank A/c</th><th>Monthly CTC</th><th>Annual CTC</th><th>Status</th><th></th></tr>
+  ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td>${esc(e.email)}</td><td>${e.doj||''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
   <td><span class="badge ${e.status==='Active'?'stP':'stA'}">${e.status}</span></td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick='empForm(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Edit</button>
   <button class="btn sm" title="Create login credentials" onclick="mkLogin('${e.id}','${esc(e.email||'')}')"><i class="fa-solid fa-key"></i> Login</button>
@@ -307,7 +307,8 @@ function empForm(e={}){
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>${e.id?'Edit':'Add'} Employee</h2>
   <div class="row"><div>${f('emp_code','Employee ID')}</div><div>${f('full_name','Full Name')}</div></div>
   <div class="row"><div><label>Department</label><select id="f_department">${['Engineering','Design','Marketing','HR','Finance','Operations','Product','Sales','Legal','Admin'].map(d=>`<option ${e.department===d?'selected':''}>${d}</option>`).join('')}</select></div>
-  <div>${f('designation','Designation')}</div></div>
+  <div>${f('designation','Designation')}</div>
+  <div><label>Employment Type</label><select id="f_employment_type">${['Full-time','Part-time','Contract','Intern','Consultant','Probation'].map(t=>`<option ${e.employment_type===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
   <div class="row"><div>${f('email','Email','email')}</div><div>${f('doj','Date of Joining','date')}</div></div>
   <div class="row"><div>${f('pan','PAN')}</div><div>${f('uan','UAN')}</div><div>${f('bank_account','Bank A/c No.')}</div></div>
   <div class="row"><div>${f('ctc','Monthly CTC (₹)','number')}</div><div><label>Annual CTC</label><span id="f_actc" style="font-weight:700;color:var(--navy)">${e.ctc?inr(e.ctc*12)+' / year':'—'}</span><br><span style="font-size:11px;color:#667">Payroll auto-fills: Basic 50% · HRA 20% · Other 30%</span></div></div>
@@ -317,7 +318,7 @@ function empForm(e={}){
   $('f_ctc').addEventListener('input',function(){$('f_actc').textContent=this.value?inr(this.value*12)+' / year':'—'});
 }
 async function saveEmp(id){
-  const o={};['emp_code','full_name','department','designation','email','doj','pan','uan','bank_account','ctc','status'].forEach(k=>o[k]=$('f_'+k)?($('f_'+k).value||null):undefined);
+  const o={};['emp_code','full_name','department','designation','employment_type','email','doj','pan','uan','bank_account','ctc','status'].forEach(k=>o[k]=$('f_'+k)?($('f_'+k).value||null):undefined);
   const q=id?sb.from('employees').update(o).eq('id',id):sb.from('employees').insert(o);
   const{error}=await q;if(error)return alert(error.message);
   document.querySelector('.modal').remove();emp();
