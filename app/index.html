@@ -195,10 +195,10 @@ const ADMIN_GROUPS=[
  ['People',[['emp','<i class="fa-solid fa-users"></i>','Employees'],['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['pay','<i class="fa-solid fa-money-bill-wave"></i>','Payroll'],['perf','<i class="fa-solid fa-star" style="color:#E8A200"></i>','Performance']]],
  ['Tracking',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log']]],
  ['Business',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
- ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
+ ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
- ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do']]]];
+ ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do'],['myfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
 function renderShell(){
   const groups=(ME.profile?.role==='admin'?ADMIN_GROUPS:EMP_GROUPS);
   const first=groups[0][1][0][0];
@@ -218,7 +218,7 @@ function renderShell(){
 }
 function go(v){VIEW=v;document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 function paginateTables(){
@@ -954,6 +954,44 @@ async function addTodo(){const v=$('td_new').value.trim();if(!v)return;
   error?alert(error.message):mynotes()}
 async function toggleTodo(id,done){const{error}=await sb.from('emp_notes').update({done,updated_at:new Date().toISOString()}).eq('id',id);error?alert(error.message):mynotes()}
 async function delNote(id){const{error}=await sb.from('emp_notes').delete().eq('id',id);error?alert(error.message):mynotes()}
+const FB_CATS=['Product','Requirement','Bug','Improvement','Other'];
+const FB_STATUS=['New','Reviewed','Planned','Done'];
+const fbBadge=s=>({New:'stL',Reviewed:'stW',Planned:'stOL',Done:'stP'}[s]||'stL');
+// ---- Employee: submit & track feedback ----
+async function myfb(){
+  if(!ME.employee)return mydash();
+  const{data,error}=await sb.from('feedback').select('*').eq('employee_id',ME.employee.id).order('created_at',{ascending:false});
+  if(error)return M(`<h2>Feedback</h2><div class="warnbar">${esc(error.message)}</div>`);
+  M(`<h2>Feedback</h2>
+  <div class="warnbar"><i class="fa-solid fa-lightbulb" style="color:#E8A200"></i> Tell us what's working, what's missing, or what you'd like added to the product.</div>
+  <div class="card"><div class="row">
+    <div style="max-width:200px"><label>Category</label><select id="fb_cat">${FB_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
+    <label>Your feedback / requirement</label><textarea id="fb_msg" rows="3" placeholder="Describe your feedback or requirement…"></textarea>
+    <div style="margin-top:10px"><button class="btn" onclick="sendFb()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button></div></div>
+  <div class="card"><table><tr><th>Date</th><th>Category</th><th>Feedback</th><th>Status</th><th>Admin Reply</th></tr>
+  ${(data||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td><td>${esc(r.category)}</td>
+  <td style="max-width:320px">${esc(r.message)}</td><td><span class="badge ${fbBadge(r.status)}">${esc(r.status)}</span></td>
+  <td style="max-width:260px;font-size:12px;color:#445">${esc(r.admin_reply||'—')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:#889">No feedback submitted yet.</td></tr>'}</table></div>`);
+}
+async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return alert('Please write your feedback.');
+  const{error}=await sb.from('feedback').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,category:$('fb_cat').value,message:msg});
+  error?alert(error.message):myfb()}
+// ---- Admin: review feedback ----
+async function fb(){
+  const{data,error}=await sb.from('feedback').select('*,employees(full_name,emp_code)').order('created_at',{ascending:false});
+  if(error)return M(`<h2>Feedback</h2><div class="warnbar">${esc(error.message)}</div>`);
+  const rows=data||[];const open=rows.filter(r=>r.status!=='Done').length;
+  M(pgh('Feedback','Product feedback and requirements from your team.')+
+  kpis([['<i class="fa-solid fa-comment-dots"></i>','#E8EEFB','Total',rows.length],['<i class="fa-solid fa-inbox"></i>','#FFE9DC','Open',open],['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Done',rows.length-open]])+
+  `<div class="card"><table><tr><th>Date</th><th>Employee</th><th>Category</th><th>Feedback</th><th>Status</th><th>Reply</th></tr>
+  ${rows.map(r=>`<tr data-fid="${r.id}"><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td>
+  <td style="white-space:nowrap">${esc(r.employees?.full_name||'—')}</td><td>${esc(r.category)}</td>
+  <td style="max-width:320px">${esc(r.message)}</td>
+  <td><select onchange="setFbStatus('${r.id}',this.value)" style="width:120px">${FB_STATUS.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+  <td style="min-width:200px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Reply to employee…" onblur="setFbReply('${r.id}',this.value)">${esc(r.admin_reply||'')}</textarea></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No feedback yet.</td></tr>'}</table></div>`);
+}
+async function setFbStatus(id,v){const{error}=await sb.from('feedback').update({status:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message)}
+async function setFbReply(id,v){const{error}=await sb.from('feedback').update({admin_reply:v||null,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message)}
 async function myslip(){
   if(!ME.employee)return mydash();
   const{data}=await sb.from('payroll').select('*').eq('employee_id',ME.employee.id).order('pay_year',{ascending:false}).order('pay_month',{ascending:false});
