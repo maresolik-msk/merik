@@ -607,6 +607,31 @@ async function addHol(){const{error}=await sb.from('holidays').insert({holiday_d
 async function delHol(id){await sb.from('holidays').delete().eq('id',id);hol()}
 
 /* ---------- TASK LOG (admin) ---------- */
+/* ---- Numbered task list (per daily update) ---- */
+const TASK_ITEM_STATUS=['Done','In Progress','Blocked','Pending'];
+const TASK_ITEM_CLS={Done:'stP','In Progress':'stL',Blocked:'stA',Pending:'stH'};
+// Normalise a task_updates row into a list of task items (falls back to legacy single-field rows).
+function taskItems(r){
+  if(Array.isArray(r.tasks)&&r.tasks.length)return r.tasks;
+  if(r.task_assigned||r.completed||r.blocker||r.next_task||r.proof_link)
+    return [{task:r.task_assigned||'(update)',status:r.completed?'Done':'',completed:r.completed||'',blocker:r.blocker||'',proof:r.proof_link||'',next:r.next_task||''}];
+  return [];
+}
+function renderTaskCell(r){
+  const s=r.update_status||'No Update';const items=taskItems(r);
+  if(!items.length)return s==='No Update'?'<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> No update</span>':'<span class="tl-dash">—</span>';
+  return `<div style="min-width:230px">`+items.map((t,i)=>`<div style="padding:4px 0${i?';border-top:1px solid var(--line)':''}">
+    <b style="color:var(--navy)">${i+1}.</b> ${esc(t.task)} ${t.status?`<span class="badge ${TASK_ITEM_CLS[t.status]||'stL'}" style="padding:2px 8px;font-size:10px">${esc(t.status)}</span>`:''}
+    ${t.completed?`<div class="tl-sub"><i class="fa-solid fa-circle-check" style="color:#1E8449"></i> ${esc(t.completed)}</div>`:''}
+    ${t.blocker?`<div class="tl-sub"><i class="fa-solid fa-triangle-exclamation" style="color:#B45309"></i> ${esc(t.blocker)}</div>`:''}
+    ${t.next?`<div class="tl-sub">→ ${esc(t.next)}</div>`:''}
+  </div>`).join('')+`</div>`;
+}
+function proofCell(r){
+  const urls=[];taskItems(r).forEach(t=>(t.proof||'').split(/[\s,]+/).filter(Boolean).forEach(u=>urls.push(u)));
+  if(!urls.length)return '<span class="tl-dash">—</span>';
+  return `<span style="display:inline-flex;align-items:center"><a class="tl-thumb" href="${esc(urls[0])}" target="_blank" title="${esc(urls[0])}"><i class="fa-regular fa-image"></i></a>${urls.length>1?`<span class="tl-plus">+${urls.length-1}</span>`:''}</span>`;
+}
 let TASK_STATE={period:'daily',date:today(),client:'',employee:'',search:'',page:0,pageSize:10,_focus:false};
 const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
 function setTaskPeriod(p){TASK_STATE.period=p;TASK_STATE.page=0;task()}
@@ -682,27 +707,20 @@ async function task(d){
    <button class="tl-icon-btn" onclick="exportTasks()"><i class="fa-solid fa-download"></i> Export</button>
   </div>
   <div class="card" style="overflow:auto;padding:0">
-  <table id="tasktbl"><tr><th>Date</th><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
+  <table id="tasktbl"><tr><th>Date</th><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
   ${pageRows.map(r=>{const e=empName[r.employee_id]||{};const s=r.update_status||'No Update';
     const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
     const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
-    const done=r.completed?`<i class="fa-solid fa-circle-check" style="color:#1E8449;font-size:17px" title="${esc(r.completed)}"></i>`:'<span class="tl-dash">—</span>';
-    const nw=s==='No Update'?'<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> No update</span>':(r.not_working?`<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc((r.not_working+'').slice(0,36))}</span>`:'<span class="tl-dash">—</span>');
-    const bl=r.blocker?`<span class="tl-chip-warn">${esc((r.blocker+'').slice(0,32))}</span>`:'<span class="tl-dash">—</span>';
-    const urls=(r.proof_link||'').split(/[\s,]+/).filter(Boolean);
-    const proof=urls.length?`<span style="display:inline-flex;align-items:center"><a class="tl-thumb" href="${esc(urls[0])}" target="_blank" title="${esc(urls[0])}"><i class="fa-regular fa-image"></i></a>${urls.length>1?`<span class="tl-plus">+${urls.length-1}</span>`:''}</span>`:'<span class="tl-dash">—</span>';
-    const nt=r.next_task?esc(r.next_task):(s==='No Update'?'<span class="tl-next-red">Please submit daily update</span>':'<span class="tl-dash">—</span>');
     const rj=JSON.stringify(r.id?r:{}).replace(/'/g,"&#39;");
     return`<tr><td style="white-space:nowrap"><div style="font-weight:600;color:#14284B">${fmtDate(r.upd_date)}</div>${tm?`<div class="tl-sub">${tm}</div>`:''}</td>
     <td>${cell(e.emp_code)}</td>
     <td><div style="display:flex;align-items:center;gap:10px">${av(e.full_name||'')}<div><div class="tl-name" style="white-space:nowrap">${esc(e.full_name)}</div>${e.designation?`<div class="tl-sub">${esc(e.designation)}</div>`:''}</div></div></td>
     <td><span class="badge ${cls2}">${s}</span></td>
-    <td style="max-width:170px">${cell(r.project)}</td>
-    <td style="max-width:240px;font-size:12.5px">${cell(r.task_assigned)}</td>
-    <td style="text-align:center">${done}</td><td>${nw}</td><td>${bl}</td><td style="text-align:center">${proof}</td>
-    <td style="max-width:170px;font-size:12.5px">${nt}</td>
+    <td style="max-width:150px">${cell(r.project)}</td>
+    <td style="font-size:12.5px">${renderTaskCell(r)}</td>
+    <td style="text-align:center">${proofCell(r)}</td>
     <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
-    <td class="noprint"><button class="tl-go" title="Open / edit" onclick='taskForm("${r.employee_id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button></td></tr>`}).join('')||'<tr><td colspan="13" style="text-align:center;color:#889;padding:30px">No updates match your filters.</td></tr>'}</table></div>
+    <td class="noprint"><button class="tl-go" title="Open / edit" onclick='taskForm("${r.employee_id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button></td></tr>`}).join('')||'<tr><td colspan="9" style="text-align:center;color:#889;padding:30px">No updates match your filters.</td></tr>'}</table></div>
   <div class="tl-foot noprint">
    <span>Showing ${total?start+1:0} to ${Math.min(start+ps,total)} of ${total} entries</span>
    <div class="tl-pages">${taskPageBtns(pages,st.page)}</div>
@@ -720,19 +738,49 @@ async function taskForm(eid,d,r){
   const sel=new Set((r.project||'').split(',').map(s=>s.trim()).filter(Boolean));
   const chips=(pjs||[]).filter(x=>x.status==='Active'||sel.has(x.name)).map(x=>
     `<span class="pchip" data-v="${esc(x.name)}" onclick="this.classList.toggle('on');syncPrj()" style="cursor:pointer;display:inline-block;margin:3px;padding:4px 10px;border-radius:12px;border:1px solid #c6d0e0;font-size:12px" class2="">${esc(x.name)}</span>`).join('');
-  const f=(k,l)=>`<label>${l}</label><textarea id="t_${k}" rows="2">${esc(r[k]||'')}</textarea>`;
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Task Update — ${d}</h2>
-  <label>Update Status</label><select id="t_update_status">${['Update Shared','No Update','WFH','Leave','Sick Leave','Holiday'].map(s=>`<option ${r.update_status===s?'selected':''}>${s}</option>`).join('')}</select>
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:660px">
+  <h2>Daily Update — ${fmtDate(d)}</h2>
+  <label>Day Status</label><select id="t_update_status">${['Update Shared','No Update','WFH','Leave','Sick Leave','Holiday'].map(s=>`<option ${r.update_status===s?'selected':''}>${s}</option>`).join('')}</select>
   <label>Projects (click to select — multiple allowed)</label><div id="pchips">${chips||'<span style="font-size:12px;color:#889">No projects yet — admin can add them in the Projects page.</span>'}</div>
   <input id="t_project" value="${esc(r.project||'')}" placeholder="Selected projects (you can also type here)" style="margin-top:4px">
-  ${f('task_assigned','Task Assigned')}${f('completed','What is COMPLETED (with proof)')}${f('not_working','What is NOT working')}${f('blocker','Exact Blocker')}
-  <label>Proof Link / Screenshot URL</label><input id="t_proof_link" value="${esc(r.proof_link||'')}">
-  ${f('next_task','Next Task (clear deliverable)')}${f('remarks','Remarks')}
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><label style="margin:0">Tasks done</label><button class="btn sm" onclick="addTaskRow()"><i class="fa-solid fa-plus"></i> Add task</button></div>
+  <div id="tasklist"></div>
+  <label>Remarks (optional)</label><textarea id="t_remarks" rows="2">${esc(r.remarks||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveTask('${eid}','${d}')">Save</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
   document.querySelectorAll('#pchips .pchip').forEach(ch=>{if(sel.has(ch.dataset.v)){ch.classList.add('on');ch.style.background='#1B2A4A';ch.style.color='#fff'}});
+  // Seed the task rows from the saved list, or from a legacy single-field update, or one empty row.
+  let seed=Array.isArray(r.tasks)&&r.tasks.length?r.tasks:null;
+  if(!seed&&(r.task_assigned||r.completed||r.blocker||r.next_task||r.proof_link))
+    seed=[{task:r.task_assigned||'',status:r.completed?'Done':'In Progress',completed:r.completed||'',blocker:r.blocker||'',proof:r.proof_link||'',next:r.next_task||''}];
+  (seed||[{}]).forEach(addTaskRow);
 }
+function addTaskRow(t){t=t||{};
+  const list=$('tasklist');if(!list)return;
+  const opt=TASK_ITEM_STATUS.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('');
+  const row=document.createElement('div');row.className='taskrow';
+  row.style.cssText='border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--bg)';
+  row.innerHTML=`
+   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b class="tasknum" style="color:var(--navy)"></b>
+   <button class="btn sm warn" title="Remove" onclick="this.closest('.taskrow').remove();renumberTasks()"><i class="fa-solid fa-xmark"></i></button></div>
+   <div class="row"><div style="flex:2"><label>Task</label><input class="tk-task" value="${esc(t.task||'')}" placeholder="What did you do?"></div>
+   <div><label>Status</label><select class="tk-status">${opt}</select></div></div>
+   <div class="row"><div><label>Completed / proof note</label><input class="tk-completed" value="${esc(t.completed||'')}"></div>
+   <div><label>Proof link</label><input class="tk-proof" value="${esc(t.proof||'')}"></div></div>
+   <div class="row"><div><label>Blocker (if any)</label><input class="tk-blocker" value="${esc(t.blocker||'')}"></div>
+   <div><label>Next step</label><input class="tk-next" value="${esc(t.next||'')}"></div></div>`;
+  list.appendChild(row);renumberTasks();
+}
+function renumberTasks(){document.querySelectorAll('#tasklist .taskrow .tasknum').forEach((el,i)=>el.textContent='Task '+(i+1));}
+function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow')].map(row=>({
+  task:row.querySelector('.tk-task').value.trim(),
+  status:row.querySelector('.tk-status').value,
+  completed:row.querySelector('.tk-completed').value.trim()||null,
+  proof:row.querySelector('.tk-proof').value.trim()||null,
+  blocker:row.querySelector('.tk-blocker').value.trim()||null,
+  next:row.querySelector('.tk-next').value.trim()||null,
+})).filter(t=>t.task);}
 function syncPrj(){
   const vals=[];document.querySelectorAll('#pchips .pchip').forEach(ch=>{
     const on=ch.classList.contains('on');
@@ -741,8 +789,19 @@ function syncPrj(){
   $('t_project').value=vals.join(', ');
 }
 async function saveTask(eid,d){
-  const o={employee_id:eid,upd_date:d};
-  ['update_status','project','task_assigned','completed','not_working','blocker','proof_link','next_task','remarks'].forEach(k=>o[k]=$('t_'+k).value||null);
+  const tasks=collectTasks();
+  const o={employee_id:eid,upd_date:d,
+    update_status:$('t_update_status').value||null,
+    project:$('t_project').value||null,
+    remarks:$('t_remarks').value||null,
+    tasks:tasks.length?tasks:null,
+    // Legacy mirror so older readers / exports still show content.
+    task_assigned:tasks.map((t,i)=>`${i+1}. ${t.task}${t.status?' ('+t.status+')':''}`).join('\n')||null,
+    completed:tasks.filter(t=>t.completed).map(t=>t.completed).join('; ')||null,
+    blocker:tasks.filter(t=>t.blocker).map(t=>t.blocker).join('; ')||null,
+    proof_link:tasks.map(t=>t.proof).filter(Boolean).join(' ')||null,
+    next_task:tasks.filter(t=>t.next).map(t=>t.next).join('; ')||null,
+    not_working:null};
   const{error}=await sb.from('task_updates').upsert(o,{onConflict:'employee_id,upd_date'});
   if(error)return alert(error.message);document.querySelector('.modal').remove();
   ME.profile.role==='admin'?task(d):myupd();
@@ -1271,26 +1330,19 @@ async function myupd(dstr){
    <div class="tl-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="mysearch" placeholder="Search my updates…" value="${esc(st.search)}" oninput="setMySearch(this.value)"></div>
   </div>
   <div class="card" style="overflow:auto;padding:0">
-  <table id="tasktbl"><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Task Assigned</th><th>Completed</th><th>Not Working</th><th>Blocker</th><th>Proof</th><th>Next Task</th><th>Remarks</th><th></th></tr>
+  <table id="tasktbl"><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
   ${pageRows.map(r=>{const s=r.update_status||'No Update';
     const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
     const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
-    const done=r.completed?`<i class="fa-solid fa-circle-check" style="color:#1E8449;font-size:17px" title="${esc(r.completed)}"></i>`:'<span class="tl-dash">—</span>';
-    const nw=s==='No Update'?'<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> No update</span>':(r.not_working?`<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc((r.not_working+'').slice(0,36))}</span>`:'<span class="tl-dash">—</span>');
-    const bl=r.blocker?`<span class="tl-chip-warn">${esc((r.blocker+'').slice(0,32))}</span>`:'<span class="tl-dash">—</span>';
-    const urls=(r.proof_link||'').split(/[\s,]+/).filter(Boolean);
-    const proof=urls.length?`<span style="display:inline-flex;align-items:center"><a class="tl-thumb" href="${esc(urls[0])}" target="_blank" title="${esc(urls[0])}"><i class="fa-regular fa-image"></i></a>${urls.length>1?`<span class="tl-plus">+${urls.length-1}</span>`:''}</span>`:'<span class="tl-dash">—</span>';
-    const nt=r.next_task?esc(r.next_task):(s==='No Update'?'<span class="tl-next-red">Please submit daily update</span>':'<span class="tl-dash">—</span>');
     const rj=JSON.stringify(r).replace(/'/g,"&#39;");
     const action=r.upd_date===d?`<button class="tl-go" title="Edit today" onclick='taskForm("${ME.employee.id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button>`:'<i class="fa-solid fa-lock tl-dash" title="Locked — past day"></i>';
     return`<tr><td style="white-space:nowrap"><div style="font-weight:600;color:#14284B">${fmtDate(r.upd_date)}</div>${tm?`<div class="tl-sub">${tm}</div>`:''}</td>
     <td><span class="badge ${cls2}">${s}</span></td>
-    <td style="max-width:170px">${cell(r.project)}</td>
-    <td style="max-width:240px;font-size:12.5px">${cell(r.task_assigned)}</td>
-    <td style="text-align:center">${done}</td><td>${nw}</td><td>${bl}</td><td style="text-align:center">${proof}</td>
-    <td style="max-width:170px;font-size:12.5px">${nt}</td>
+    <td style="max-width:150px">${cell(r.project)}</td>
+    <td style="font-size:12.5px">${renderTaskCell(r)}</td>
+    <td style="text-align:center">${proofCell(r)}</td>
     <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
-    <td class="noprint">${action}</td></tr>`}).join('')||'<tr><td colspan="11" style="text-align:center;color:#889;padding:30px">No updates in this period.</td></tr>'}</table></div>
+    <td class="noprint">${action}</td></tr>`}).join('')||'<tr><td colspan="7" style="text-align:center;color:#889;padding:30px">No updates in this period.</td></tr>'}</table></div>
   <div class="tl-foot noprint">
    <span>Showing ${total?start+1:0} to ${Math.min(start+ps,total)} of ${total} entries</span>
    <div class="tl-pages">${pageBtnsFn(pages,st.page,'setMyPage')}</div>
