@@ -256,7 +256,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2});
 const today=()=>new Date().toISOString().slice(0,10);
-const fmtDate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
+const fmtDate=d=>{if(!d)return '—';const p=String(d).slice(0,10).split('-');return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:d;};
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function words(n){n=Math.round(n);if(n===0)return'Zero';const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
 const two=x=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'');
@@ -479,7 +479,7 @@ async function emp(){
   M(pgh('Employees','Manage your team members and their information','<button class="btn" onclick="empForm()">＋ Add Employee</button>')+
   kpis([['<i class="fa-solid fa-users"></i>','#FFE9DC','Total Employees',(data||[]).length,'Active team members'],['<i class="fa-solid fa-building"></i>','#E8EEFB','Departments',depts,'Across the organization'],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Active Employees',act,'Currently active'],['<i class="fa-solid fa-calendar-check"></i>','#F3ECFB','This Month Joiners',join,'New additions']])+
   `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Type</th><th>Email</th><th>DOJ</th><th>PAN</th><th>UAN</th><th>Bank A/c</th><th>Monthly CTC</th><th>Annual CTC</th><th>Status</th><th></th></tr>
-  ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td>${esc(e.email)}</td><td>${e.doj||''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
+  ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td>${esc(e.email)}</td><td>${e.doj?fmtDate(e.doj):''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
   <td><span class="badge ${e.status==='Active'?'stP':'stA'}">${e.status}</span></td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick='empForm(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Edit</button>
   <button class="btn sm" title="Create login credentials" onclick="mkLogin('${e.id}','${esc(e.email||'')}')"><i class="fa-solid fa-key"></i> Login</button>
@@ -599,7 +599,7 @@ async function hol(){
   <div><label>Name</label><input id="hn"></div><div><label>Type</label><select id="ht">${['National Holiday','State Holiday','Company Holiday','Optional Holiday'].map(t=>`<option>${t}</option>`).join('')}</select></div>
   <div><button class="btn" onclick="addHol()">+ Add</button></div></div></div>
   <div class="card"><table><tr><th>Date</th><th>Name</th><th>Type</th><th></th></tr>
-  ${(data||[]).map(h=>`<tr><td>${h.holiday_date}</td><td>${esc(h.name)}</td><td>${esc(h.type)}</td>
+  ${(data||[]).map(h=>`<tr><td>${fmtDate(h.holiday_date)}</td><td>${esc(h.name)}</td><td>${esc(h.type)}</td>
   <td><button class="btn sm warn" onclick="delHol('${h.id}')">Del</button></td></tr>`).join('')}</table></div>`);
 }
 async function addHol(){const{error}=await sb.from('holidays').insert({holiday_date:$('hd').value,name:$('hn').value,type:$('ht').value});
@@ -883,7 +883,7 @@ async function slip(eid,y,m){
   const back=ME.profile.role==='admin'?`pay('${y}-${String(m).padStart(2,'0')}')`:'myslip()';
   const n0=v=>Number(v||0).toLocaleString('en-IN');
   const n2=v=>Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:2});
-  const doj=e.doj?new Date(e.doj+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}).replace(/ /g,'-'):'—';
+  const doj=fmtDate(e.doj);
   const DK='#4a4a4a',GY='#8a8a8a',OR='#F26522',TAN='#F5C48E';
   const th=`background:${DK};color:#fff;font-weight:700;border:1px solid #999;text-align:center`;
   const gh=`background:${GY};color:#fff;font-weight:700;border:1px solid #999`;
@@ -1007,7 +1007,7 @@ async function docList(t){
     :[['<i class="fa-solid fa-file-invoice"></i>','#E8EEFB','Total Invoices',(data||[]).length],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Paid',sm.paid,inr(sm.paidv)],['<i class="fa-solid fa-circle" style="color:#E8682A"></i>','#FFF2E2','Partially Paid',sm.part,inr(sm.partv)],['<i class="fa-solid fa-circle" style="color:#C0392B"></i>','#FDECEA','Unpaid',sm.unp,inr(sm.unpv)]])+
   `<div class="card"><table><tr><th>No.</th><th>Client</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr>
   ${(data||[]).map(d=>`<tr><td><b>${esc(isQ?d.quote_no:d.invoice_no)}</b></td><td style="white-space:nowrap">${av(d.clients?.name)}${esc(d.clients?.name)}</td>
-  <td>${isQ?d.quote_date:d.invoice_date}</td><td>${inr(d.total)}</td>
+  <td>${fmtDate(isQ?d.quote_date:d.invoice_date)}</td><td>${inr(d.total)}</td>
   <td><span class="badge ${['Paid','Accepted'].includes(d.status)?'stP':['Unpaid','Rejected','Overdue'].includes(d.status)?'stA':'stL'}">${d.status}</span></td>
   <td><button class="btn sm sec" onclick='docForm("${t}",${JSON.stringify(d).replace(/'/g,"&#39;")})'>Edit</button>
   <button class="btn sm" onclick='docPrint("${t}","${d.id}")'>View/Print</button>
@@ -1092,7 +1092,7 @@ async function docPrint(t,id){
   <td style="border:none;vertical-align:top;text-align:right;font-size:13px">
     <table style="border:none;margin-left:auto">
     <tr><td style="border:none;font-weight:700;text-align:right">${isQ?'QUOTE':'TAX INVOICE'} NO:</td><td style="border:none;text-align:right;padding-left:14px">${esc(isQ?d.quote_no:d.invoice_no)}</td></tr>
-    <tr><td style="border:none;font-weight:700;text-align:right">${isQ?'QUOTE':'TAX INVOICE'} DATE</td><td style="border:none;text-align:right;padding-left:14px">${(isQ?d.quote_date:d.invoice_date)||''}</td></tr>
+    <tr><td style="border:none;font-weight:700;text-align:right">${isQ?'QUOTE':'TAX INVOICE'} DATE</td><td style="border:none;text-align:right;padding-left:14px">${fmtDate(isQ?d.quote_date:d.invoice_date)}</td></tr>
     <tr><td style="border:none;font-weight:700;text-align:right">${isQ?'VALID UNTIL':'DUE DATE'}</td><td style="border:none;text-align:right;padding-left:14px">${(isQ?d.valid_until:d.due_date)||''}</td></tr>
     </table></td></tr></table>
   <table style="margin-top:18px;border-collapse:collapse;width:100%"><tr>
@@ -1291,7 +1291,7 @@ async function myatt(ym){
   const{data}=await sb.from('attendance').select('*').eq('employee_id',ME.employee.id).gte('att_date',`${ym}-01`).lte('att_date',`${ym}-${dim}`).order('att_date');
   M(`<h2>My Attendance</h2><div class="row" style="margin-bottom:10px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="myatt(this.value)"></div></div>
   <div class="card"><table><tr><th>Date</th><th>Status</th><th>Entry</th><th>Exit</th><th>Remarks</th></tr>
-  ${(data||[]).map(r=>`<tr><td>${r.att_date}</td><td><span class="badge st${r.status}">${r.status||''}</span></td>
+  ${(data||[]).map(r=>`<tr><td>${fmtDate(r.att_date)}</td><td><span class="badge st${r.status}">${r.status||''}</span></td>
   <td>${r.entry_time||''}</td><td>${r.exit_time||''}</td><td>${esc(r.remarks)}</td></tr>`).join('')}</table></div>`);
 }
 async function mywfh(){
