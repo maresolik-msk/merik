@@ -1171,11 +1171,25 @@ function getPos(){return new Promise(res=>{
       {enableHighAccuracy:false,timeout:15000,maximumAge:60000}),
     {enableHighAccuracy:true,timeout:12000});
 })}
-async function geoName(lat,lng){try{
-  const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16`,{headers:{'Accept':'application/json'}});
-  const j=await r.json();const a=j.address||{};
-  return [a.suburb||a.neighbourhood||a.village,a.city||a.town||a.county,a.state].filter(Boolean).slice(0,2).join(', ')||j.display_name?.split(',').slice(0,2).join(', ')||'';
-}catch(e){return ''}}
+function _fetchT(url,ms){return Promise.race([fetch(url,{headers:{'Accept':'application/json'}}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);}
+// Reverse-geocode to a readable place name. BigDataCloud is CORS-friendly and keyless
+// (Nominatim often blocks browser calls); we fall back to it, then to raw coordinates.
+async function geoName(lat,lng){
+  try{
+    const r=await _fetchT(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`,7000);
+    const j=await r.json();
+    const parts=[j.locality||j.city,j.principalSubdivision,j.countryName].filter(Boolean);
+    if(parts.length)return parts.slice(0,2).join(', ');
+  }catch(e){}
+  try{
+    const r=await _fetchT(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16`,7000);
+    const j=await r.json();const a=j.address||{};
+    const n=[a.suburb||a.neighbourhood||a.village,a.city||a.town||a.county,a.state].filter(Boolean).slice(0,2).join(', ')||(j.display_name?j.display_name.split(',').slice(0,2).join(', '):'');
+    if(n)return n;
+  }catch(e){}
+  // Last resort: store the coordinates so the check-in always has a location value.
+  return `${(+lat).toFixed(5)}, ${(+lng).toFixed(5)}`;
+}
 async function checkIn(ev){
   const btn=ev&&ev.target?ev.target.closest('button'):null;
   if(btn){btn.disabled=true;btn.style.opacity=.6;}
