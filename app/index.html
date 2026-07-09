@@ -395,9 +395,18 @@ const SUPER_GROUPS=[
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
+// Tenant-enablable admin modules (map a nav group to a module key).
+const MODULES=[['employee','Employee Management'],['team','Team Management'],['task','Task Management'],['client','Client Management']];
+const GROUP_MODULE={'Employee Management':'employee','Team Management':'team','Task Management':'task','Client Management':'client'};
+let ALLOWED_VIEWS=null;
 function renderShell(){
   const role=ME.profile?.role;
-  const groups=(role==='superadmin'?SUPER_GROUPS:role==='admin'?ADMIN_GROUPS:EMP_GROUPS);
+  let groups=(role==='superadmin'?SUPER_GROUPS:role==='admin'?ADMIN_GROUPS:EMP_GROUPS);
+  // Hide admin modules the Merik super admin hasn't enabled for this tenant (null = all enabled).
+  if(role==='admin'){const en=Array.isArray(ME.org?.modules)?ME.org.modules:null;
+    if(en)groups=groups.filter(([label])=>!GROUP_MODULE[label]||en.includes(GROUP_MODULE[label]));
+    ALLOWED_VIEWS=new Set();groups.forEach(([,items])=>items.forEach(([k])=>ALLOWED_VIEWS.add(k)));
+  } else ALLOWED_VIEWS=null;
   const first=groups[0][1][0][0];
   const nm=ME.employee?.full_name||ME.user.email;
   const orgnm=esc(ME.org?.name||"Workspace");const logo=ME.org?.logo||LOGO;
@@ -422,7 +431,7 @@ function renderShell(){
 }
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
-function go(v){VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
+function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
   ({dash,emp,att,mtr,hol,fb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
@@ -1851,13 +1860,17 @@ function suEditTenant(o){
   <div><label>Status</label><select id="ten_status">${['Active','Suspended'].map(s=>`<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div>
   <label>GSTIN</label><input id="ten_gstin" value="${esc(o.gstin||'')}">
   <label>Address</label><textarea id="ten_address" rows="2">${esc(o.address||'')}</textarea>
+  <label>Enabled modules <span style="color:#889;font-weight:400">— what this tenant can use</span></label>
+  <div id="ten_modules" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">${MODULES.map(([k,l])=>{const on=!Array.isArray(o.modules)||o.modules.includes(k);return `<label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;margin:0"><input type="checkbox" data-mk="${k}" ${on?'checked':''} style="width:16px;height:16px;margin:0"> ${l}</label>`;}).join('')}</div>
+  <p style="font-size:11.5px;color:#889;margin-top:4px">Dashboard &amp; Settings are always available. Unchecking a module hides it from this tenant's admins.</p>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveTenant('${o.id}')">Save</button>
   <button class="btn warn" onclick="suDelTenant('${o.id}','${esc(o.name)}')">Delete tenant</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
 }
 async function suSaveTenant(id){
-  const o={name:$('ten_name').value.trim(),plan:$('ten_plan').value.trim()||null,status:$('ten_status').value,gstin:$('ten_gstin').value.trim()||null,address:$('ten_address').value.trim()||null};
+  const modules=[...document.querySelectorAll('#ten_modules input:checked')].map(c=>c.dataset.mk);
+  const o={name:$('ten_name').value.trim(),plan:$('ten_plan').value.trim()||null,status:$('ten_status').value,gstin:$('ten_gstin').value.trim()||null,address:$('ten_address').value.trim()||null,modules};
   const{error}=await sb.from('orgs').update(o).eq('id',id);if(error)return alert(error.message);
   document.querySelector('.modal').remove();sutenants();
 }
