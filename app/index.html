@@ -155,6 +155,8 @@ tbody tr:hover td{background:#F1F6FD}
 .tl-go{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:#fff;color:#2563A8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none;padding:0}
 .tl-go:hover{background:#EEF4FF;border-color:#c7d6ef}
 .tl-dash{color:#c2ccda}
+.tl-time{display:inline-flex;align-items:center;gap:4px;background:#EEF4FF;color:#2563A8;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px;white-space:nowrap}
+[data-theme="dark"] .tl-time{background:#1e2c44;color:#8fb4e8}
 .tl-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 4px 2px;font-size:13px;color:#6b7a90}
 .tl-pages{display:flex;align-items:center;gap:6px}
 .pg-btn{min-width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:600;color:#41506a;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;box-shadow:none;padding:0}
@@ -354,7 +356,7 @@ async function logout(){await sb.auth.signOut();ME=null;renderLogin()}
 const ADMIN_GROUPS=[
  [null,[['dash','<i class="fa-solid fa-gauge-high"></i>','Dashboard']]],
  ['People',[['emp','<i class="fa-solid fa-users"></i>','Employees'],['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['pay','<i class="fa-solid fa-money-bill-wave"></i>','Payroll'],['perf','<i class="fa-solid fa-star" style="color:#E8A200"></i>','Performance']]],
- ['Tracking',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log']]],
+ ['Tracking',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights']]],
  ['Business',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
@@ -393,7 +395,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -411,7 +413,7 @@ function pageBtnsFn(pages,cur,fn){const b=(i,l,dis,on)=>`<button class="pg-btn $
   return out+b(cur+1,'›',cur>=pages-1);}
 function paginateTables(){
   document.querySelectorAll('#main table').forEach(tb=>{
-    if(tb.classList.contains('grid-att')||tb.id==='ditems'||tb.id==='tasktbl')return;
+    if(tb.classList.contains('grid-att')||tb.classList.contains('nopg')||tb.id==='ditems'||tb.id==='tasktbl')return;
     if(tb.closest('.payslip')||tb.closest('#docsheet')||tb.closest('.modal'))return;
     const rows=[...tb.rows].filter(r=>r.cells[0]&&r.cells[0].tagName==='TD');
     if(rows.length<FILTER_MIN)return;
@@ -621,7 +623,7 @@ function renderTaskCell(r){
   const s=r.update_status||'No Update';const items=taskItems(r);
   if(!items.length)return s==='No Update'?'<span class="tl-chip-warn"><i class="fa-solid fa-triangle-exclamation"></i> No update</span>':'<span class="tl-dash">—</span>';
   return `<div style="min-width:230px">`+items.map((t,i)=>`<div style="padding:4px 0${i?';border-top:1px solid var(--line)':''}">
-    <b style="color:var(--navy)">${i+1}.</b> ${esc(t.task)} ${t.status?`<span class="badge ${TASK_ITEM_CLS[t.status]||'stL'}" style="padding:2px 8px;font-size:10px">${esc(t.status)}</span>`:''}
+    <b style="color:var(--navy)">${i+1}.</b> ${esc(t.task)} ${t.status?`<span class="badge ${TASK_ITEM_CLS[t.status]||'stL'}" style="padding:2px 8px;font-size:10px">${esc(t.status)}</span>`:''}${(t.act_min||t.est_min)?`<span class="tl-time" title="Actual / Estimated minutes"><i class="fa-regular fa-clock"></i> ${t.act_min?fmtMin(t.act_min):'—'}${t.est_min?` / est ${fmtMin(t.est_min)}`:''}</span>`:''}
     ${t.completed?`<div class="tl-sub"><i class="fa-solid fa-circle-check" style="color:#1E8449"></i> ${esc(t.completed)}</div>`:''}
     ${t.blocker?`<div class="tl-sub"><i class="fa-solid fa-triangle-exclamation" style="color:#B45309"></i> ${esc(t.blocker)}</div>`:''}
     ${t.next?`<div class="tl-sub">→ ${esc(t.next)}</div>`:''}
@@ -631,6 +633,42 @@ function proofCell(r){
   const urls=[];taskItems(r).forEach(t=>(t.proof||'').split(/[\s,]+/).filter(Boolean).forEach(u=>urls.push(u)));
   if(!urls.length)return '<span class="tl-dash">—</span>';
   return `<span style="display:inline-flex;align-items:center"><a class="tl-thumb" href="${esc(urls[0])}" target="_blank" title="${esc(urls[0])}"><i class="fa-regular fa-image"></i></a>${urls.length>1?`<span class="tl-plus">+${urls.length-1}</span>`:''}</span>`;
+}
+const fmtMin=m=>{m=Math.round(+m||0);return m>=60?`${Math.floor(m/60)}h${m%60?(' '+(m%60)+'m'):''}`:`${m}m`;};
+/* ============ TASK INTELLIGENCE (on-device kNN time model) ============
+   Learns from historical task text + actual minutes, and predicts how long a
+   similar task will take. Similarity = token overlap (Jaccard) with a boost for
+   the same project/client; prediction = similarity-weighted average of actuals. */
+const _STOP=new Set('the a an and or of to for in on at with is are was were be been do did done doing task tasks work working update updates fix fixed fixing add added adding create created make made new page app data code test tested using use used from into this that then also more some all get set'.split(' '));
+function tok(s){return [...new Set(String(s||'').toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>2&&!_STOP.has(w)))];}
+function jac(a,b){if(!a.length||!b.length)return 0;const B=new Set(b);let inter=0;a.forEach(w=>{if(B.has(w))inter++;});return inter/(a.length+b.length-inter);}
+let TASK_SAMPLES=[],PROJ_CLIENT={};
+// Build the training set from task_updates (RLS: employees get their own, admins their org).
+async function loadTaskSamples(){
+  const [{data:rows},{data:pjs},{data:cls}]=await Promise.all([
+    sb.from('task_updates').select('employee_id,upd_date,project,tasks').not('tasks','is',null).order('upd_date',{ascending:false}).limit(3000),
+    sb.from('projects').select('name,client_id'),
+    sb.from('clients').select('id,name')]);
+  const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
+  PROJ_CLIENT={};(pjs||[]).forEach(p=>{PROJ_CLIENT[p.name]=p.client_id?(clientName[p.client_id]||''):'Internal';});
+  const out=[];
+  (rows||[]).forEach(r=>{const proj=(r.project||'').split(',')[0].trim();const client=PROJ_CLIENT[proj]||'';
+    (Array.isArray(r.tasks)?r.tasks:[]).forEach(t=>{if(!t.task)return;
+      out.push({tokens:tok(t.task),text:t.task,project:proj,client,act:+t.act_min||0,est:+t.est_min||0,emp:r.employee_id,date:r.upd_date,status:t.status});});});
+  TASK_SAMPLES=out;return out;
+}
+// Predict minutes for a task, using only samples that have a recorded actual time.
+function predictTime(text,project,client){
+  const q=tok(text);if(!q.length)return null;
+  const trained=TASK_SAMPLES.filter(s=>s.act>0);
+  if(!trained.length)return null;
+  const scored=trained.map(s=>{let sc=jac(q,s.tokens);if(project&&s.project&&s.project===project)sc+=0.30;if(client&&s.client&&s.client===client)sc+=0.15;return {s,sc};})
+    .filter(x=>x.sc>0.06).sort((a,b)=>b.sc-a.sc).slice(0,6);
+  if(scored.length>=2){const w=scored.reduce((a,x)=>a+x.sc,0);
+    return {mins:Math.round(scored.reduce((a,x)=>a+x.sc*x.s.act,0)/w),n:scored.length,how:'similar tasks',samples:scored.map(x=>x.s)};}
+  const proj=trained.filter(s=>s.project===project);
+  if(proj.length){return {mins:Math.round(proj.reduce((a,s)=>a+s.act,0)/proj.length),n:proj.length,how:'this project'};}
+  return {mins:Math.round(trained.reduce((a,s)=>a+s.act,0)/trained.length),n:trained.length,how:'overall average'};
 }
 let TASK_STATE={period:'daily',date:today(),client:'',employee:'',search:'',page:0,pageSize:10,_focus:false};
 const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
@@ -733,6 +771,62 @@ function exportTasks(){
   const csv=rows.map(tr=>[...tr.children].slice(0,12).map(td=>`"${(td.innerText||'').replace(/"/g,'""').replace(/\s+/g,' ').trim()}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`task-log-${st.date}.csv`;a.click();
 }
+/* ---- Task Insights: time analysis + on-device predictor ---- */
+let INS_STATE={month:today().slice(0,7)};
+function setInsMonth(m){INS_STATE.month=m;insights();}
+async function insights(){
+  const ym=INS_STATE.month||today().slice(0,7);const [y,m]=ym.split('-').map(Number);
+  const dim=new Date(y,m,0).getDate();
+  const [{data:rows},{data:emps},{data:pjs},{data:cls}]=await Promise.all([
+    sb.from('task_updates').select('employee_id,upd_date,project,tasks').not('tasks','is',null).gte('upd_date',`${ym}-01`).lte('upd_date',`${ym}-${String(dim).padStart(2,'0')}`),
+    sb.from('employees').select('id,full_name').eq('status','Active'),
+    sb.from('projects').select('name,client_id'),
+    sb.from('clients').select('id,name')]);
+  const empName={};(emps||[]).forEach(e=>empName[e.id]=e.full_name);
+  const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
+  const pc={};(pjs||[]).forEach(p=>pc[p.name]=p.client_id?(clientName[p.client_id]||''):'Internal');
+  // Flatten tasks into rows with attributed project/client.
+  const items=[];(rows||[]).forEach(r=>{const proj=(r.project||'').split(',')[0].trim()||'—';const client=pc[proj]||'—';
+    (Array.isArray(r.tasks)?r.tasks:[]).forEach(t=>{if(!t.task)return;items.push({emp:r.employee_id,proj,client,act:+t.act_min||0,est:+t.est_min||0,status:t.status,task:t.task});});});
+  const timed=items.filter(i=>i.act>0);
+  const totalMin=timed.reduce((a,i)=>a+i.act,0);
+  const withBoth=timed.filter(i=>i.est>0);
+  const acc=withBoth.length?Math.round(100-Math.min(100,withBoth.reduce((a,i)=>a+Math.abs(i.act-i.est)/i.act,0)/withBoth.length*100)):null;
+  const group=(key,label)=>{const g={};items.forEach(i=>{const k=i[key]||'—';(g[k]=g[k]||{n:0,act:0,est:0,timed:0})&&0;g[k].n++;if(i.act){g[k].act+=i.act;g[k].timed++;}g[k].est+=i.est;});
+    return Object.entries(g).sort((a,b)=>b[1].act-a[1].act).map(([k,v])=>({k:key==='emp'?(empName[k]||'—'):k,n:v.n,act:v.act,avg:v.timed?Math.round(v.act/v.timed):0,timed:v.timed}));};
+  const tbl=(title,rows2,firstLabel)=>`<div class="card" style="overflow:auto;padding:0"><div style="padding:14px 16px 0;font-weight:700;color:#14284B">${title}</div>
+    <table class="nopg"><tr><th>${firstLabel}</th><th>Tasks</th><th>Tracked time</th><th>Avg / task</th></tr>
+    ${rows2.map(r=>`<tr><td><b>${esc(r.k)}</b></td><td>${r.n}</td><td>${r.timed?fmtMin(r.act):'<span class="tl-dash">—</span>'}</td><td>${r.avg?fmtMin(r.avg):'<span class="tl-dash">—</span>'}</td></tr>`).join('')||`<tr><td colspan="4" style="color:#889">No timed tasks.</td></tr>`}</table></div>`;
+  M(pgh('Task Insights','How time is spent per project, client and employee — and what similar work should take.',
+    `<input type="month" value="${ym}" onchange="setInsMonth(this.value)" style="width:auto">`)+
+  `<div class="warnbar"><i class="fa-solid fa-brain" style="color:#7B3FE4"></i> The on-device model learns from logged <b>actual time</b> per task to predict how long similar future tasks will take. The more tasks employees time, the sharper it gets.</div>
+  <div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-list-check"></i>','#E8EEFB','#2563A8','Tasks logged',items.length,timed.length+' timed')}
+   ${suStat('<i class="fa-regular fa-clock"></i>','#E6F7EC','#1E8449','Total tracked',fmtMin(totalMin),'this month')}
+   ${suStat('<i class="fa-solid fa-gauge"></i>','#F3ECFB','#7B3FE4','Avg / task',timed.length?fmtMin(Math.round(totalMin/timed.length)):'—','across all')}
+   ${suStat('<i class="fa-solid fa-bullseye"></i>','#FFF6E5','#B45309','Estimate accuracy',acc==null?'—':acc+'%',withBoth.length+' with estimates')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+   ${tbl('Time by project',group('proj'),'Project')}
+   ${tbl('Time by client',group('client'),'Client')}
+  </div>
+  ${tbl('Time by employee',group('emp'),'Employee')}
+  <div class="card" style="margin-top:14px"><div style="font-weight:700;color:#14284B;margin-bottom:8px"><i class="fa-solid fa-wand-magic-sparkles" style="color:#7B3FE4"></i> Predict time for a task</div>
+   <div class="row" style="align-items:flex-end"><div style="flex:2"><label>Describe the task</label><input id="ins_q" placeholder="e.g. build payment gateway integration"></div>
+   <div><label>Project</label><select id="ins_proj"><option value="">Any</option>${(pjs||[]).map(p=>`<option>${esc(p.name)}</option>`).join('')}</select></div>
+   <div><button class="btn" onclick="insPredict()">Predict</button></div></div>
+   <div id="ins_out" style="margin-top:12px"></div></div>`);
+  await loadTaskSamples();
+}
+async function insPredict(){
+  if(!TASK_SAMPLES.length)await loadTaskSamples();
+  const q=$('ins_q').value.trim();if(!q)return;
+  const proj=$('ins_proj').value;const client=PROJ_CLIENT[proj]||'';
+  const p=predictTime(q,proj,client);const out=$('ins_out');
+  if(!p){out.innerHTML='<div class="warnbar">Not enough timed history yet — log a few tasks with their actual time first.</div>';return;}
+  out.innerHTML=`<div class="card" style="margin:0;background:var(--bg)"><div style="font-size:15px"><i class="fa-regular fa-clock" style="color:#2563A8"></i> Estimated <b style="font-size:20px;color:#14284B">${fmtMin(p.mins)}</b> <span class="tl-sub">based on ${p.n} ${p.how}</span></div>
+   ${p.samples?`<div style="margin-top:8px"><div class="tl-sub" style="margin-bottom:4px">Most similar past tasks:</div>${p.samples.slice(0,4).map(s=>`<div class="tl-sub">• ${esc(s.text)} — <b>${fmtMin(s.act)}</b>${s.project?` · ${esc(s.project)}`:''}</div>`).join('')}</div>`:''}</div>`;
+}
 async function taskForm(eid,d,r){
   const{data:pjs}=await sb.from('projects').select('name,status').order('name');
   const sel=new Set((r.project||'').split(',').map(s=>s.trim()).filter(Boolean));
@@ -750,6 +844,8 @@ async function taskForm(eid,d,r){
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
   document.querySelectorAll('#pchips .pchip').forEach(ch=>{if(sel.has(ch.dataset.v)){ch.classList.add('on');ch.style.background='#1B2A4A';ch.style.color='#fff'}});
+  // Load the on-device time model so we can suggest estimates as tasks are typed.
+  loadTaskSamples().catch(()=>{});
   // Seed the task rows from the saved list, or from a legacy single-field update, or one empty row.
   let seed=Array.isArray(r.tasks)&&r.tasks.length?r.tasks:null;
   if(!seed&&(r.task_assigned||r.completed||r.blocker||r.next_task||r.proof_link))
@@ -764,18 +860,34 @@ function addTaskRow(t){t=t||{};
   row.innerHTML=`
    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b class="tasknum" style="color:var(--navy)"></b>
    <button class="btn sm warn" title="Remove" onclick="this.closest('.taskrow').remove();renumberTasks()"><i class="fa-solid fa-xmark"></i></button></div>
-   <div class="row"><div style="flex:2"><label>Task</label><input class="tk-task" value="${esc(t.task||'')}" placeholder="What did you do?"></div>
+   <div class="row"><div style="flex:2"><label>Task</label><input class="tk-task" value="${esc(t.task||'')}" placeholder="What did you do?" onblur="suggestTime(this)"></div>
    <div><label>Status</label><select class="tk-status">${opt}</select></div></div>
+   <div class="row"><div><label>Estimated (min)</label><input class="tk-est" type="number" min="0" step="5" value="${t.est_min||''}"></div>
+   <div><label>Actual time (min)</label><input class="tk-act" type="number" min="0" step="5" value="${t.act_min||''}"></div></div>
+   <div class="tk-suggest" style="font-size:12px;color:#2563A8;margin:2px 0 6px;min-height:14px"></div>
    <div class="row"><div><label>Completed / proof note</label><input class="tk-completed" value="${esc(t.completed||'')}"></div>
    <div><label>Proof link</label><input class="tk-proof" value="${esc(t.proof||'')}"></div></div>
    <div class="row"><div><label>Blocker (if any)</label><input class="tk-blocker" value="${esc(t.blocker||'')}"></div>
    <div><label>Next step</label><input class="tk-next" value="${esc(t.next||'')}"></div></div>`;
   list.appendChild(row);renumberTasks();
+  if(t.task)suggestTime(row.querySelector('.tk-task'));
+}
+// Predict and show an estimate for this task row from the model.
+function suggestTime(inp){
+  const row=inp.closest('.taskrow');const el=row.querySelector('.tk-suggest');const text=inp.value.trim();
+  if(!text){if(el)el.textContent='';return;}
+  const proj=($('t_project')?.value||'').split(',')[0].trim();const client=PROJ_CLIENT[proj]||'';
+  const p=predictTime(text,proj,client);
+  if(!p||!el){if(el)el.textContent='';return;}
+  el.innerHTML=`<i class="fa-solid fa-wand-magic-sparkles"></i> Model suggests ~<b>${fmtMin(p.mins)}</b> (from ${p.n} ${p.how}).`;
+  const est=row.querySelector('.tk-est');if(est&&!est.value)est.value=p.mins;
 }
 function renumberTasks(){document.querySelectorAll('#tasklist .taskrow .tasknum').forEach((el,i)=>el.textContent='Task '+(i+1));}
 function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow')].map(row=>({
   task:row.querySelector('.tk-task').value.trim(),
   status:row.querySelector('.tk-status').value,
+  est_min:+row.querySelector('.tk-est').value||null,
+  act_min:+row.querySelector('.tk-act').value||null,
   completed:row.querySelector('.tk-completed').value.trim()||null,
   proof:row.querySelector('.tk-proof').value.trim()||null,
   blocker:row.querySelector('.tk-blocker').value.trim()||null,
