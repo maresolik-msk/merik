@@ -772,40 +772,58 @@ function exportTasks(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`task-log-${st.date}.csv`;a.click();
 }
 /* ---- Task Insights: time analysis + on-device predictor ---- */
-let INS_STATE={month:today().slice(0,7)};
+let INS_STATE={mode:'month',month:today().slice(0,7),date:today()};
 function setInsMonth(m){INS_STATE.month=m;insights();}
+function setInsDay(d){INS_STATE.date=d;insights();}
+function setInsMode(md){INS_STATE.mode=md;insights();}
 async function insights(){
-  const ym=INS_STATE.month||today().slice(0,7);const [y,m]=ym.split('-').map(Number);
-  const dim=new Date(y,m,0).getDate();
+  const day=INS_STATE.mode==='day';
+  const ym=INS_STATE.month||today().slice(0,7);const [y,m]=ym.split('-').map(Number);const dim=new Date(y,m,0).getDate();
+  const from=day?INS_STATE.date:`${ym}-01`;const to=day?INS_STATE.date:`${ym}-${String(dim).padStart(2,'0')}`;
+  const periodLabel=day?fmtDate(INS_STATE.date):new Date(`${ym}-01T00:00:00`).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const periodSub=day?'this day':'this month';
   const [{data:rows},{data:emps},{data:pjs},{data:cls}]=await Promise.all([
-    sb.from('task_updates').select('employee_id,upd_date,project,tasks').not('tasks','is',null).gte('upd_date',`${ym}-01`).lte('upd_date',`${ym}-${String(dim).padStart(2,'0')}`),
+    sb.from('task_updates').select('employee_id,upd_date,project,tasks').not('tasks','is',null).gte('upd_date',from).lte('upd_date',to),
     sb.from('employees').select('id,full_name').eq('status','Active'),
     sb.from('projects').select('name,client_id'),
     sb.from('clients').select('id,name')]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e.full_name);
   const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
   const pc={};(pjs||[]).forEach(p=>pc[p.name]=p.client_id?(clientName[p.client_id]||''):'Internal');
-  // Flatten tasks into rows with attributed project/client.
   const items=[];(rows||[]).forEach(r=>{const proj=(r.project||'').split(',')[0].trim()||'—';const client=pc[proj]||'—';
-    (Array.isArray(r.tasks)?r.tasks:[]).forEach(t=>{if(!t.task)return;items.push({emp:r.employee_id,proj,client,act:+t.act_min||0,est:+t.est_min||0,status:t.status,task:t.task});});});
+    (Array.isArray(r.tasks)?r.tasks:[]).forEach(t=>{if(!t.task)return;items.push({emp:r.employee_id,date:r.upd_date,proj,client,act:+t.act_min||0,est:+t.est_min||0,status:t.status,task:t.task});});});
   const timed=items.filter(i=>i.act>0);
   const totalMin=timed.reduce((a,i)=>a+i.act,0);
   const withBoth=timed.filter(i=>i.est>0);
   const acc=withBoth.length?Math.round(100-Math.min(100,withBoth.reduce((a,i)=>a+Math.abs(i.act-i.est)/i.act,0)/withBoth.length*100)):null;
-  const group=(key,label)=>{const g={};items.forEach(i=>{const k=i[key]||'—';(g[k]=g[k]||{n:0,act:0,est:0,timed:0})&&0;g[k].n++;if(i.act){g[k].act+=i.act;g[k].timed++;}g[k].est+=i.est;});
+  const group=(key)=>{const g={};items.forEach(i=>{const k=i[key]||'—';if(!g[k])g[k]={n:0,act:0,est:0,timed:0};g[k].n++;if(i.act){g[k].act+=i.act;g[k].timed++;}g[k].est+=i.est;});
     return Object.entries(g).sort((a,b)=>b[1].act-a[1].act).map(([k,v])=>({k:key==='emp'?(empName[k]||'—'):k,n:v.n,act:v.act,avg:v.timed?Math.round(v.act/v.timed):0,timed:v.timed}));};
   const tbl=(title,rows2,firstLabel)=>`<div class="card" style="overflow:auto;padding:0"><div style="padding:14px 16px 0;font-weight:700;color:#14284B">${title}</div>
     <table class="nopg"><tr><th>${firstLabel}</th><th>Tasks</th><th>Tracked time</th><th>Avg / task</th></tr>
     ${rows2.map(r=>`<tr><td><b>${esc(r.k)}</b></td><td>${r.n}</td><td>${r.timed?fmtMin(r.act):'<span class="tl-dash">—</span>'}</td><td>${r.avg?fmtMin(r.avg):'<span class="tl-dash">—</span>'}</td></tr>`).join('')||`<tr><td colspan="4" style="color:#889">No timed tasks.</td></tr>`}</table></div>`;
-  M(pgh('Task Insights','How time is spent per project, client and employee — and what similar work should take.',
-    `<input type="month" value="${ym}" onchange="setInsMonth(this.value)" style="width:auto">`)+
+  // Day mode: per-employee time-slot breakdown of the day's work.
+  const dayLog=()=>{const byEmp={};items.forEach(i=>{(byEmp[i.emp]=byEmp[i.emp]||[]).push(i);});
+    const list=Object.entries(byEmp).sort((a,b)=>b[1].reduce((s,i)=>s+i.act,0)-a[1].reduce((s,i)=>s+i.act,0));
+    if(!list.length)return `<div class="card"><div class="tl-sub">No task updates logged on ${fmtDate(INS_STATE.date)}.</div></div>`;
+    return `<div class="card"><div style="font-weight:700;color:#14284B;margin-bottom:6px"><i class="fa-regular fa-clock" style="color:#2563A8"></i> Daily work breakdown — ${fmtDate(INS_STATE.date)}</div>`+
+      list.map(([id,l])=>{const tot=l.reduce((s,i)=>s+i.act,0);const util=Math.min(100,Math.round(tot/480*100));
+        return `<div style="padding:10px 0;border-top:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b>${esc(empName[id]||'—')}</b><span class="tl-sub">${tot?fmtMin(tot):'no time logged'} · ${util}% of 8h</span></div>
+          <div style="height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:6px 0 8px"><div style="height:100%;width:${util}%;background:${util>=100?'#1E8449':'#2563A8'}"></div></div>
+          ${l.map((i,n)=>`<div class="tl-sub" style="display:flex;justify-content:space-between;gap:10px;padding:2px 0"><span>${n+1}. ${esc(i.task)} ${i.status?`<span class="badge ${TASK_ITEM_CLS[i.status]||'stL'}" style="padding:1px 7px;font-size:10px">${esc(i.status)}</span>`:''} <span style="color:#9aa8bc">· ${esc(i.proj)}</span></span><span style="white-space:nowrap">${i.act?fmtMin(i.act):'—'}</span></div>`).join('')}
+        </div>`;}).join('')+`</div>`;};
+  const modeBtn=(md,l)=>`<button class="btn sm ${INS_STATE.mode===md?'':'sec'}" onclick="setInsMode('${md}')">${l}</button>`;
+  const picker=day?`<input type="date" value="${INS_STATE.date}" onchange="setInsDay(this.value)" style="width:auto">`:`<input type="month" value="${ym}" onchange="setInsMonth(this.value)" style="width:auto">`;
+  M(pgh('Task Insights',`Time spent per project, client and employee — ${periodLabel}.`,
+    `<div style="display:flex;gap:8px;align-items:center">${modeBtn('month','Month')}${modeBtn('day','Day')}${picker}</div>`)+
   `<div class="warnbar"><i class="fa-solid fa-brain" style="color:#7B3FE4"></i> The on-device model learns from logged <b>actual time</b> per task to predict how long similar future tasks will take. The more tasks employees time, the sharper it gets.</div>
   <div class="kpi" style="margin-bottom:16px">
    ${suStat('<i class="fa-solid fa-list-check"></i>','#E8EEFB','#2563A8','Tasks logged',items.length,timed.length+' timed')}
-   ${suStat('<i class="fa-regular fa-clock"></i>','#E6F7EC','#1E8449','Total tracked',fmtMin(totalMin),'this month')}
+   ${suStat('<i class="fa-regular fa-clock"></i>','#E6F7EC','#1E8449','Total tracked',fmtMin(totalMin),periodSub)}
    ${suStat('<i class="fa-solid fa-gauge"></i>','#F3ECFB','#7B3FE4','Avg / task',timed.length?fmtMin(Math.round(totalMin/timed.length)):'—','across all')}
    ${suStat('<i class="fa-solid fa-bullseye"></i>','#FFF6E5','#B45309','Estimate accuracy',acc==null?'—':acc+'%',withBoth.length+' with estimates')}
   </div>
+  ${day?dayLog()+'<div style="height:14px"></div>':''}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
    ${tbl('Time by project',group('proj'),'Project')}
    ${tbl('Time by client',group('client'),'Client')}
