@@ -356,7 +356,7 @@ async function logout(){await sb.auth.signOut();ME=null;renderLogin()}
 const ADMIN_GROUPS=[
  [null,[['dash','<i class="fa-solid fa-gauge-high"></i>','Dashboard']]],
  ['People',[['emp','<i class="fa-solid fa-users"></i>','Employees'],['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['pay','<i class="fa-solid fa-money-bill-wave"></i>','Payroll'],['perf','<i class="fa-solid fa-star" style="color:#E8A200"></i>','Performance']]],
- ['Tracking',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights']]],
+ ['Tracking',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project" style="color:#2563A8"></i>','Project Intelligence']]],
  ['Business',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
@@ -395,7 +395,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -670,6 +670,40 @@ function predictTime(text,project,client){
   if(proj.length){return {mins:Math.round(proj.reduce((a,s)=>a+s.act,0)/proj.length),n:proj.length,how:'this project'};}
   return {mins:Math.round(trained.reduce((a,s)=>a+s.act,0)/trained.length),n:trained.length,how:'overall average'};
 }
+/* ============ PROJECT INTELLIGENCE (lexicon text-classification + rule scoring) ============
+   Classifies each task by work-type category and lifecycle stage, scores its importance,
+   and rolls tasks up per project to reveal how a project moves from onboarding to delivery. */
+const WORK_CATS=[
+  ['Creative & Design',['design','poster','banner','creative','logo','ui','ux','figma','mockup','graphic','illustration','branding','visual','color','colours','font','layout','thumbnail','artwork']],
+  ['Website & Dev',['website','web','api','backend','frontend','code','deploy','bug','integration','database','feature','component','function','server','endpoint','responsive','html','css','javascript','repo']],
+  ['Marketing',['seo','campaign','ads','ad ','social','content','email','marketing','post','reel','google tag','analytics','keyword','audience','outreach','newsletter','engagement']],
+  ['Digital Product',['app','product','saas','platform','module','dashboard','onboarding flow','tryon','crm','pms','b2b','b2c','subscription','order']],
+  ['Content & Copy',['copy','blog','article','writing','caption','script','wording','description','proofread']],
+  ['QA & Fixes',['test','qa','review','revision','fix','fixed','issue','debug','resolve','stabil']],
+  ['Client & Delivery',['deliver','delivery','handover','launch','client','kickoff','proposal','quote','requirement','brief','scope','go live','publish','present','demo']],
+];
+const STAGES=['Onboarding','Design','Build','Review','Delivery'];
+const STAGE_KW={
+  Onboarding:['onboard','kickoff','proposal','quote','requirement','discovery','brief','scope','plan','research'],
+  Design:['design','wireframe','mockup','creative','ui','ux','prototype','layout','poster','banner','branding','figma'],
+  Build:['develop','build','code','implement','integration','api','backend','frontend','feature','setup','add','create','database'],
+  Review:['test','qa','review','feedback','revision','fix','bug','issue','stabil','resolve','optimize','refine'],
+  Delivery:['deliver','delivery','launch','handover','deploy','publish','final','go live','present','demo','ship'],
+};
+const IMPORTANT_KW={delivery:3,deliver:3,launch:3,'go live':3,deadline:3,urgent:3,critical:3,client:2,payment:2,final:2,proposal:2,quote:2,handover:2,demo:1,review:1,fix:1,bug:1};
+function _hit(text,words){text=' '+text+' ';let n=0;for(const w of words)if(text.includes(w))n++;return n;}
+function classifyCategory(text){text=(text||'').toLowerCase();let best='General',bestN=0;
+  for(const [cat,words] of WORK_CATS){const n=_hit(text,words);if(n>bestN){bestN=n;best=cat;}}return best;}
+function classifyStage(text){text=(text||'').toLowerCase();let best='Build',bestN=0;
+  for(const st of STAGES){const n=_hit(text,STAGE_KW[st]);if(n>bestN){bestN=n;best=st;}}return best;}
+function realBlocker(v){v=(v||'').trim().toLowerCase();return !!v&&!['none','no','na','n/a','nil','-','—','nothing','no blocker','no blockers','no issues','no issue'].includes(v);}
+function taskImportance(t){const bl=realBlocker(t.blocker);const text=((t.task||'')+' '+(bl?t.blocker:'')+' '+(t.next||'')).toLowerCase();
+  let s=0;for(const k in IMPORTANT_KW)if(text.includes(k))s+=IMPORTANT_KW[k];
+  if(t.status==='Blocked')s+=3;else if(t.status==='In Progress')s+=1;
+  if(bl)s+=2;if((+t.est_min||0)>=180)s+=1;
+  return {score:s,level:s>=4?'High':s>=2?'Medium':'Low'};}
+const IMP_CLS={High:'stA',Medium:'stH',Low:'stL'};
+const CAT_COLOR={'Creative & Design':'#D6336C','Website & Dev':'#2563A8','Marketing':'#D35400','Digital Product':'#7B3FE4','Content & Copy':'#0E7490','QA & Fixes':'#B45309','Client & Delivery':'#1E8449','General':'#6b7a90'};
 let TASK_STATE={period:'daily',date:today(),client:'',employee:'',search:'',page:0,pageSize:10,_focus:false};
 const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
 function setTaskPeriod(p){TASK_STATE.period=p;TASK_STATE.page=0;task()}
@@ -845,6 +879,97 @@ async function insPredict(){
   if(!p){out.innerHTML='<div class="warnbar">Not enough timed history yet — log a few tasks with their actual time first.</div>';return;}
   out.innerHTML=`<div class="card" style="margin:0;background:var(--bg)"><div style="font-size:15px"><i class="fa-regular fa-clock" style="color:#2563A8"></i> Estimated <b style="font-size:20px;color:#14284B">${fmtMin(p.mins)}</b> <span class="tl-sub">based on ${p.n} ${p.how}</span></div>
    ${p.samples?`<div style="margin-top:8px"><div class="tl-sub" style="margin-bottom:4px">Most similar past tasks:</div>${p.samples.slice(0,4).map(s=>`<div class="tl-sub">• ${esc(s.text)} — <b>${fmtMin(s.act)}</b>${s.project?` · ${esc(s.project)}`:''}</div>`).join('')}</div>`:''}</div>`;
+}
+/* ---- Project Intelligence: build per-project behaviour from classified tasks ---- */
+let PROJ_INTEL=null;
+async function loadProjectIntel(){
+  const [{data:rows},{data:emps},{data:pjs},{data:cls}]=await Promise.all([
+    sb.from('task_updates').select('employee_id,upd_date,project,tasks,task_assigned,completed,blocker,next_task,proof_link,update_status').order('upd_date',{ascending:false}).limit(4000),
+    sb.from('employees').select('id,full_name,department'),
+    sb.from('projects').select('name,client_id,status'),
+    sb.from('clients').select('id,name')]);
+  const emp={};(emps||[]).forEach(e=>emp[e.id]=e);
+  const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
+  const projMeta={};(pjs||[]).forEach(p=>projMeta[p.name]={client:p.client_id?(clientName[p.client_id]||'Internal'):'Internal',status:p.status});
+  const P={};
+  (rows||[]).forEach(r=>{if(r.update_status==='No Update')return;
+    const names=(r.project||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const list=(names.length?names:['(unassigned)']);
+    const e=emp[r.employee_id]||{};const dept=e.department||'Unassigned';
+    taskItems(r).forEach(t=>{if(!t.task)return;
+      const cat=classifyCategory(t.task);const stage=classifyStage((t.task||'')+' '+(t.next||''));const imp=taskImportance(t);const mins=+t.act_min||0;
+      list.forEach(pn=>{const p=P[pn]||(P[pn]={name:pn,client:(projMeta[pn]||{}).client||'Internal',status:(projMeta[pn]||{}).status||'',tasks:0,mins:0,depts:{},cats:{},stages:{},people:{},items:[],blockers:0,last:r.upd_date,openEffort:0});
+        p.tasks++;p.mins+=mins;if(r.upd_date>p.last)p.last=r.upd_date;
+        p.depts[dept]=(p.depts[dept]||{tasks:0,mins:0});p.depts[dept].tasks++;p.depts[dept].mins+=mins;
+        p.cats[cat]=(p.cats[cat]||0)+1;p.stages[stage]=(p.stages[stage]||0)+1;
+        if(e.full_name)p.people[e.full_name]=(p.people[e.full_name]||0)+1;
+        const bl=realBlocker(t.blocker)?t.blocker:null;if(bl)p.blockers++;
+        p.items.push({task:t.task,dept,cat,stage,imp,status:t.status,blocker:bl,next:t.next,emp:e.full_name||'—',date:r.upd_date,mins});
+      });});});
+  // Derive current stage = latest activity's furthest stage.
+  Object.values(P).forEach(p=>{const recent=p.items.slice(0,12);const idx=Math.max(0,...recent.map(i=>STAGES.indexOf(i.stage)));p.currentStage=STAGES[idx]||'Build';
+    p.items.sort((a,b)=>b.imp.score-a.imp.score||(a.date<b.date?1:-1));});
+  PROJ_INTEL=Object.values(P).sort((a,b)=>(b.last<a.last?-1:b.last>a.last?1:b.tasks-a.tasks));
+  return PROJ_INTEL;
+}
+function stageBar(cur){const i=STAGES.indexOf(cur);return `<div style="display:flex;gap:4px;margin:8px 0">${STAGES.map((s,n)=>`<div title="${s}" style="flex:1;text-align:center"><div style="height:6px;border-radius:4px;background:${n<=i?'#2563A8':'var(--line)'}"></div><div class="tl-sub" style="font-size:10px;margin-top:3px;color:${n===i?'#2563A8':''};font-weight:${n===i?'700':'500'}">${s}</div></div>`).join('')}</div>`;}
+function catBars(cats,total){const ent=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  return `<div style="display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--line)">${ent.map(([c,n])=>`<div title="${c}: ${n}" style="width:${Math.round(n/total*100)}%;background:${CAT_COLOR[c]||'#889'}"></div>`).join('')}</div>`;}
+async function projint(){
+  M(pgh('Project Intelligence','How each project behaves — teams involved, work mix, stage and priorities.')+`<div class="warnbar"><i class="fa-solid fa-diagram-project" style="color:#2563A8"></i> Loading the model…</div>`);
+  await loadProjectIntel();
+  const P=PROJ_INTEL||[];
+  const active=P.filter(p=>p.status!=='Completed');
+  const kpiDepts=new Set();P.forEach(p=>Object.keys(p.depts).forEach(d=>kpiDepts.add(d)));
+  const highTasks=P.reduce((a,p)=>a+p.items.filter(i=>i.imp.level==='High').length,0);
+  M(pgh('Project Intelligence','How each project behaves — teams involved, work mix, stage and priorities.')+
+  `<div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-diagram-project"></i>','#E8EEFB','#2563A8','Projects',P.length,active.length+' active')}
+   ${suStat('<i class="fa-solid fa-people-group"></i>','#E6F7EC','#1E8449','Departments',kpiDepts.size,'contributing')}
+   ${suStat('<i class="fa-solid fa-fire"></i>','#FDECEA','#C0392B','High-priority tasks',highTasks,'flagged by the model')}
+   ${suStat('<i class="fa-solid fa-triangle-exclamation"></i>','#FFF6E5','#B45309','Blockers',P.reduce((a,p)=>a+p.blockers,0),'across projects')}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
+  ${P.map(p=>{const topCat=Object.entries(p.cats).sort((a,b)=>b[1]-a[1])[0];const depts=Object.entries(p.depts).sort((a,b)=>b[1].tasks-a[1].tasks);
+    return `<div class="card" style="margin:0;cursor:pointer" onclick="projintDetail('${esc(p.name).replace(/'/g,"&#39;")}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div style="font-weight:800;color:#14284B">${esc(p.name)}</div><div class="tl-sub">${esc(p.client)}</div></div>
+    <span class="badge stP" style="white-space:nowrap">${esc(p.currentStage)}</span></div>
+    ${stageBar(p.currentStage)}
+    <div style="margin:8px 0 4px">${catBars(p.cats,p.tasks)}</div>
+    <div class="tl-sub" style="margin-bottom:6px">${topCat?`Mostly <b style="color:${CAT_COLOR[topCat[0]]}">${topCat[0]}</b>`:''} · ${p.tasks} tasks${p.mins?` · ${fmtMin(p.mins)}`:''}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px">${depts.slice(0,4).map(([d,v])=>`<span class="pchip" style="margin:0;font-size:10.5px;padding:2px 8px">${esc(d)} ${v.tasks}</span>`).join('')}</div>
+    ${p.blockers?`<div class="tl-sub" style="color:#C0392B;margin-top:6px"><i class="fa-solid fa-triangle-exclamation"></i> ${p.blockers} blocker(s)</div>`:''}</div>`;}).join('')||'<div class="card">No project activity yet.</div>'}
+  </div>`);
+}
+async function projintDetail(name){
+  if(!PROJ_INTEL)await loadProjectIntel();
+  const p=(PROJ_INTEL||[]).find(x=>x.name===name);
+  if(!p)return projint();
+  const depts=Object.entries(p.depts).sort((a,b)=>b[1].tasks-a[1].tasks);
+  const cats=Object.entries(p.cats).sort((a,b)=>b[1]-a[1]);
+  const people=Object.entries(p.people).sort((a,b)=>b[1]-a[1]);
+  const top=p.items.slice(0,10);
+  const openTasks=p.items.filter(i=>i.status==='In Progress'||i.status==='Blocked');
+  let remEffort=0,remN=0;openTasks.forEach(i=>{const pr=predictTime(i.task,p.name,p.client);if(pr){remEffort+=pr.mins;remN++;}});
+  M(pgh(esc(p.name),`${esc(p.client)} · current stage: ${esc(p.currentStage)}`,`<button class="btn sec" onclick="projint()">‹ All projects</button>`)+
+  `<div class="card"><div style="font-weight:700;color:#14284B;margin-bottom:2px">Project journey</div><div class="tl-sub" style="margin-bottom:4px">Inferred from task activity — onboarding through delivery.</div>${stageBar(p.currentStage)}
+   <div class="tl-sub" style="margin-top:6px">${STAGES.map(s=>`${s}: <b>${p.stages[s]||0}</b>`).join(' &nbsp;·&nbsp; ')}</div></div>
+  <div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-list-check"></i>','#E8EEFB','#2563A8','Tasks',p.tasks,fmtMin(p.mins)+' tracked')}
+   ${suStat('<i class="fa-solid fa-people-group"></i>','#E6F7EC','#1E8449','Teams',depts.length,people.length+' people')}
+   ${suStat('<i class="fa-solid fa-fire"></i>','#FDECEA','#C0392B','High priority',p.items.filter(i=>i.imp.level==='High').length,p.blockers+' blockers')}
+   ${suStat('<i class="fa-regular fa-clock"></i>','#F3ECFB','#7B3FE4','Predicted remaining',remN?fmtMin(remEffort):'—',remN+' open tasks')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+   <div class="card" style="padding:0;overflow:auto"><div style="padding:14px 16px 0;font-weight:700;color:#14284B">Team / department split</div>
+    <table class="nopg"><tr><th>Department</th><th>Tasks</th><th>Time</th></tr>${depts.map(([d,v])=>`<tr><td><b>${esc(d)}</b></td><td>${v.tasks}</td><td>${v.mins?fmtMin(v.mins):'<span class="tl-dash">—</span>'}</td></tr>`).join('')}</table></div>
+   <div class="card"><div style="font-weight:700;color:#14284B;margin-bottom:10px">Work-type mix</div>
+    ${cats.map(([c,n])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:12px;height:12px;border-radius:3px;background:${CAT_COLOR[c]||'#889'};flex:none"></span><span style="flex:1;font-size:13px">${esc(c)}</span><b>${n}</b><div style="width:90px;height:7px;background:var(--line);border-radius:4px;overflow:hidden"><div style="height:100%;width:${Math.round(n/p.tasks*100)}%;background:${CAT_COLOR[c]||'#889'}"></div></div></div>`).join('')}</div>
+  </div>
+  <div class="card" style="padding:0;overflow:auto"><div style="padding:14px 16px 0;font-weight:700;color:#14284B"><i class="fa-solid fa-fire" style="color:#C0392B"></i> Most important tasks <span class="tl-sub">(model-ranked)</span></div>
+   <table class="nopg"><tr><th>Priority</th><th>Task</th><th>Category</th><th>Stage</th><th>Owner</th><th>Status</th></tr>
+   ${top.map(i=>`<tr><td><span class="badge ${IMP_CLS[i.imp.level]}">${i.imp.level}</span></td><td style="max-width:320px">${esc(i.task)}${i.blocker?`<div class="tl-sub" style="color:#B45309"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(i.blocker)}</div>`:''}</td>
+   <td><span style="color:${CAT_COLOR[i.cat]||'#889'};font-weight:600;font-size:12px">${esc(i.cat)}</span></td><td>${esc(i.stage)}</td><td>${esc(i.emp)}</td><td>${i.status?`<span class="badge ${TASK_ITEM_CLS[i.status]||'stL'}">${esc(i.status)}</span>`:'—'}</td></tr>`).join('')}</table></div>`);
 }
 async function taskForm(eid,d,r){
   const{data:pjs}=await sb.from('projects').select('name,status').order('name');
