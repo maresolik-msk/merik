@@ -783,15 +783,16 @@ async function insights(){
   const periodLabel=day?fmtDate(INS_STATE.date):new Date(`${ym}-01T00:00:00`).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
   const periodSub=day?'this day':'this month';
   const [{data:rows},{data:emps},{data:pjs},{data:cls}]=await Promise.all([
-    sb.from('task_updates').select('employee_id,upd_date,project,tasks').not('tasks','is',null).gte('upd_date',from).lte('upd_date',to),
+    sb.from('task_updates').select('employee_id,upd_date,project,tasks,task_assigned,completed,blocker,next_task,proof_link,update_status').gte('upd_date',from).lte('upd_date',to),
     sb.from('employees').select('id,full_name').eq('status','Active'),
     sb.from('projects').select('name,client_id'),
     sb.from('clients').select('id,name')]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e.full_name);
   const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
   const pc={};(pjs||[]).forEach(p=>pc[p.name]=p.client_id?(clientName[p.client_id]||''):'Internal');
-  const items=[];(rows||[]).forEach(r=>{const proj=(r.project||'').split(',')[0].trim()||'—';const client=pc[proj]||'—';
-    (Array.isArray(r.tasks)?r.tasks:[]).forEach(t=>{if(!t.task)return;items.push({emp:r.employee_id,date:r.upd_date,proj,client,act:+t.act_min||0,est:+t.est_min||0,status:t.status,task:t.task});});});
+  // Include both the new numbered tasks and legacy single-field updates (via taskItems fallback).
+  const items=[];(rows||[]).forEach(r=>{if(r.update_status==='No Update')return;const proj=(r.project||'').split(',')[0].trim()||'—';const client=pc[proj]||'—';
+    taskItems(r).forEach(t=>{if(!t.task)return;items.push({emp:r.employee_id,date:r.upd_date,proj,client,act:+t.act_min||0,est:+t.est_min||0,status:t.status,task:t.task});});});
   const timed=items.filter(i=>i.act>0);
   const totalMin=timed.reduce((a,i)=>a+i.act,0);
   const withBoth=timed.filter(i=>i.est>0);
