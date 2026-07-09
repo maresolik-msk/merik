@@ -157,6 +157,34 @@ tbody tr:hover td{background:#F1F6FD}
 .tl-dash{color:#c2ccda}
 .tl-time{display:inline-flex;align-items:center;gap:4px;background:#EEF4FF;color:#2563A8;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px;white-space:nowrap}
 [data-theme="dark"] .tl-time{background:#1e2c44;color:#8fb4e8}
+/* ---- Project Intelligence redesign ---- */
+.pi-datepill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:#41506a;padding:9px 14px;border-radius:11px;font-weight:600;font-size:13.5px;white-space:nowrap}
+.pi-toolbar{display:flex;align-items:center;gap:12px;margin:16px 0;flex-wrap:wrap}
+.pi-tabs{display:flex;background:#EEF2F9;border-radius:11px;padding:4px}
+.pi-tabs button{background:transparent;border:none;padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;color:#6b7a90;box-shadow:none}
+.pi-tabs button.on{background:var(--card);color:var(--navy);box-shadow:0 1px 4px rgba(20,40,75,.12)}
+[data-theme="dark"] .pi-tabs{background:#1f2a3d}[data-theme="dark"] .pi-tabs button.on{background:#2b3a54;color:#fff}
+.pi-views{display:flex;gap:4px;background:#EEF2F9;border-radius:10px;padding:4px}
+.pi-views button{width:34px;height:32px;border:none;background:transparent;color:#8896aa;border-radius:8px;box-shadow:none;display:flex;align-items:center;justify-content:center}
+.pi-views button.on{background:var(--card);color:var(--navy);box-shadow:0 1px 4px rgba(20,40,75,.12)}
+[data-theme="dark"] .pi-views{background:#1f2a3d}[data-theme="dark"] .pi-views button.on{background:#2b3a54;color:#fff}
+.pi-card{margin:0;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+.pi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.pi-chip{display:inline-block;background:#EEF2F9;color:#41506a;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;margin:0 4px 4px 0}
+[data-theme="dark"] .pi-chip{background:#243149;color:#c3d0e6}
+.pi-avstack{display:inline-flex;align-items:center}
+.pi-avstack .av2{margin-left:-9px;border:2px solid var(--card);width:28px;height:28px}
+.pi-avstack .av2:first-child{margin-left:0}
+.pi-avmore{margin-left:4px;font-size:11.5px;font-weight:700;color:#6b7a90}
+/* journey stepper */
+.pj{display:flex;align-items:center;margin-top:12px}
+.pj-node{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);background:var(--card);flex:none;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff}
+.pj-conn{flex:1;height:2px;background:var(--line);border-radius:2px}
+.pj-lbls{display:flex;margin-top:6px}
+.pj-lbls>span{flex:1;font-size:10.5px;color:#94a3b8;text-align:center}
+.pj-lbls>span:first-child{text-align:left}
+.pj-lbls>span:last-child{text-align:right}
+.pj-lbls>span.cur{color:#2563A8;font-weight:700}
 .tl-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 4px 2px;font-size:13px;color:#6b7a90}
 .tl-pages{display:flex;align-items:center;gap:6px}
 .pg-btn{min-width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:600;color:#41506a;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;box-shadow:none;padding:0}
@@ -912,34 +940,72 @@ async function loadProjectIntel(){
   PROJ_INTEL=Object.values(P).sort((a,b)=>(b.last<a.last?-1:b.last>a.last?1:b.tasks-a.tasks));
   return PROJ_INTEL;
 }
-function stageBar(cur){const i=STAGES.indexOf(cur);return `<div style="display:flex;gap:4px;margin:8px 0">${STAGES.map((s,n)=>`<div title="${s}" style="flex:1;text-align:center"><div style="height:6px;border-radius:4px;background:${n<=i?'#2563A8':'var(--line)'}"></div><div class="tl-sub" style="font-size:10px;margin-top:3px;color:${n===i?'#2563A8':''};font-weight:${n===i?'700':'500'}">${s}</div></div>`).join('')}</div>`;}
-function catBars(cats,total){const ent=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
-  return `<div style="display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--line)">${ent.map(([c,n])=>`<div title="${c}: ${n}" style="width:${Math.round(n/total*100)}%;background:${CAT_COLOR[c]||'#889'}"></div>`).join('')}</div>`;}
+const STAGE_NODE_COLORS=['#94A3B8','#E5484D','#F76808','#D6409F','#2563A8'];
+function journeyStepper(cur){const i=STAGES.indexOf(cur);let out='';
+  STAGES.forEach((s,n)=>{const done=n<=i;const col=STAGE_NODE_COLORS[n];
+    out+=`<div class="pj-node" style="${done?`border-color:${col};${n===i?`background:${col}`:''}`:''}">${n===i?'<i class="fa-solid fa-check"></i>':''}</div>`;
+    if(n<STAGES.length-1)out+=`<div class="pj-conn" style="background:${n<i?STAGE_NODE_COLORS[n+1]:'var(--line)'}"></div>`;});
+  return `<div class="pj">${out}</div><div class="pj-lbls">${STAGES.map((s,n)=>`<span class="${n===i?'cur':''}">${s}</span>`).join('')}</div>`;}
+function piSpark(series,color){if(!series||!series.length)series=[0,0];const max=Math.max(1,...series),min=Math.min(...series),rng=(max-min)||1;
+  const W=88,H=34,step=series.length>1?W/(series.length-1):W;
+  const pts=series.map((v,i)=>`${(i*step).toFixed(1)},${(H-5-((v-min)/rng)*(H-10)).toFixed(1)}`);
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="flex:none;align-self:center"><polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+function piAvatars(people){const ppl=Object.keys(people||{});const show=ppl.slice(0,3);const extra=ppl.length-show.length;
+  return `<div class="pi-avstack">${show.map(n=>av(n)).join('')}${extra>0?`<span class="pi-avmore">+${extra}</span>`:''}</div>`;}
+let PI_STATE={q:'',stage:'',view:'grid',_focus:false};
+function setPiStage(s){PI_STATE.stage=s;renderProjint();}
+function setPiView(v){PI_STATE.view=v;renderProjint();}
+function setPiSearch(v){PI_STATE.q=v;PI_STATE._focus=true;renderProjint();}
 async function projint(){
-  M(pgh('Project Intelligence','How each project behaves — teams involved, work mix, stage and priorities.')+`<div class="warnbar"><i class="fa-solid fa-diagram-project" style="color:#2563A8"></i> Loading the model…</div>`);
-  await loadProjectIntel();
-  const P=PROJ_INTEL||[];
+  M(pgh('Project Intelligence','Real-time overview of how projects are progressing across teams and priorities.')+`<div class="warnbar"><i class="fa-solid fa-diagram-project" style="color:#2563A8"></i> Loading the model…</div>`);
+  await loadProjectIntel();renderProjint();
+}
+function renderProjint(){
+  const P=PROJ_INTEL||[];const st=PI_STATE;
   const active=P.filter(p=>p.status!=='Completed');
   const kpiDepts=new Set();P.forEach(p=>Object.keys(p.depts).forEach(d=>kpiDepts.add(d)));
   const highTasks=P.reduce((a,p)=>a+p.items.filter(i=>i.imp.level==='High').length,0);
-  M(pgh('Project Intelligence','How each project behaves — teams involved, work mix, stage and priorities.')+
-  `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-diagram-project"></i>','#E8EEFB','#2563A8','Projects',P.length,active.length+' active')}
-   ${suStat('<i class="fa-solid fa-people-group"></i>','#E6F7EC','#1E8449','Departments',kpiDepts.size,'contributing')}
-   ${suStat('<i class="fa-solid fa-fire"></i>','#FDECEA','#C0392B','High-priority tasks',highTasks,'flagged by the model')}
-   ${suStat('<i class="fa-solid fa-triangle-exclamation"></i>','#FFF6E5','#B45309','Blockers',P.reduce((a,p)=>a+p.blockers,0),'across projects')}
+  const blockers=P.reduce((a,p)=>a+p.blockers,0);
+  // Activity trend (last 14 days) for the KPI sparklines.
+  const days=[];for(let k=13;k>=0;k--){const d=new Date();d.setDate(d.getDate()-k);days.push(isoD(d));}
+  const perDay={};P.forEach(p=>p.items.forEach(it=>{perDay[it.date]=(perDay[it.date]||0)+1;}));
+  const series=days.map(d=>perDay[d]||0);
+  let cards=P;
+  if(st.stage)cards=cards.filter(p=>p.currentStage===st.stage);
+  if(st.q){const q=st.q.toLowerCase();cards=cards.filter(p=>(p.name+' '+p.client+' '+Object.keys(p.depts).join(' ')).toLowerCase().includes(q));}
+  const kcard=(ic,bg,col,label,val,sub,subcol,spk)=>`<div class="card" style="margin:0;flex:1;min-width:220px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+    <div style="display:flex;gap:12px"><div class="kicon" style="background:${bg};color:${col}">${ic}</div>
+    <div><div style="font-size:12.5px;color:#6b7a90">${label}</div><div style="font-size:26px;font-weight:800;color:#14284B;line-height:1.1">${val}</div><div style="font-size:11.5px;color:${subcol||'#9aa8bc'};font-weight:600">${sub}</div></div></div>
+    ${piSpark(spk,col)}</div></div>`;
+  const stageTab=(s,l)=>`<button class="${st.stage===s?'on':''}" onclick="setPiStage('${s}')">${l}</button>`;
+  const grid=st.view==='grid';
+  const card=(p)=>{const topCat=Object.entries(p.cats).sort((a,b)=>b[1]-a[1])[0];const depts=Object.entries(p.depts).sort((a,b)=>b[1].tasks-a[1].tasks);
+    return `<div class="card pi-card" onclick="projintDetail('${esc(p.name).replace(/'/g,"&#39;")}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div style="font-weight:800;color:#14284B;font-size:16px">${esc(p.name)}</div><div class="tl-sub">${esc(p.client)}</div></div>
+    <span class="badge ${p.currentStage==='Delivery'?'stP':p.currentStage==='Review'?'stL':'stW'}" style="white-space:nowrap">${esc(p.currentStage)}</span></div>
+    ${journeyStepper(p.currentStage)}
+    <div class="tl-sub" style="margin:10px 0 8px">${topCat?`Mostly <b style="color:${CAT_COLOR[topCat[0]]}">${topCat[0]}</b>`:''} · ${p.tasks} tasks${p.mins?` · ${fmtMin(p.mins)}`:''}</div>
+    <div>${depts.slice(0,3).map(([d,v])=>`<span class="pi-chip">${esc(d)} ${v.tasks}</span>`).join('')}${depts.length>3?`<span class="pi-chip">+${depts.length-3}</span>`:''}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;min-height:28px">
+     <span>${p.blockers?`<span style="color:#C0392B;font-size:12.5px;font-weight:600"><i class="fa-solid fa-triangle-exclamation"></i> ${p.blockers} blocker(s)</span>`:''}</span>
+     ${piAvatars(p.people)}</div></div>`;};
+  M(pgh('Project Intelligence <i class="fa-solid fa-wand-magic-sparkles" style="color:#7B3FE4;font-size:16px"></i>','Real-time overview of how projects are progressing across teams and priorities.',
+    `<span class="pi-datepill"><i class="fa-regular fa-calendar"></i> ${fmtDate(today())}</span>`)+
+  `<div class="kpi" style="margin-bottom:6px">
+   ${kcard('<i class="fa-solid fa-folder-open"></i>','#E8EEFB','#2563A8','Total Projects',P.length,active.length+' active',null,series)}
+   ${kcard('<i class="fa-solid fa-people-group"></i>','#E6F7EC','#1E8449','Departments',kpiDepts.size,'Contributing','#1E8449',series)}
+   ${kcard('<i class="fa-solid fa-fire"></i>','#FDECEA','#C0392B','High-priority Tasks',highTasks,'Flagged by AI','#C0392B',series)}
+   ${kcard('<i class="fa-solid fa-triangle-exclamation"></i>','#FFF6E5','#B45309','Blockers',blockers,'Across projects','#B45309',series)}
   </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
-  ${P.map(p=>{const topCat=Object.entries(p.cats).sort((a,b)=>b[1]-a[1])[0];const depts=Object.entries(p.depts).sort((a,b)=>b[1].tasks-a[1].tasks);
-    return `<div class="card" style="margin:0;cursor:pointer" onclick="projintDetail('${esc(p.name).replace(/'/g,"&#39;")}')">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div style="font-weight:800;color:#14284B">${esc(p.name)}</div><div class="tl-sub">${esc(p.client)}</div></div>
-    <span class="badge stP" style="white-space:nowrap">${esc(p.currentStage)}</span></div>
-    ${stageBar(p.currentStage)}
-    <div style="margin:8px 0 4px">${catBars(p.cats,p.tasks)}</div>
-    <div class="tl-sub" style="margin-bottom:6px">${topCat?`Mostly <b style="color:${CAT_COLOR[topCat[0]]}">${topCat[0]}</b>`:''} · ${p.tasks} tasks${p.mins?` · ${fmtMin(p.mins)}`:''}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:4px">${depts.slice(0,4).map(([d,v])=>`<span class="pchip" style="margin:0;font-size:10.5px;padding:2px 8px">${esc(d)} ${v.tasks}</span>`).join('')}</div>
-    ${p.blockers?`<div class="tl-sub" style="color:#C0392B;margin-top:6px"><i class="fa-solid fa-triangle-exclamation"></i> ${p.blockers} blocker(s)</div>`:''}</div>`;}).join('')||'<div class="card">No project activity yet.</div>'}
+  <div class="pi-toolbar">
+   <div class="tl-search" style="flex:1;min-width:220px"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="pi_q" placeholder="Search projects, teams or tasks…" value="${esc(st.q)}" oninput="setPiSearch(this.value)"></div>
+   <div class="pi-tabs">${stageTab('','All')}${stageTab('Delivery','Delivery')}${stageTab('Review','Review')}${stageTab('Build','Build')}</div>
+   <div class="pi-views"><button class="${grid?'on':''}" onclick="setPiView('grid')" title="Grid"><i class="fa-solid fa-table-cells-large"></i></button><button class="${!grid?'on':''}" onclick="setPiView('list')" title="List"><i class="fa-solid fa-list"></i></button></div>
+  </div>
+  <div style="display:grid;grid-template-columns:${grid?'repeat(auto-fill,minmax(330px,1fr))':'1fr'};gap:16px">
+   ${cards.map(card).join('')||'<div class="card">No projects match your filters.</div>'}
   </div>`);
+  if(PI_STATE._focus){const el=$('pi_q');if(el){el.focus();const v=el.value;el.value='';el.value=v;}PI_STATE._focus=false;}
 }
 async function projintDetail(name){
   if(!PROJ_INTEL)await loadProjectIntel();
@@ -952,7 +1018,7 @@ async function projintDetail(name){
   const openTasks=p.items.filter(i=>i.status==='In Progress'||i.status==='Blocked');
   let remEffort=0,remN=0;openTasks.forEach(i=>{const pr=predictTime(i.task,p.name,p.client);if(pr){remEffort+=pr.mins;remN++;}});
   M(pgh(esc(p.name),`${esc(p.client)} · current stage: ${esc(p.currentStage)}`,`<button class="btn sec" onclick="projint()">‹ All projects</button>`)+
-  `<div class="card"><div style="font-weight:700;color:#14284B;margin-bottom:2px">Project journey</div><div class="tl-sub" style="margin-bottom:4px">Inferred from task activity — onboarding through delivery.</div>${stageBar(p.currentStage)}
+  `<div class="card"><div style="font-weight:700;color:#14284B;margin-bottom:2px">Project journey</div><div class="tl-sub" style="margin-bottom:4px">Inferred from task activity — onboarding through delivery.</div>${journeyStepper(p.currentStage)}
    <div class="tl-sub" style="margin-top:6px">${STAGES.map(s=>`${s}: <b>${p.stages[s]||0}</b>`).join(' &nbsp;·&nbsp; ')}</div></div>
   <div class="kpi" style="margin-bottom:16px">
    ${suStat('<i class="fa-solid fa-list-check"></i>','#E8EEFB','#2563A8','Tasks',p.tasks,fmtMin(p.mins)+' tracked')}
