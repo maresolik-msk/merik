@@ -383,10 +383,11 @@ async function logout(){await sb.auth.signOut();ME=null;renderLogin()}
 
 const ADMIN_GROUPS=[
  [null,[['dash','<i class="fa-solid fa-gauge-high"></i>','Dashboard']]],
- ['People',[['emp','<i class="fa-solid fa-users"></i>','Employees'],['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['pay','<i class="fa-solid fa-money-bill-wave"></i>','Payroll'],['perf','<i class="fa-solid fa-star" style="color:#E8A200"></i>','Performance']]],
- ['Tracking',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project" style="color:#2563A8"></i>','Project Intelligence']]],
- ['Business',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
- ['Organization',[['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays'],['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
+ ['Employee Management',[['emp','<i class="fa-solid fa-users"></i>','Employees'],['pay','<i class="fa-solid fa-money-bill-wave"></i>','Payroll'],['perf','<i class="fa-solid fa-star" style="color:#E8A200"></i>','Performance']]],
+ ['Team Management',[['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays']]],
+ ['Task Management',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project" style="color:#2563A8"></i>','Project Intelligence']]],
+ ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
+ ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
  [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview'],['suanalytics','<i class="fa-solid fa-chart-line"></i>','Analytics']]],
