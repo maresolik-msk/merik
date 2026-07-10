@@ -522,6 +522,7 @@ async function emp(){
   ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td>${esc(e.email)}</td><td>${e.doj?fmtDate(e.doj):''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
   <td><span class="badge ${e.status==='Active'?'stP':'stA'}">${e.status}</span></td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick='empForm(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Edit</button>
+  <button class="btn sm sec" title="Salary & hike history" onclick="salaryHistory('${e.id}')"><i class="fa-solid fa-arrow-trend-up"></i> Salary</button>
   <button class="btn sm" title="Create login credentials" onclick="mkLogin('${e.id}','${esc(e.email||'')}')"><i class="fa-solid fa-key"></i> Login</button>
   <button class="btn sm warn" onclick="delEmp('${e.id}')">Del</button></td></tr>`).join('')}</table></div>`);
 }
@@ -545,6 +546,52 @@ async function saveEmp(id){
   const q=id?sb.from('employees').update(o).eq('id',id):sb.from('employees').insert(o);
   const{error}=await q;if(error)return alert(error.message);
   document.querySelector('.modal').remove();emp();
+}
+// Effective monthly CTC for a given month: latest revision effective on/before month-end,
+// else the earliest revision's previous CTC, else the employee's current CTC.
+function effectiveCtc(hist,ym,fallback){
+  if(!hist||!hist.length)return +fallback||0;
+  const end=`${ym}-31`;const sorted=[...hist].sort((a,b)=>a.effective_month<b.effective_month?-1:1);
+  if(end<sorted[0].effective_month)return sorted[0].previous_ctc!=null?+sorted[0].previous_ctc:(+fallback||0);
+  let ctc=null;for(const h of sorted){if(h.effective_month<=end)ctc=+h.new_ctc;else break;}
+  return ctc!=null?ctc:(+fallback||0);
+}
+// Salary & hike history for one employee.
+async function salaryHistory(eid){
+  const [{data:e},{data:hist}]=await Promise.all([
+    sb.from('employees').select('id,full_name,emp_code,ctc,doj').eq('id',eid).single(),
+    sb.from('salary_history').select('*').eq('employee_id',eid).order('effective_month',{ascending:false})]);
+  const rows=(hist||[]);
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:620px"><h2>Salary &amp; Hikes — ${esc(e.full_name)}</h2>
+  <div class="kpi" style="margin:0 0 12px"><div class="card" style="margin:0;flex:1"><div style="font-size:12.5px;color:#6b7a90">Current monthly CTC</div><div style="font-size:24px;font-weight:800;color:#14284B">${e.ctc?inr(e.ctc):'—'}</div><div class="tl-sub">${e.ctc?inr(e.ctc*12)+' / year':''}</div></div></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><label style="margin:0">Revision history</label><button class="btn sm" onclick="hikeForm('${eid}',${+e.ctc||0})"><i class="fa-solid fa-arrow-trend-up"></i> Revise salary</button></div>
+  <div class="card" style="overflow:auto;padding:0;margin-top:8px"><table class="nopg"><tr><th>Effective from</th><th>Previous</th><th>New</th><th>Change</th><th>Note</th></tr>
+  ${rows.map(h=>{const pv=+h.previous_ctc||0,nv=+h.new_ctc||0;const pct=pv?Math.round((nv-pv)/pv*100):null;const up=nv>=pv;
+    return `<tr><td style="white-space:nowrap">${new Date(h.effective_month+'T00:00:00').toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</td>
+    <td>${pv?inr(pv):'—'}</td><td style="font-weight:700">${inr(nv)}</td>
+    <td style="color:${up?'#1E8449':'#C0392B'};font-weight:600">${pct==null?'—':`${up?'▲':'▼'} ${Math.abs(pct)}%`}</td><td style="font-size:12px">${esc(h.note||'')}</td></tr>`;}).join('')||'<tr><td colspan="5" style="color:#889">No revisions recorded yet.</td></tr>'}</table></div>
+  <div style="margin-top:12px;text-align:right"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
+  document.querySelectorAll('.modal').forEach(m=>m.remove());document.body.appendChild(div);
+}
+function hikeForm(eid,curCtc){
+  const nowM=today().slice(0,7);
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Revise Salary</h2>
+  <p style="font-size:13px;color:#667;margin-bottom:6px">Current monthly CTC: <b>${curCtc?inr(curCtc):'—'}</b></p>
+  <div class="row"><div><label>New monthly CTC (₹)</label><input id="hk_new" type="number" min="0" value="${curCtc||''}"></div>
+  <div style="max-width:180px"><label>Effective from</label><input id="hk_month" type="month" value="${nowM}"></div></div>
+  <label>Note (optional)</label><input id="hk_note" placeholder="e.g. Annual appraisal, promotion">
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveHike('${eid}',${curCtc||0})">Save revision</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveHike(eid,prevCtc){
+  const nv=+$('hk_new').value;if(!nv||nv<=0)return alert('Enter the new monthly CTC.');
+  const eff=$('hk_month').value;if(!eff)return alert('Choose the effective month.');
+  const{error}=await sb.from('salary_history').insert({employee_id:eid,org_id:ME.org?.id||null,effective_month:eff+'-01',previous_ctc:prevCtc||null,new_ctc:nv,note:$('hk_note').value.trim()||null});
+  if(error)return alert(error.message);
+  // Current CTC on the employee reflects the latest revision.
+  await sb.from('employees').update({ctc:nv}).eq('id',eid);
+  document.querySelectorAll('.modal').forEach(m=>m.remove());salaryHistory(eid);
 }
 async function mkLogin(eid,email){
   if(!email)return alert('Set an email for this employee first (Edit).');
@@ -1197,18 +1244,24 @@ async function apprWfh(id,v){await sb.from('wfh_leave').update({approved:v}).eq(
 /* ---------- PAYROLL ---------- */
 function autoPay(e,y,m,att){const dim=new Date(y,m,0).getDate();
   const unpaid=(att&&att.unpaid)||0;const td=dim;const paid=dim-unpaid;
-  if(!e.ctc)return{total_days:td,paid_days:paid};
-  const g=+e.ctc,f=td?paid/td:1;
+  const ctc=e.eff_ctc!=null?e.eff_ctc:e.ctc;
+  if(!ctc)return{total_days:td,paid_days:paid};
+  const g=+ctc,f=td?paid/td:1;
   return{total_days:td,paid_days:paid,basic:Math.round(g*0.5),hra:Math.round(g*0.2),other_allowance:Math.round(g*0.3),pt:g>20000?200:(g>15000?150:0),lop:Math.round(g*(1-f)),incentives:'',arrears:''};}
 async function pay(ym){
   const now=new Date();ym=ym||`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const [y,m]=ym.split('-').map(Number);
   const dim0=new Date(y,m,0).getDate();
-  const [{data:emps},{data:rows},{data:arec}]=await Promise.all([
+  const [{data:emps},{data:rows},{data:arec},{data:hist}]=await Promise.all([
     sb.from('employees').select('*').eq('status','Active').order('emp_code'),
     sb.from('payroll').select('*').eq('pay_year',y).eq('pay_month',m),
-    sb.from('attendance').select('employee_id,status').gte('att_date',`${ym}-01`).lte('att_date',`${ym}-${dim0}`)]);
+    sb.from('attendance').select('employee_id,status').gte('att_date',`${ym}-01`).lte('att_date',`${ym}-${dim0}`),
+    sb.from('salary_history').select('employee_id,effective_month,previous_ctc,new_ctc')]);
   const map={};(rows||[]).forEach(r=>map[r.employee_id]=r);
+  // Effective CTC per employee for THIS month, plus a flag if a hike took effect this month.
+  const HIST={};(hist||[]).forEach(h=>{(HIST[h.employee_id]=HIST[h.employee_id]||[]).push(h);});
+  (emps||[]).forEach(e=>{e.eff_ctc=effectiveCtc(HIST[e.id],ym,e.ctc);
+    e.hiked_this_month=(HIST[e.id]||[]).find(h=>h.effective_month>=`${ym}-01`&&h.effective_month<=`${ym}-31`);});
   const ATT={};(arec||[]).forEach(r=>{const a=ATT[r.employee_id]=ATT[r.employee_id]||{unpaid:0};
     if(r.status==='A'||r.status==='UL')a.unpaid++;else if(r.status==='H')a.unpaid+=0.5;});
   const F=['total_days','paid_days','basic','hra','other_allowance','incentives','arrears','pt','lop'];
@@ -1216,7 +1269,7 @@ async function pay(ym){
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="pay(this.value)"></div></div>`+
   kpis([['<i class="fa-solid fa-money-bills"></i>','#E8EEFB','Total Gross Pay','—','', 'kgross'],['<i class="fa-solid fa-file-invoice"></i>','#E6F7EC','Total Deductions','—','','kded'],['<i class="fa-solid fa-money-bill-wave"></i>','#FFE9DC','Net Pay (Take Home)','—','','knet'],['<i class="fa-solid fa-users"></i>','#F3ECFB','Employees',(emps||[]).length,'','kemp']])+`
   <div class="card" style="overflow:auto"><table id="ptbl"><tr><th>ID</th><th>Name</th><th>Days</th><th>Paid</th><th>Basic</th><th>HRA</th><th>Other Allow</th><th>Incentives</th><th>Arrears</th><th>PT</th><th>LOP</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Salary Status</th><th>Payslip</th><th></th></tr>
-  ${(emps||[]).map(e=>{const r=map[e.id]||autoPay(e,y,m,ATT[e.id]);const ft=e.employment_type==='Full-time';return`<tr data-eid="${e.id}" data-ctc="${e.ctc||''}"><td>${e.emp_code}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b>${!map[e.id]&&e.ctc?' <span title="auto-filled from CTC + attendance"><i class="fa-solid fa-bolt" style="color:#E8A200"></i></span>':''}</td>
+  ${(emps||[]).map(e=>{const r=map[e.id]||autoPay(e,y,m,ATT[e.id]);const ft=e.employment_type==='Full-time';const hk=e.hiked_this_month;return`<tr data-eid="${e.id}" data-ctc="${e.eff_ctc||e.ctc||''}"><td>${e.emp_code}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b>${!map[e.id]&&(e.eff_ctc||e.ctc)?' <span title="auto-filled from CTC + attendance"><i class="fa-solid fa-bolt" style="color:#E8A200"></i></span>':''}${hk?` <span class="badge stP" style="font-size:9.5px;padding:1px 7px" title="Salary revised from ${inr(hk.previous_ctc||0)} to ${inr(hk.new_ctc)} this month"><i class="fa-solid fa-arrow-trend-up"></i> Hike</span>`:''}</td>
   ${F.map(k=>`<td><input class="pi" data-k="${k}" type="number" step="0.01" value="${r[k]??''}" style="width:78px"></td>`).join('')}
   <td class="cg"></td><td class="cd"></td><td class="cn" style="font-weight:700"></td>
   <td><select class="pi" data-k="pay_status" style="width:95px;background:${r.pay_status==='Paid'?'#D5F5E3':'#FADBD8'}" onchange="this.style.background=this.value==='Paid'?'#D5F5E3':'#FADBD8'">
