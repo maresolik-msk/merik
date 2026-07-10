@@ -1050,12 +1050,13 @@ async function projintDetail(name){
 }
 let FORM_PROJECTS=[];
 async function taskForm(eid,d,r){
-  const{data:pjs}=await sb.from('projects').select('name,status').order('name');
+  const{data:pjs}=await sb.from('projects').select('name,status,clients(name)').order('name');
+  const clientOf={};(pjs||[]).forEach(p=>clientOf[p.name]=p.clients?.name||'Internal');
   const sel=new Set((r.project||'').split(',').map(s=>s.trim()).filter(Boolean));
-  // Projects offered in each task's dropdown (active ones + any already used on this update).
-  FORM_PROJECTS=[...new Set([...(pjs||[]).filter(x=>x.status==='Active').map(x=>x.name),...sel])];
+  // Projects offered in each task's dropdown (active ones + any already used on this update), each with its client.
+  FORM_PROJECTS=[...new Set([...(pjs||[]).filter(x=>x.status==='Active').map(x=>x.name),...sel])].map(n=>({name:n,client:clientOf[n]||''}));
   const chips=(pjs||[]).filter(x=>x.status==='Active'||sel.has(x.name)).map(x=>
-    `<span class="pchip" data-v="${esc(x.name)}" onclick="this.classList.toggle('on');syncPrj()" style="cursor:pointer;display:inline-block;margin:3px;padding:4px 10px;border-radius:12px;border:1px solid #c6d0e0;font-size:12px" class2="">${esc(x.name)}</span>`).join('');
+    `<span class="pchip" data-v="${esc(x.name)}" title="Client: ${esc(clientOf[x.name]||'Internal')}" onclick="this.classList.toggle('on');syncPrj()" style="cursor:pointer;display:inline-block;margin:3px;padding:4px 10px;border-radius:12px;border:1px solid #c6d0e0;font-size:12px" class2="">${esc(x.name)} <span style="opacity:.6;font-size:11px">· ${esc(clientOf[x.name]||'Internal')}</span></span>`).join('');
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:660px">
   <h2>Daily Update — ${fmtDate(d)}</h2>
   <label>Day Status</label><select id="t_update_status">${['Update Shared','No Update','WFH','Leave','Sick Leave','Holiday'].map(s=>`<option ${r.update_status===s?'selected':''}>${s}</option>`).join('')}</select>
@@ -1080,8 +1081,8 @@ function addTaskRow(t){t=t||{};
   const list=$('tasklist');if(!list)return;
   const opt=TASK_ITEM_STATUS.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('');
   const dfltProj=t.project||($('t_project')?.value||'').split(',')[0].trim()||'';
-  const projList=[...new Set([...FORM_PROJECTS,...(dfltProj?[dfltProj]:[])])];
-  const projOpts=`<option value="">— No project —</option>`+projList.map(n=>`<option ${n===dfltProj?'selected':''}>${esc(n)}</option>`).join('');
+  const projList=[...FORM_PROJECTS];if(dfltProj&&!projList.some(p=>p.name===dfltProj))projList.push({name:dfltProj,client:''});
+  const projOpts=`<option value="">— No project —</option>`+projList.map(p=>`<option value="${esc(p.name)}" ${p.name===dfltProj?'selected':''}>${esc(p.name)}${p.client?` — ${esc(p.client)}`:''}</option>`).join('');
   const row=document.createElement('div');row.className='taskrow';
   row.style.cssText='border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--bg)';
   row.innerHTML=`
