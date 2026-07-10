@@ -1265,7 +1265,7 @@ async function pay(ym){
   const ATT={};(arec||[]).forEach(r=>{const a=ATT[r.employee_id]=ATT[r.employee_id]||{unpaid:0};
     if(r.status==='A'||r.status==='UL')a.unpaid++;else if(r.status==='H')a.unpaid+=0.5;});
   const F=['total_days','paid_days','basic','hra','other_allowance','incentives','arrears','pt','lop'];
-  M(pgh(`Payroll — ${MONTHS[m-1]} ${y}`,'Manage employee payroll and salary details for the selected month.',`<button class="btn sec" onclick="sendAll(${y},${m})"><i class="fa-solid fa-paper-plane"></i> Send Payslips</button> <button class="btn" onclick="savePay(${y},${m})"><i class="fa-solid fa-floppy-disk"></i> Save All</button>`)+
+  M(pgh(`Payroll — ${MONTHS[m-1]} ${y}`,'Manage employee payroll and salary details for the selected month.',`<button class="btn sec" onclick="recomputePay()" title="Refill Basic/HRA/Other/PT/LOP from each employee's current (effective) CTC"><i class="fa-solid fa-rotate"></i> Recompute from CTC</button> <button class="btn sec" onclick="sendAll(${y},${m})"><i class="fa-solid fa-paper-plane"></i> Send Payslips</button> <button class="btn" onclick="savePay(${y},${m})"><i class="fa-solid fa-floppy-disk"></i> Save All</button>`)+
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="pay(this.value)"></div></div>`+
   kpis([['<i class="fa-solid fa-money-bills"></i>','#E8EEFB','Total Gross Pay','—','', 'kgross'],['<i class="fa-solid fa-file-invoice"></i>','#E6F7EC','Total Deductions','—','','kded'],['<i class="fa-solid fa-money-bill-wave"></i>','#FFE9DC','Net Pay (Take Home)','—','','knet'],['<i class="fa-solid fa-users"></i>','#F3ECFB','Employees',(emps||[]).length,'','kemp']])+`
   <div class="card" style="overflow:auto"><table id="ptbl"><tr><th>ID</th><th>Name</th><th>Days</th><th>Paid</th><th>Basic</th><th>HRA</th><th>Other Allow</th><th>Incentives</th><th>Arrears</th><th>PT</th><th>LOP</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Salary Status</th><th>Payslip</th><th></th></tr>
@@ -1291,6 +1291,19 @@ async function pay(ym){
       const td=+tr.querySelector('[data-k=total_days]').value||0,pd=+tr.querySelector('[data-k=paid_days]').value||0;
       if(ctc&&td)tr.querySelector('[data-k=lop]').value=Math.max(0,Math.round(ctc*(td-pd)/td));}
     upd();}));upd();
+}
+// Refill formula-based components from each row's current (effective) CTC. Skips Paid rows,
+// keeps incentives/arrears. Admin reviews then clicks Save All.
+function recomputePay(){let n=0;
+  document.querySelectorAll('#ptbl tr[data-eid]').forEach(tr=>{
+    if(tr.querySelector('[data-k=pay_status]').value==='Paid')return;
+    const ctc=+tr.dataset.ctc||0;if(!ctc)return;
+    const td=+tr.querySelector('[data-k=total_days]').value||0,pd=+tr.querySelector('[data-k=paid_days]').value||0;const f=td?pd/td:1;
+    const set=(k,v)=>tr.querySelector(`[data-k=${k}]`).value=v;
+    set('basic',Math.round(ctc*0.5));set('hra',Math.round(ctc*0.2));set('other_allowance',Math.round(ctc*0.3));
+    set('pt',ctc>20000?200:(ctc>15000?150:0));set('lop',Math.round(ctc*(1-f)));
+    tr.querySelector('[data-k=basic]').dispatchEvent(new Event('input',{bubbles:true}));n++;});
+  alert(n?`Recomputed ${n} row(s) from current CTC. Review and click Save All.`:'Nothing to recompute — Paid rows are locked and untouched.');
 }
 async function savePay(y,m){
   const ups=[];document.querySelectorAll('#ptbl tr[data-eid]').forEach(tr=>{
