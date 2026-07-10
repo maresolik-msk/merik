@@ -1346,7 +1346,7 @@ async function delCli(id){if(confirm('Delete client?')){await sb.from('clients')
 /* ---------- QUOTES & INVOICES (shared doc engine) ---------- */
 async function prj(){
   const [{data:ps},{data:cls}]=await Promise.all([
-    sb.from('projects').select('*,clients(name)').order('name'),
+    sb.from('projects').select('*,clients(name)').order('start_date',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('clients').select('id,name').order('name')]);
   M(pgh('Projects','Manage all projects and their status.')+`<div class="card"><div class="row">
   <div><label>Project Name</label><input id="pj_name"></div>
@@ -1359,8 +1359,27 @@ async function prj(){
   <td style="min-width:220px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Add description…" onblur="updDesc('${x.id}',this.value)">${esc(x.description||'')}</textarea></td>
   <td style="white-space:nowrap">${fmtDate(x.start_date)}</td>
   <td><select onchange="updPrj('${x.id}',this.value)" style="width:120px">${['Active','On Hold','Completed'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
-  <td><button class="btn sm warn" onclick="delPrj('${x.id}')">Del</button></td></tr>`).join('')}</table></div>
-  <p style="font-size:12px;color:#667">Edit a description inline — it saves when you click away. Active projects appear as selectable chips in the Daily Task Log.</p>`);
+  <td style="white-space:nowrap"><button class="btn sm sec" onclick='prjForm(${JSON.stringify({id:x.id,name:x.name,client_id:x.client_id,status:x.status,start_date:x.start_date,description:x.description}).replace(/'/g,"&#39;")})'>Edit</button>
+  <button class="btn sm warn" onclick="delPrj('${x.id}')">Del</button></td></tr>`).join('')}</table></div>
+  <p style="font-size:12px;color:#667">Newest projects appear on top. Use <b>Edit</b> for full changes (name, client, start date), or edit status/description inline. Active projects appear as selectable chips in the Daily Task Log.</p>`);
+}
+async function prjForm(p){
+  const{data:cls}=await sb.from('clients').select('id,name').order('name');
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Edit Project</h2>
+  <label>Project Name</label><input id="pe_name" value="${esc(p.name||'')}">
+  <div class="row"><div><label>Client</label><select id="pe_client"><option value="">— Internal —</option>${(cls||[]).map(c=>`<option value="${c.id}" ${p.client_id===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+  <div><label>Status</label><select id="pe_status">${['Active','On Hold','Completed'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div>
+  <div class="row"><div style="max-width:200px"><label>Start Date</label><input id="pe_start" type="date" value="${(p.start_date||'').slice(0,10)}"></div></div>
+  <label>Description</label><textarea id="pe_desc" rows="3">${esc(p.description||'')}</textarea>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveProjEdit('${p.id}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveProjEdit(id){
+  const name=$('pe_name').value.trim();if(!name)return alert('Project name is required.');
+  const o={name,client_id:$('pe_client').value||null,status:$('pe_status').value,start_date:$('pe_start').value||null,description:$('pe_desc').value.trim()||null};
+  const{error}=await sb.from('projects').update(o).eq('id',id);if(error)return alert(error.message);
+  document.querySelector('.modal').remove();prj();
 }
 async function addPrj(){const{error}=await sb.from('projects').insert({name:$('pj_name').value,client_id:$('pj_client').value||null,status:$('pj_status').value,description:$('pj_desc').value||null});
   error?alert(error.message):prj()}
