@@ -1,0 +1,19 @@
+# Merik
+
+> Merik is an all-in-one workforce management platform for small and growing businesses — employee management, attendance tracking, leave management, payroll and daily task tracking in one secure company workspace.
+
+Merik replaces spreadsheets and disconnected tools with a single company workspace. Employees can self sign-up, mark attendance, request leave, and log daily tasks. Attendance and leave data flow directly into monthly payroll calculations.
+
+## Product
+
+- [Home](https://merik.in/): Overview of the Merik workforce suite.
+- [Features](https://merik.in/features.html): Employee management, attendance tracking, leave management, payroll, daily task tracking, company workspaces.
+- [How it works](https://merik.in/how-it-works.html): Three-step setup — create a workspace, invite employees, run daily operations.
+- [Modules](https://merik.in/modules.html): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices.
+
+## Key facts
+
+- Pricing: free to start, unlimited employee self sign-up.
+- Setup time: under 5 minutes to create a company workspace.
+- Core modules: HR/Employees, Attendance, Leave, Payroll, Daily Tasks, Clients & Invoicing.
+- Contact: maresolik@gmail.com
