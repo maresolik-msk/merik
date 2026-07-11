@@ -7,9 +7,9 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 ## Product
 
 - [Home](https://www.merik.in/): Overview of the Merik workforce suite.
-- [Features](https://www.merik.in/features.html): Employee management, attendance tracking, leave management, payroll, daily task tracking, company workspaces.
-- [How it works](https://www.merik.in/how-it-works.html): Three-step setup — create a workspace, invite employees, run daily operations.
-- [Modules](https://www.merik.in/modules.html): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices.
+- [Features](https://www.merik.in/features): Employee management, attendance tracking, leave management, payroll, daily task tracking, company workspaces.
+- [How it works](https://www.merik.in/how-it-works): Three-step setup — create a workspace, invite employees, run daily operations.
+- [Modules](https://www.merik.in/modules): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices.
 
 ## Key facts
 
