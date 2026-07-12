@@ -4,6 +4,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
 } from "react";
 
 type Variant = "primary" | "outline" | "ghost" | "danger";
@@ -54,6 +55,18 @@ export function Select({ className, children, ...props }: SelectHTMLAttributes<H
     >
       {children}
     </select>
+  );
+}
+
+export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className={cn(
+        "w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-muted/70",
+        className,
+      )}
+      {...props}
+    />
   );
 }
 

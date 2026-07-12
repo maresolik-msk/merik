@@ -28,6 +28,7 @@ const NAV: NavGroup[] = [
       { href: "/projects", label: "Projects", ready: true },
       { href: "/quotes", label: "Quotes", ready: true },
       { href: "/invoices", label: "Invoices", ready: true },
+      { href: "/feedback", label: "Feedback", ready: true },
     ],
   },
 ];
