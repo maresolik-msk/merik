@@ -387,7 +387,7 @@ const ADMIN_GROUPS=[
  ['Team Management',[['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays']]],
  ['Task Management',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project" style="color:#2563A8"></i>','Project Intelligence']]],
  ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
- ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings']]]];
+ ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings'],['adminfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
  [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview'],['suanalytics','<i class="fa-solid fa-chart-line"></i>','Analytics']]],
@@ -433,7 +433,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -1877,6 +1877,26 @@ async function myfb(){
 async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return alert('Please write your feedback.');
   const{error}=await sb.from('feedback').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,category:$('fb_cat').value,message:msg});
   error?alert(error.message):myfb()}
+// ---- Tenant admin: submit & manage the org's feedback ----
+async function adminfb(){
+  const{data,error}=await sb.from('feedback').select('*,employees(full_name,emp_code)').order('created_at',{ascending:false});
+  if(error)return M(`<h2>Feedback</h2><div class="warnbar">${esc(error.message)}</div>`);
+  const rows=data||[];
+  M(pgh('Feedback','Share feedback or a feature request, and manage what your team has raised.')+
+  `<div class="card"><div class="row">
+    <div style="max-width:200px"><label>Category</label><select id="afb_cat">${FB_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
+    <label>Your feedback / requirement</label><textarea id="afb_msg" rows="3" placeholder="Describe your feedback or requirement…"></textarea>
+    <div style="margin-top:10px"><button class="btn" onclick="sendAdminFb()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button></div></div>
+  <div class="card"><table><tr><th>Date</th><th>From</th><th>Category</th><th>Feedback</th><th>Status</th><th>Reply</th></tr>
+  ${rows.map(r=>`<tr data-fid="${r.id}"><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td>
+  <td style="white-space:nowrap">${esc(r.employees?.full_name||'Admin')}</td><td>${esc(r.category)}</td>
+  <td style="max-width:320px">${esc(r.message)}</td>
+  <td><select onchange="setFbStatus('${r.id}',this.value)" style="width:120px">${FB_STATUS.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+  <td style="min-width:200px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Reply…" onblur="setFbReply('${r.id}',this.value)">${esc(r.admin_reply||'')}</textarea></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No feedback submitted yet.</td></tr>'}</table></div>`);
+}
+async function sendAdminFb(){const msg=$('afb_msg').value.trim();if(!msg)return alert('Please write your feedback.');
+  const{error}=await sb.from('feedback').insert({employee_id:ME.employee?.id||null,org_id:ME.org?.id||null,category:$('afb_cat').value,message:msg});
+  error?alert(error.message):adminfb()}
 // ---- Admin: review feedback ----
 /* ================= MERIK SUPER ADMIN — product management ================= */
 const suStat=(ic,bg,col,label,val,sub)=>`<div class="card" style="margin:0;flex:1;min-width:190px"><div style="display:flex;gap:14px;align-items:flex-start">
