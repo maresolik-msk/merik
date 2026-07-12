@@ -1,9 +1,41 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Best-effort welcome email — approval must succeed even if SMTP is misconfigured
+// or the send fails, so this never throws.
+async function sendWelcomeEmail(to: string, companyName: string, password: string) {
+  try {
+    const user = Deno.env.get('SMTP_USER');
+    const pass = Deno.env.get('SMTP_PASS');
+    if (!user || !pass) return;
+    const client = new SMTPClient({
+      connection: {
+        hostname: Deno.env.get('SMTP_HOST') || 'smtp.gmail.com',
+        port: Number(Deno.env.get('SMTP_PORT') || '465'),
+        tls: true,
+        auth: { username: user, password: pass },
+      },
+    });
+    await client.send({
+      from: Deno.env.get('SMTP_FROM') || user,
+      to,
+      subject: `Your Merik workspace for ${companyName} is ready`,
+      html: `<p>Hi,</p><p>Your company workspace <b>${companyName}</b> has been approved and is ready to use.</p>
+        <table cellpadding="6"><tr><td>Sign in at</td><td><a href="https://www.merik.in/app/">https://www.merik.in/app/</a></td></tr>
+        <tr><td>Email</td><td><b>${to}</b></td></tr>
+        <tr><td>Password</td><td><b>${password}</b></td></tr></table>
+        <p>We recommend changing your password after your first sign-in.</p>`,
+    });
+    await client.close();
+  } catch {
+    // never block approval on a notification failure
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -54,6 +86,8 @@ Deno.serve(async (req) => {
       await admin.from('profiles').upsert({ id: userId, role: 'admin', org_id: org.id, employee_id: null });
 
       await admin.from('signup_requests').update({ status: 'Approved', reviewed_at: new Date().toISOString(), created_org_id: org.id, review_notes: notes || null }).eq('id', request_id);
+
+      await sendWelcomeEmail(rq.email, rq.company_name, password);
 
       return new Response(JSON.stringify({ ok: true, status: 'Approved', email: rq.email, org_id: org.id }), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }

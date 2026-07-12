@@ -25,6 +25,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/site.css?v=2">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="application/ld+json">
 {
   "@context":"https://schema.org",
@@ -253,6 +254,32 @@
   </div>
 </section>
 
+<!-- TALK TO US -->
+<section id="talk-to-us" class="soft">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Not ready to sign up yet?</div>
+      <h2>Talk to us about your team</h2>
+      <p>Tell us a bit about your business and we'll get your workspace set up for you.</p>
+    </div>
+    <div id="leadFormWrap" class="lead-form">
+      <form id="leadForm">
+        <div class="grid2">
+          <div class="field"><label for="lf_company">Company name</label><input id="lf_company" required></div>
+          <div class="field"><label for="lf_name">Your name</label><input id="lf_name" required></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="lf_email">Work email</label><input id="lf_email" type="email" required></div>
+          <div class="field"><label for="lf_phone">Phone (optional)</label><input id="lf_phone" type="tel"></div>
+        </div>
+        <div class="field"><label for="lf_msg">What are you looking for? (optional)</label><textarea id="lf_msg" rows="3" placeholder="Team size, what you want to track, anything else…"></textarea></div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Request access →</button>
+        <div id="leadMsg" class="fmsg" role="status"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
 <!-- CTA -->
 <section class="soft">
   <div class="wrap">
@@ -277,7 +304,7 @@
       </div>
       <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="#pricing">Pricing</a><a href="/blog/">Blog</a></div>
       <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a></div>
-      <div><h5>Get started</h5><a href="app/">Create workspace</a><a href="app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+      <div><h5>Get started</h5><a href="app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
     </div>
     <div class="foot-bottom">
       <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
@@ -291,6 +318,49 @@
   var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
   mb.addEventListener('click',function(){nl.classList.toggle('open');});
   nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');});});
+
+  // Lead capture form — inserts into signup_requests (same table/flow the
+  // app's "Request Access" screen uses) and pings the team by email.
+  var sb=supabase.createClient('https://cohifrzskydnozpmieov.supabase.co','sb_publishable_-o5UbAkbstAxZRZ5Tqs6mA_sADPbnOP');
+  var leadForm=document.getElementById('leadForm');
+  if(leadForm){
+    leadForm.addEventListener('submit', async function(e){
+      e.preventDefault();
+      var msgEl=document.getElementById('leadMsg');
+      var payload={
+        company_name: document.getElementById('lf_company').value.trim(),
+        contact_name: document.getElementById('lf_name').value.trim(),
+        email: document.getElementById('lf_email').value.trim(),
+        phone: document.getElementById('lf_phone').value.trim() || null,
+        message: document.getElementById('lf_msg').value.trim() || null,
+        status: 'Pending'
+      };
+      if(!payload.company_name || !payload.contact_name || !payload.email){
+        msgEl.textContent='Company, your name and email are required.'; msgEl.className='fmsg err'; return;
+      }
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payload.email)){
+        msgEl.textContent='Please enter a valid email address.'; msgEl.className='fmsg err'; return;
+      }
+      var btn=leadForm.querySelector('button[type="submit"]');
+      btn.disabled=true; btn.textContent='Submitting…';
+      var res=await sb.from('signup_requests').insert(payload);
+      if(res.error){
+        msgEl.textContent=res.error.message; msgEl.className='fmsg err';
+        btn.disabled=false; btn.textContent='Request access →';
+        return;
+      }
+      if (typeof gtag === 'function') gtag('event', 'generate_lead', { form: 'homepage_talk_to_us' });
+      fetch('https://cohifrzskydnozpmieov.supabase.co/functions/v1/notify-lead',{
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+      }).catch(function(){});
+      var esc=function(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;};
+      var firstName=esc((payload.contact_name.split(' ')[0]) || 'there');
+      document.getElementById('leadFormWrap').innerHTML='<div class="lead-success">'+
+        '<div class="ico">✓</div>'+
+        '<h3>Thanks, '+firstName+'!</h3>'+
+        '<p style="margin-top:8px;color:var(--muted)">We\'ve got your request for <b>'+esc(payload.company_name)+'</b> and will be in touch shortly.</p></div>';
+    });
+  }
 </script>
 </body>
 </html>
