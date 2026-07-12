@@ -6,13 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 import { Button, Card, Input, Select } from "@/components/ui";
 import { inr } from "@/lib/utils";
 
+const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 type Row = {
   employee_id: string;
   emp_code: string;
   full_name: string;
+  email: string | null;
   ctc: number | null;
   auto: boolean;
   pay_status: string;
+  sent: boolean;
   total_days: number;
   paid_days: number;
   basic: number;
@@ -133,6 +137,33 @@ export function PayrollView() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll", ym] }),
   });
 
+  const sendPayslip = useMutation({
+    mutationFn: async (row: Row) => {
+      const d = draft[row.employee_id];
+      if (!row.email) throw new Error(`${row.full_name} has no email on file`);
+      const t = derive(d);
+      // Save this row's current numbers first, so what the employee sees matches what's emailed.
+      const { error: saveErr } = await supabase.functions.invoke("payroll", {
+        body: { action: "save", year, month, rows: [{ employee_id: row.employee_id, ...d }] },
+      });
+      if (saveErr) throw saveErr;
+      const { error: sentErr } = await supabase
+        .from("payroll")
+        .update({ sent: true, sent_at: new Date().toISOString() })
+        .match({ employee_id: row.employee_id, pay_year: year, pay_month: month });
+      if (sentErr) throw sentErr;
+      const { error: mailErr } = await supabase.functions.invoke("send-email", {
+        body: {
+          to: row.email,
+          subject: `Your payslip for ${MONTHS[month]} ${year} is ready`,
+          html: `<p>Hi ${row.full_name},</p><p>Your payslip for ${MONTHS[month]} ${year} is ready.</p><table cellpadding="6"><tr><td>Gross pay</td><td><b>${inr(t.gross)}</b></td></tr><tr><td>Deductions</td><td><b>${inr(t.deductions)}</b></td></tr><tr><td>Net pay</td><td><b>${inr(t.net)}</b></td></tr></table><p>Sign in to Merik to view the full breakdown.</p>`,
+        },
+      });
+      if (mailErr) throw mailErr;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll", ym] }),
+  });
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -175,10 +206,13 @@ export function PayrollView() {
         </Card>
       </div>
 
-      {(error || save.isError) && (
-        <p className="mb-3 text-sm font-medium text-brand-dark">{((error || save.error) as Error).message}</p>
+      {(error || save.isError || sendPayslip.isError) && (
+        <p className="mb-3 text-sm font-medium text-brand-dark">
+          {((error || save.error || sendPayslip.error) as Error).message}
+        </p>
       )}
       {save.isSuccess && <p className="mb-3 text-sm font-medium text-emerald-700">Saved {save.data.saved} payslip(s).</p>}
+      {sendPayslip.isSuccess && <p className="mb-3 text-sm font-medium text-emerald-700">Payslip emailed.</p>}
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
@@ -194,12 +228,13 @@ export function PayrollView() {
                 <th className="px-2 py-3">Deduct</th>
                 <th className="px-2 py-3">Net</th>
                 <th className="px-2 py-3">Status</th>
+                <th className="px-2 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={16} className="px-4 py-10 text-center text-muted">Computing payroll…</td>
+                  <td colSpan={17} className="px-4 py-10 text-center text-muted">Computing payroll…</td>
                 </tr>
               )}
               {pageRows.map((r) => {
@@ -235,6 +270,19 @@ export function PayrollView() {
                         <option>Unpaid</option>
                         <option>Paid</option>
                       </Select>
+                    </td>
+                    <td className="px-2 py-2">
+                      {d.pay_status === "Paid" && !r.auto && (
+                        <Button
+                          variant={r.sent ? "outline" : "primary"}
+                          className="px-2 py-1 text-xs whitespace-nowrap"
+                          disabled={sendPayslip.isPending || !r.email}
+                          title={r.email ? undefined : "No email on file"}
+                          onClick={() => sendPayslip.mutate(r)}
+                        >
+                          {r.sent ? "Resend" : "Send Payslip"}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );

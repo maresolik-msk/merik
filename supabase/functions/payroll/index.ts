@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 
     if (body.action === "compute") {
       const [{ data: emps, error: e1 }, { data: saved, error: e2 }, { data: att, error: e3 }] = await Promise.all([
-        supabase.from("employees").select("id, emp_code, full_name, ctc").eq("status", "Active").order("emp_code"),
+        supabase.from("employees").select("id, emp_code, full_name, ctc, email").eq("status", "Active").order("emp_code"),
         supabase.from("payroll").select("*").eq("pay_year", year).eq("pay_month", month),
         supabase.from("attendance").select("employee_id, status").gte("att_date", `${ym}-01`).lte("att_date", `${ym}-${dim}`),
       ]);
@@ -108,9 +108,11 @@ Deno.serve(async (req) => {
           employee_id: e.id,
           emp_code: e.emp_code,
           full_name: e.full_name,
+          email: e.email,
           ctc: e.ctc,
           auto: !existing,
           pay_status: (existing?.pay_status as string) ?? "Unpaid",
+          sent: Boolean(existing?.sent),
           ...base,
           ...derive(base),
         };

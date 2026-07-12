@@ -7,7 +7,7 @@ import type { Tables } from "@/lib/database.types";
 import { Badge, Button, Card } from "@/components/ui";
 
 type Leave = Tables<"wfh_leave">;
-type Emp = Pick<Tables<"employees">, "id" | "full_name" | "emp_code">;
+type Emp = Pick<Tables<"employees">, "id" | "full_name" | "emp_code" | "email">;
 const PAGE_SIZE = 12;
 
 export function LeaveView() {
@@ -20,7 +20,7 @@ export function LeaveView() {
     queryFn: async () => {
       const [{ data: requests, error: e1 }, { data: employees, error: e2 }] = await Promise.all([
         supabase.from("wfh_leave").select("*").order("req_date", { ascending: false }).limit(200),
-        supabase.from("employees").select("id, full_name, emp_code"),
+        supabase.from("employees").select("id, full_name, emp_code, email"),
       ]);
       if (e1) throw e1;
       if (e2) throw e2;
@@ -34,6 +34,22 @@ export function LeaveView() {
     mutationFn: async ({ id, value }: { id: string; value: "Yes" | "No" }) => {
       const { error } = await supabase.from("wfh_leave").update({ approved: value }).eq("id", id);
       if (error) throw error;
+      if (value !== "Yes") return;
+      // Best-effort notification — approval already succeeded even if email fails.
+      const req = data?.requests.find((r) => r.id === id);
+      const emp = req ? data?.empById[req.employee_id] : undefined;
+      if (!emp?.email || !req) return;
+      try {
+        await supabase.functions.invoke("send-email", {
+          body: {
+            to: emp.email,
+            subject: `Your ${req.status} request has been approved`,
+            html: `<p>Hi ${emp.full_name},</p><p>Your <b>${req.status}</b> request for <b>${req.req_date}</b>${req.end_date ? ` to <b>${req.end_date}</b>` : ""} has been approved.</p>`,
+          },
+        });
+      } catch {
+        // notification failure shouldn't surface as an approval error
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["leave"] }),
   });
