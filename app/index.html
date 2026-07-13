@@ -521,10 +521,71 @@ async function emp(){
   `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Type</th><th>Email</th><th>DOJ</th><th>PAN</th><th>UAN</th><th>Bank A/c</th><th>Monthly CTC</th><th>Annual CTC</th><th>Status</th><th></th></tr>
   ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td>${esc(e.email)}</td><td>${e.doj?fmtDate(e.doj):''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
   <td><span class="badge ${e.status==='Active'?'stP':'stA'}">${e.status}</span></td>
-  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick='empForm(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Edit</button>
+  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" title="View employee" onclick="empDetail('${e.id}')"><i class="fa-solid fa-eye"></i> View</button>
+  <button class="btn sm sec" onclick='empForm(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Edit</button>
   <button class="btn sm sec" title="Salary & hike history" onclick="salaryHistory('${e.id}')"><i class="fa-solid fa-arrow-trend-up"></i> Salary</button>
-  <button class="btn sm" title="Create login credentials" onclick="mkLogin('${e.id}','${esc(e.email||'')}')"><i class="fa-solid fa-key"></i> Login</button>
   <button class="btn sm warn" onclick="delEmp('${e.id}')">Del</button></td></tr>`).join('')}</table></div>`);
+}
+// ---- Individual employee page: view details, email login credentials, send a document ----
+async function empDetail(eid){
+  const [{data:e},{data:prof}]=await Promise.all([
+    sb.from('employees').select('*').eq('id',eid).single(),
+    sb.from('profiles').select('id').eq('employee_id',eid).maybeSingle()]);
+  if(!e)return alert('Employee not found');
+  const hasLogin=!!prof;
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:640px">
+  <h2>${esc(e.full_name)}</h2>
+  <p style="font-size:13px;color:#667;margin-bottom:10px">${esc(e.emp_code)} · ${esc(e.department||'—')} · ${esc(e.designation||'—')}</p>
+  <div class="row" style="font-size:13px">
+    <div><label>Email</label><div>${esc(e.email||'—')}</div></div>
+    <div><label>Status</label><div><span class="badge ${e.status==='Active'?'stP':'stA'}">${esc(e.status)}</span></div></div>
+  </div>
+  <div class="row" style="font-size:13px;margin-top:8px">
+    <div><label>Date of Joining</label><div>${e.doj?fmtDate(e.doj):'—'}</div></div>
+    <div><label>Monthly CTC</label><div>${e.ctc?inr(e.ctc):'—'}</div></div>
+  </div>
+  <hr style="margin:16px 0;border:none;border-top:1px solid #eee">
+  <h3 style="font-size:15px;margin-bottom:6px">Account &amp; login</h3>
+  <p style="font-size:12.5px;color:#667;margin-bottom:8px">${hasLogin?'This employee already has a login — resending sets a new password and emails it to them.':'This employee has no login yet.'}</p>
+  <button class="btn sm" onclick="mkLogin('${eid}','${esc(e.email||'')}',true)"><i class="fa-solid fa-key"></i> ${hasLogin?'Resend':'Email'} login credentials</button>
+  <div id="edMsg" style="margin-top:8px;font-size:13px"></div>
+  <hr style="margin:16px 0;border:none;border-top:1px solid #eee">
+  <h3 style="font-size:15px;margin-bottom:6px">Send a document</h3>
+  <p style="font-size:12.5px;color:#667;margin-bottom:8px">Attach a PDF (offer letter, etc.) and email it directly to ${esc(e.email||'this employee')}. Max 5MB.</p>
+  <label>Subject</label><input id="ed_subj" placeholder="e.g. Your offer letter">
+  <label>Message (optional)</label><textarea id="ed_msg" rows="3" placeholder="A short note to include in the email…"></textarea>
+  <label>PDF file</label><input id="ed_file" type="file" accept="application/pdf,.pdf">
+  <div style="margin-top:10px"><button class="btn sm" onclick="sendEmpDoc('${eid}','${esc(e.email||'')}')"><i class="fa-solid fa-paperclip"></i> Send document</button></div>
+  <div id="edDocMsg" style="margin-top:8px;font-size:13px"></div>
+  <div style="margin-top:16px;text-align:right"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div>
+  </div>`;
+  document.querySelectorAll('.modal').forEach(m=>m.remove());document.body.appendChild(div);
+}
+async function fnMsg(err){let m=err.message;try{const j=await err.context.json();m=j.error||m}catch(_){}return m}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(String(r.result).split(',')[1]||'');
+    r.onerror=()=>reject(new Error('Could not read the file'));
+    r.readAsDataURL(file);
+  });
+}
+async function sendEmpDoc(eid,email){
+  if(!email)return alert('Set an email for this employee first (Edit).');
+  const fileInput=$('ed_file');const file=fileInput&&fileInput.files[0];
+  if(!file)return alert('Choose a PDF file first.');
+  if(file.size>5*1024*1024)return alert('File is too large (max 5MB).');
+  const subject=($('ed_subj').value||'').trim()||'A document from Merik';
+  const note=($('ed_msg').value||'').trim();
+  const statusEl=$('edDocMsg');statusEl.textContent='Sending…';statusEl.style.color='#667';
+  try{
+    const b64=await fileToBase64(file);
+    const html=`<p>Hi,</p>${note?`<p>${esc(note)}</p>`:''}<p>Please find the attached document.</p>`;
+    const{error}=await sb.functions.invoke('send-email',{body:{to:email,subject,html,
+      attachments:[{filename:file.name,contentType:file.type||'application/pdf',content_base64:b64}]}});
+    if(error){statusEl.textContent='Failed: '+(await fnMsg(error));statusEl.style.color='#C0392B';return}
+    statusEl.textContent=`✔ Document emailed to ${email}.`;statusEl.style.color='#1E8449';
+  }catch(e){statusEl.textContent='Failed: '+e.message;statusEl.style.color='#C0392B'}
 }
 function empForm(e={}){
   const f=(k,l,t='text')=>`<label>${l}</label><input id="f_${k}" type="${t}" value="${esc(e[k]||'')}">`;
@@ -593,14 +654,27 @@ async function saveHike(eid,prevCtc){
   await sb.from('employees').update({ctc:nv}).eq('id',eid);
   document.querySelectorAll('.modal').forEach(m=>m.remove());salaryHistory(eid);
 }
-async function mkLogin(eid,email){
+async function mkLogin(eid,email,fromDetail){
   if(!email)return alert('Set an email for this employee first (Edit).');
-  const pw=prompt(`Create login for ${email}\n\nEnter a password (min 6 characters):`);
+  const pw=prompt(`Create/resend login for ${email}\n\nEnter a password (min 6 characters):`);
   if(!pw)return;
+  const msgEl=fromDetail?$('edMsg'):null;
+  if(msgEl){msgEl.textContent='Creating login…';msgEl.style.color='#667'}
   const{data,error}=await sb.functions.invoke('create-employee-login',{body:{employee_id:eid,password:pw}});
-  if(error){let m=error.message;try{const j=await error.context.json();m=j.error||m}catch(_){}
-    return alert('Failed: '+m)}
-  alert(`✔ Login created\n\nEmail: ${data.email}\nPassword: ${pw}\n\nShare these credentials with the employee.`);
+  if(error){const m='Failed: '+(await fnMsg(error));
+    if(msgEl){msgEl.textContent=m;msgEl.style.color='#C0392B'}else alert(m);
+    return}
+  // Email the credentials directly to the employee, with the site link.
+  const html=`<p>Hi,</p><p>Your Merik account is ready.</p>
+    <table cellpadding="6"><tr><td>Sign in at</td><td><a href="https://www.merik.in/app/">https://www.merik.in/app/</a></td></tr>
+    <tr><td>Email</td><td><b>${esc(data.email)}</b></td></tr>
+    <tr><td>Password</td><td><b>${esc(pw)}</b></td></tr></table>
+    <p>We recommend changing your password after your first sign-in.</p>`;
+  const{error:mailErr}=await sb.functions.invoke('send-email',{body:{to:data.email,subject:'Your Merik login',html}});
+  const msg=mailErr
+    ?`Login created, but the email couldn't be sent (${await fnMsg(mailErr)}). Share these manually — Email: ${data.email} · Password: ${pw}`
+    :`✔ Login credentials emailed to ${data.email}.`;
+  if(msgEl){msgEl.textContent=msg;msgEl.style.color=mailErr?'#C0392B':'#1E8449'}else alert(msg);
 }
 async function delEmp(id){if(!confirm('Delete this employee? All their records will be removed.'))return;
   const{error}=await sb.from('employees').delete().eq('id',id);if(error)return alert(error.message);emp()}
