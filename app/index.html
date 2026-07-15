@@ -1170,12 +1170,16 @@ async function projintDetail(name){
    <td><span style="color:${CAT_COLOR[i.cat]||'#889'};font-weight:600;font-size:12px">${esc(i.cat)}</span></td><td>${esc(i.stage)}</td><td>${esc(i.emp)}</td><td>${i.status?`<span class="badge ${TASK_ITEM_CLS[i.status]||'stL'}">${esc(i.status)}</span>`:'—'}</td></tr>`).join('')}</table></div>`);
 }
 let FORM_PROJECTS=[];
+let PROJECTS_BY_CLIENT={};
 async function taskForm(eid,d,r){
   const{data:pjs}=await sb.from('projects').select('name,status,clients(name)').order('name');
   const clientOf={};(pjs||[]).forEach(p=>clientOf[p.name]=p.clients?.name||'Internal');
   const sel=new Set((r.project||'').split(',').map(s=>s.trim()).filter(Boolean));
   // Projects offered in each task's dropdown (active ones + any already used on this update), each with its client.
-  FORM_PROJECTS=[...new Set([...(pjs||[]).filter(x=>x.status==='Active').map(x=>x.name),...sel])].map(n=>({name:n,client:clientOf[n]||''}));
+  FORM_PROJECTS=[...new Set([...(pjs||[]).filter(x=>x.status==='Active').map(x=>x.name),...sel])].map(n=>({name:n,client:clientOf[n]||'Internal'}));
+  // Group projects by client, so picking a client narrows the project dropdown to just theirs.
+  PROJECTS_BY_CLIENT={};
+  FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.name)});
   const chips=(pjs||[]).filter(x=>x.status==='Active'||sel.has(x.name)).map(x=>
     `<span class="pchip" data-v="${esc(x.name)}" title="Client: ${esc(clientOf[x.name]||'Internal')}" onclick="this.classList.toggle('on');syncPrj()" style="cursor:pointer;display:inline-block;margin:3px;padding:4px 10px;border-radius:12px;border:1px solid #c6d0e0;font-size:12px" class2="">${esc(x.name)} <span style="opacity:.6;font-size:11px">· ${esc(clientOf[x.name]||'Internal')}</span></span>`).join('');
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:660px">
@@ -1202,8 +1206,14 @@ function addTaskRow(t){t=t||{};
   const list=$('tasklist');if(!list)return;
   const opt=TASK_ITEM_STATUS.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('');
   const dfltProj=t.project||($('t_project')?.value||'').split(',')[0].trim()||'';
-  const projList=[...FORM_PROJECTS];if(dfltProj&&!projList.some(p=>p.name===dfltProj))projList.push({name:dfltProj,client:''});
-  const projOpts=`<option value="">— No project —</option>`+projList.map(p=>`<option value="${esc(p.name)}" ${p.name===dfltProj?'selected':''}>${esc(p.name)}${p.client?` — ${esc(p.client)}`:''}</option>`).join('');
+  // Default client comes from the project's own client if we know it, else the first client with projects.
+  const knownProj=FORM_PROJECTS.find(p=>p.name===dfltProj);
+  const clients=Object.keys(PROJECTS_BY_CLIENT).sort((a,b)=>a==='Internal'?1:b==='Internal'?-1:a.localeCompare(b));
+  const dfltClient=knownProj?.client||clients[0]||'Internal';
+  const clientOpts=clients.length?clients.map(c=>`<option ${c===dfltClient?'selected':''}>${esc(c)}</option>`).join(''):`<option>Internal</option>`;
+  const projForClient=(PROJECTS_BY_CLIENT[dfltClient]||[]);
+  const projList=[...new Set([...projForClient,...(dfltProj?[dfltProj]:[])])];
+  const projOpts=`<option value="">— No project —</option>`+projList.map(n=>`<option value="${esc(n)}" ${n===dfltProj?'selected':''}>${esc(n)}</option>`).join('');
   const row=document.createElement('div');row.className='taskrow';
   row.style.cssText='border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--bg)';
   row.innerHTML=`
@@ -1211,6 +1221,7 @@ function addTaskRow(t){t=t||{};
    <button class="btn sm warn" title="Remove" onclick="this.closest('.taskrow').remove();renumberTasks()"><i class="fa-solid fa-xmark"></i></button></div>
    <div class="row"><div style="flex:2"><label>Task</label><input class="tk-task" value="${esc(t.task||'')}" placeholder="What did you do?" onblur="suggestTime(this)"></div>
    <div><label>Status</label><select class="tk-status">${opt}</select></div></div>
+   <label>Client <span style="color:#889;font-weight:400">— pick the client first to narrow the project list</span></label><select class="tk-client" onchange="onTaskClientChange(this)">${clientOpts}</select>
    <label>Project <span style="color:#889;font-weight:400">— which project is this task for?</span></label><select class="tk-project" onchange="suggestTime(this.closest('.taskrow').querySelector('.tk-task'))">${projOpts}</select>
    <div class="row"><div><label>Estimated (min)</label><input class="tk-est" type="number" min="0" step="5" value="${t.est_min||''}"></div>
    <div><label>Actual time (min)</label><input class="tk-act" type="number" min="0" step="5" value="${t.act_min||''}"></div></div>
@@ -1231,6 +1242,14 @@ function suggestTime(inp){
   if(!p||!el){if(el)el.textContent='';return;}
   el.innerHTML=`<i class="fa-solid fa-wand-magic-sparkles"></i> Model suggests ~<b>${fmtMin(p.mins)}</b> (from ${p.n} ${p.how}).`;
   const est=row.querySelector('.tk-est');if(est&&!est.value)est.value=p.mins;
+}
+// Re-populate a task row's Project dropdown to only the projects for the newly picked client.
+function onTaskClientChange(clientSel){
+  const row=clientSel.closest('.taskrow');const projSel=row.querySelector('.tk-project');
+  const cur=projSel.value;const list=PROJECTS_BY_CLIENT[clientSel.value]||[];
+  const keepCur=cur&&!list.includes(cur)?[cur]:[];
+  projSel.innerHTML=`<option value="">— No project —</option>`+[...list,...keepCur].map(n=>
+    `<option value="${esc(n)}" ${n===cur?'selected':''}>${esc(n)}</option>`).join('');
 }
 function renumberTasks(){document.querySelectorAll('#tasklist .taskrow .tasknum').forEach((el,i)=>el.textContent='Task '+(i+1));}
 function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow')].map(row=>({
