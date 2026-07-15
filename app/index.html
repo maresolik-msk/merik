@@ -891,6 +891,7 @@ async function task(d){
     sb.from('projects').select('name,client_id')]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e);
   const clientOfProject={};(pjs||[]).forEach(p=>{clientOfProject[p.name]=p.client_id||''});
+  const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
   let list=(rows||[]).slice();
   if(st.employee)list=list.filter(r=>r.employee_id===st.employee);
   if(st.client){const target=st.client==='internal'?'':st.client;
@@ -919,6 +920,13 @@ async function task(d){
     <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="#14284B">${pct}%</text></svg>
     <div><div style="font-size:12.5px;color:#6b7a90">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${cnt.sh} of ${cnt.sh+cnt.nu} logged</div></div></div></div>`;
   const cell=(v)=>v?esc(v):'<span class="tl-dash">—</span>';
+  // Show each project on the update with its client name (or "Internal" if it has none).
+  const clientProjCell=(projStr)=>{
+    const names=(projStr||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if(!names.length)return '<span class="tl-dash">—</span>';
+    return names.map(n=>{const cid=clientOfProject[n];const cname=cid?(clientNameById[cid]||'—'):'Internal';
+      return `<div>${esc(n)}<div class="tl-sub">${esc(cname)}</div></div>`;}).join('');
+  };
   M(pgh('Task Log','Track all task updates and activities in one place.','<button class="btn" onclick="newTaskUpdate()"><i class="fa-solid fa-plus"></i> New Update</button>')+
   `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> <b>Missing update = NO WORK DONE for the day.</b> Updates due before 5:30 PM daily.</div>
   <div class="row noprint" style="margin-bottom:14px;align-items:flex-end;gap:12px">
@@ -947,7 +955,7 @@ async function task(d){
     <td>${cell(e.emp_code)}</td>
     <td><div style="display:flex;align-items:center;gap:10px">${av(e.full_name||'')}<div><div class="tl-name" style="white-space:nowrap">${esc(e.full_name)}</div>${e.designation?`<div class="tl-sub">${esc(e.designation)}</div>`:''}</div></div></td>
     <td><span class="badge ${cls2}">${s}</span></td>
-    <td style="max-width:150px">${cell(r.project)}</td>
+    <td style="max-width:150px">${clientProjCell(r.project)}</td>
     <td style="font-size:12.5px">${renderTaskCell(r)}</td>
     <td style="text-align:center">${proofCell(r)}</td>
     <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
@@ -1180,20 +1188,15 @@ async function taskForm(eid,d,r){
   // Group projects by client, so picking a client narrows the project dropdown to just theirs.
   PROJECTS_BY_CLIENT={};
   FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.name)});
-  const chips=(pjs||[]).filter(x=>x.status==='Active'||sel.has(x.name)).map(x=>
-    `<span class="pchip" data-v="${esc(x.name)}" title="Client: ${esc(clientOf[x.name]||'Internal')}" onclick="this.classList.toggle('on');syncPrj()" style="cursor:pointer;display:inline-block;margin:3px;padding:4px 10px;border-radius:12px;border:1px solid #c6d0e0;font-size:12px" class2="">${esc(x.name)} <span style="opacity:.6;font-size:11px">· ${esc(clientOf[x.name]||'Internal')}</span></span>`).join('');
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:660px">
   <h2>Daily Update — ${fmtDate(d)}</h2>
   <label>Day Status</label><select id="t_update_status">${['Update Shared','No Update','WFH','Leave','Sick Leave','Holiday'].map(s=>`<option ${r.update_status===s?'selected':''}>${s}</option>`).join('')}</select>
-  <label>Default project (applied to new task rows)</label><div id="pchips">${chips||'<span style="font-size:12px;color:#889">No projects yet — admin can add them in the Projects page.</span>'}</div>
-  <input id="t_project" value="${esc((r.project||'').split(',')[0].trim())}" placeholder="Pick above, or type a project" style="margin-top:4px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><label style="margin:0">Tasks done</label><button class="btn sm" onclick="addTaskRow()"><i class="fa-solid fa-plus"></i> Add task</button></div>
   <div id="tasklist"></div>
   <label>Remarks (optional)</label><textarea id="t_remarks" rows="2">${esc(r.remarks||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveTask('${eid}','${d}')">Save</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
-  document.querySelectorAll('#pchips .pchip').forEach(ch=>{if(sel.has(ch.dataset.v)){ch.classList.add('on');ch.style.background='#1B2A4A';ch.style.color='#fff'}});
   // Load the on-device time model so we can suggest estimates as tasks are typed.
   loadTaskSamples().catch(()=>{});
   // Seed the task rows from the saved list, or from a legacy single-field update, or one empty row.
@@ -1205,7 +1208,7 @@ async function taskForm(eid,d,r){
 function addTaskRow(t){t=t||{};
   const list=$('tasklist');if(!list)return;
   const opt=TASK_ITEM_STATUS.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('');
-  const dfltProj=t.project||($('t_project')?.value||'').split(',')[0].trim()||'';
+  const dfltProj=t.project||'';
   // Default client comes from the project's own client if we know it, else the first client with projects.
   const knownProj=FORM_PROJECTS.find(p=>p.name===dfltProj);
   const clients=Object.keys(PROJECTS_BY_CLIENT).sort((a,b)=>a==='Internal'?1:b==='Internal'?-1:a.localeCompare(b));
@@ -1237,7 +1240,7 @@ function addTaskRow(t){t=t||{};
 function suggestTime(inp){
   const row=inp.closest('.taskrow');const el=row.querySelector('.tk-suggest');const text=inp.value.trim();
   if(!text){if(el)el.textContent='';return;}
-  const proj=row.querySelector('.tk-project')?.value||($('t_project')?.value||'').split(',')[0].trim();const client=PROJ_CLIENT[proj]||'';
+  const proj=row.querySelector('.tk-project')?.value||'';const client=PROJ_CLIENT[proj]||'';
   const p=predictTime(text,proj,client);
   if(!p||!el){if(el)el.textContent='';return;}
   el.innerHTML=`<i class="fa-solid fa-wand-magic-sparkles"></i> Model suggests ~<b>${fmtMin(p.mins)}</b> (from ${p.n} ${p.how}).`;
@@ -1263,19 +1266,12 @@ function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow
   blocker:row.querySelector('.tk-blocker').value.trim()||null,
   next:row.querySelector('.tk-next').value.trim()||null,
 })).filter(t=>t.task);}
-function syncPrj(){
-  const vals=[];document.querySelectorAll('#pchips .pchip').forEach(ch=>{
-    const on=ch.classList.contains('on');
-    ch.style.background=on?'#1B2A4A':'';ch.style.color=on?'#fff':'';
-    if(on)vals.push(ch.dataset.v)});
-  $('t_project').value=vals.join(', ');
-}
 async function saveTask(eid,d){
   const tasks=collectTasks();
   const projUnion=[...new Set(tasks.map(t=>t.project).filter(Boolean))].join(', ');
   const o={employee_id:eid,upd_date:d,
     update_status:$('t_update_status').value||null,
-    project:projUnion||$('t_project').value||null,
+    project:projUnion||null,
     remarks:$('t_remarks').value||null,
     tasks:tasks.length?tasks:null,
     // Legacy mirror so older readers / exports still show content.
@@ -1820,7 +1816,12 @@ async function myupd(dstr){
   if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
   else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
   else{from=to=a;}
-  const{data}=await sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false});
+  const [{data},{data:cls},{data:pjs}]=await Promise.all([
+    sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false}),
+    sb.from('clients').select('id,name'),
+    sb.from('projects').select('name,client_id')]);
+  const clientOfProject={};(pjs||[]).forEach(p=>{clientOfProject[p.name]=p.client_id||''});
+  const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
   const t=(data||[]).find(r=>r.upd_date===d);
   const list=(data||[]);
   const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
@@ -1842,6 +1843,12 @@ async function myupd(dstr){
     <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="#14284B">${pct}%</text></svg>
     <div><div style="font-size:12.5px;color:#6b7a90">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${cnt.sh} of ${cnt.sh+cnt.nu} logged</div></div></div></div>`;
   const cell=(v)=>v?esc(v):'<span class="tl-dash">—</span>';
+  const clientProjCell=(projStr)=>{
+    const names=(projStr||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if(!names.length)return '<span class="tl-dash">—</span>';
+    return names.map(n=>{const cid=clientOfProject[n];const cname=cid?(clientNameById[cid]||'—'):'Internal';
+      return `<div>${esc(n)}<div class="tl-sub">${esc(cname)}</div></div>`;}).join('');
+  };
   M(pgh('My Daily Update','Post today’s update and review your history.',`<button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'<i class="fa-solid fa-pen"></i> Edit today’s update':'<i class="fa-solid fa-plus"></i> Post today’s update'}</button>`)+
   `<div class="warnbar"><i class="fa-solid fa-lock" style="color:#E8682A"></i> You can only edit <b>today's</b> update. Past days are locked — any day left without an update is automatically recorded as <b>“No Update”</b>.</div>
   <div class="row noprint" style="margin-bottom:14px;align-items:flex-end;gap:12px">
@@ -1866,7 +1873,7 @@ async function myupd(dstr){
     const action=r.upd_date===d?`<button class="tl-go" title="Edit today" onclick='taskForm("${ME.employee.id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button>`:'<i class="fa-solid fa-lock tl-dash" title="Locked — past day"></i>';
     return`<tr><td style="white-space:nowrap"><div style="font-weight:600;color:#14284B">${fmtDate(r.upd_date)}</div>${tm?`<div class="tl-sub">${tm}</div>`:''}</td>
     <td><span class="badge ${cls2}">${s}</span></td>
-    <td style="max-width:150px">${cell(r.project)}</td>
+    <td style="max-width:150px">${clientProjCell(r.project)}</td>
     <td style="font-size:12.5px">${renderTaskCell(r)}</td>
     <td style="text-align:center">${proofCell(r)}</td>
     <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
