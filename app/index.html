@@ -1188,13 +1188,13 @@ async function taskForm(eid,d,r){
   // Group projects by client, so picking a client narrows the project dropdown to just theirs.
   PROJECTS_BY_CLIENT={};
   FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.name)});
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:660px">
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:920px">
   <h2>Daily Update — ${fmtDate(d)}</h2>
   <label>Day Status</label><select id="t_update_status">${['Update Shared','No Update','WFH','Leave','Sick Leave','Holiday'].map(s=>`<option ${r.update_status===s?'selected':''}>${s}</option>`).join('')}</select>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><label style="margin:0">Tasks done</label><button class="btn sm" onclick="addTaskRow()"><i class="fa-solid fa-plus"></i> Add task</button></div>
   <div id="tasklist"></div>
   <label>Remarks (optional)</label><textarea id="t_remarks" rows="2">${esc(r.remarks||'')}</textarea>
-  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveTask('${eid}','${d}')">Save</button>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveTask('${eid}','${d}')"><i class="fa-solid fa-circle-check"></i> Save Task</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
   // Load the on-device time model so we can suggest estimates as tasks are typed.
@@ -1220,19 +1220,23 @@ function addTaskRow(t){t=t||{};
   const row=document.createElement('div');row.className='taskrow';
   row.style.cssText='border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--bg)';
   row.innerHTML=`
-   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b class="tasknum" style="color:var(--navy)"></b>
-   <button class="btn sm warn" title="Remove" onclick="this.closest('.taskrow').remove();renumberTasks()"><i class="fa-solid fa-xmark"></i></button></div>
-   <div class="row"><div style="flex:2"><label>Task</label><input class="tk-task" value="${esc(t.task||'')}" placeholder="What did you do?" onblur="suggestTime(this)"></div>
+   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b class="tasknum" style="color:var(--navy)"></b>
+   <div style="display:flex;gap:8px;align-items:center">
+   <button class="btn sm warn" onclick="this.closest('.taskrow').remove();renumberTasks()"><i class="fa-solid fa-trash-can"></i> Delete Task</button>
+   <button class="btn sm sec" title="Collapse / expand" onclick="toggleTaskRow(this)"><i class="fa-solid fa-chevron-up"></i></button></div></div>
+   <div class="tk-body">
+   <div class="row" style="align-items:flex-start"><div style="flex:2.5"><label>Task</label><textarea class="tk-task" rows="4" maxlength="1000" placeholder="What did you do?" onblur="suggestTime(this)" oninput="tkCount(this)">${esc(t.task||'')}</textarea><div class="tk-count" style="text-align:right;font-size:11px;color:#9aa8bf;margin-top:2px">${(t.task||'').length} / 1000</div></div>
    <div><label>Status</label><select class="tk-status">${opt}</select></div></div>
-   <label>Client <span style="color:#889;font-weight:400">— pick the client first to narrow the project list</span></label><select class="tk-client" onchange="onTaskClientChange(this)">${clientOpts}</select>
-   <label>Project <span style="color:#889;font-weight:400">— which project is this task for?</span></label><select class="tk-project" onchange="suggestTime(this.closest('.taskrow').querySelector('.tk-task'))">${projOpts}</select>
+   <div class="row"><div><label>Client <span style="color:#889;font-weight:400">— pick the client first to narrow the project list</span></label><select class="tk-client" onchange="onTaskClientChange(this)">${clientOpts}</select></div>
+   <div><label>Project <span style="color:#889;font-weight:400">— which project is this task for?</span></label><select class="tk-project" onchange="suggestTime(this.closest('.taskrow').querySelector('.tk-task'))">${projOpts}</select></div></div>
    <div class="row"><div><label>Estimated (min)</label><input class="tk-est" type="number" min="0" step="5" value="${t.est_min||''}"></div>
    <div><label>Actual time (min)</label><input class="tk-act" type="number" min="0" step="5" value="${t.act_min||''}"></div></div>
    <div class="tk-suggest" style="font-size:12px;color:#2563A8;margin:2px 0 6px;min-height:14px"></div>
-   <div class="row"><div><label>Completed / proof note</label><input class="tk-completed" value="${esc(t.completed||'')}"></div>
-   <div><label>Proof link</label><input class="tk-proof" value="${esc(t.proof||'')}"></div></div>
-   <div class="row"><div><label>Blocker (if any)</label><input class="tk-blocker" value="${esc(t.blocker||'')}"></div>
-   <div><label>Next step</label><input class="tk-next" value="${esc(t.next||'')}"></div></div>`;
+   <div class="row" style="align-items:flex-start"><div><label>Completed / proof note</label><textarea class="tk-completed" rows="3" maxlength="1000" placeholder="Add notes about what was completed… (What changed, What was updated, Key points)" oninput="tkCount(this)">${esc(t.completed||'')}</textarea><div class="tk-count" style="text-align:right;font-size:11px;color:#9aa8bf;margin-top:2px">${(t.completed||'').length} / 1000</div></div>
+   <div><label>Proof link</label><input class="tk-proof" placeholder="Paste link here…" value="${esc(t.proof||'')}"></div></div>
+   <div class="row" style="align-items:flex-start"><div><label>Blocker (if any)</label><textarea class="tk-blocker" rows="3" maxlength="1000" placeholder="What's blocking you from completing this task?" oninput="tkCount(this)">${esc(t.blocker||'')}</textarea><div class="tk-count" style="text-align:right;font-size:11px;color:#9aa8bf;margin-top:2px">${(t.blocker||'').length} / 1000</div></div>
+   <div><label>Next step</label><textarea class="tk-next" rows="3" maxlength="1000" placeholder="What's the next step for this task?" oninput="tkCount(this)">${esc(t.next||'')}</textarea><div class="tk-count" style="text-align:right;font-size:11px;color:#9aa8bf;margin-top:2px">${(t.next||'').length} / 1000</div></div></div>
+   </div>`;
   list.appendChild(row);renumberTasks();
   if(t.task)suggestTime(row.querySelector('.tk-task'));
 }
@@ -1254,6 +1258,11 @@ function onTaskClientChange(clientSel){
   projSel.innerHTML=`<option value="">— No project —</option>`+[...list,...keepCur].map(n=>
     `<option value="${esc(n)}" ${n===cur?'selected':''}>${esc(n)}</option>`).join('');
 }
+// Live "n / 1000" character counter under each task textarea.
+function tkCount(ta){const c=ta.nextElementSibling;if(c&&c.classList.contains('tk-count'))c.textContent=ta.value.length+' / 1000';}
+// Collapse / expand a task card body.
+function toggleTaskRow(btn){const body=btn.closest('.taskrow').querySelector('.tk-body');const open=body.style.display!=='none';
+  body.style.display=open?'none':'';btn.querySelector('i').className=open?'fa-solid fa-chevron-down':'fa-solid fa-chevron-up';}
 function renumberTasks(){document.querySelectorAll('#tasklist .taskrow .tasknum').forEach((el,i)=>el.textContent='Task '+(i+1));}
 function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow')].map(row=>({
   task:row.querySelector('.tk-task').value.trim(),
