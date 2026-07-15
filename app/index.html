@@ -1229,8 +1229,8 @@ function addTaskRow(t){t=t||{};
    <div><label>Status</label><select class="tk-status">${opt}</select></div></div>
    <div class="row"><div><label>Client <span style="color:#889;font-weight:400">— pick the client first to narrow the project list</span></label><select class="tk-client" onchange="onTaskClientChange(this)">${clientOpts}</select></div>
    <div><label>Project <span style="color:#889;font-weight:400">— which project is this task for?</span></label><select class="tk-project" onchange="suggestTime(this.closest('.taskrow').querySelector('.tk-task'))">${projOpts}</select></div></div>
-   <div class="row"><div><label>Estimated (min)</label><input class="tk-est" type="number" min="0" step="5" value="${t.est_min||''}"></div>
-   <div><label>Actual time (min)</label><input class="tk-act" type="number" min="0" step="5" value="${t.act_min||''}"></div></div>
+   <div class="row"><div><label>Estimated (min) <span style="color:#C0392B">*</span></label><input class="tk-est" type="number" min="0" step="5" required value="${t.est_min||''}"></div>
+   <div><label>Actual time (min) <span style="color:#C0392B">*</span></label><input class="tk-act" type="number" min="0" step="5" required value="${t.act_min||''}"></div></div>
    <div class="tk-suggest" style="font-size:12px;color:#2563A8;margin:2px 0 6px;min-height:14px"></div>
    <div class="row" style="align-items:flex-start"><div><label>Completed / proof note</label><textarea class="tk-completed" rows="3" maxlength="1000" placeholder="Add notes about what was completed… (What changed, What was updated, Key points)" oninput="tkCount(this)">${esc(t.completed||'')}</textarea><div class="tk-count" style="text-align:right;font-size:11px;color:#9aa8bf;margin-top:2px">${(t.completed||'').length} / 1000</div></div>
    <div><label>Proof link</label><input class="tk-proof" placeholder="Paste link here…" value="${esc(t.proof||'')}"></div></div>
@@ -1277,6 +1277,9 @@ function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow
 })).filter(t=>t.task);}
 async function saveTask(eid,d){
   const tasks=collectTasks();
+  // Estimated and Actual time are mandatory on every task row.
+  const bad=tasks.findIndex(t=>!t.est_min||!t.act_min);
+  if(bad>-1)return alert(`Task ${bad+1}: Estimated time and Actual time are required (enter a value above 0).`);
   const projUnion=[...new Set(tasks.map(t=>t.project).filter(Boolean))].join(', ');
   const o={employee_id:eid,upd_date:d,
     update_status:$('t_update_status').value||null,
