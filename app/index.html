@@ -1825,13 +1825,16 @@ async function myupd(dstr){
   if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
   else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
   else{from=to=a;}
-  const [{data},{data:cls},{data:pjs}]=await Promise.all([
+  const [{data},{data:cls},{data:pjs},{data:todayRows}]=await Promise.all([
     sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('clients').select('id,name'),
-    sb.from('projects').select('name,client_id')]);
+    sb.from('projects').select('name,client_id'),
+    // Today's row fetched independently of the viewed period, so the header CTA always
+    // reflects today's true state (Edit + prefilled) even while browsing past days.
+    sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).eq('upd_date',d).limit(1)]);
   const clientOfProject={};(pjs||[]).forEach(p=>{clientOfProject[p.name]=p.client_id||''});
   const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
-  const t=(data||[]).find(r=>r.upd_date===d);
+  const t=(data||[]).find(r=>r.upd_date===d)||(todayRows&&todayRows[0])||null;
   const list=(data||[]);
   const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
   const pct=(cnt.sh+cnt.nu)?Math.round(cnt.sh/(cnt.sh+cnt.nu)*100):0;
