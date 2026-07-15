@@ -1337,7 +1337,26 @@ async function wfh(){
   <td class="noprint">${r.approved==='Pending'?`<button class="btn sm" onclick="apprWfh('${r.id}','Yes')">Approve</button>
   <button class="btn sm warn" onclick="apprWfh('${r.id}','No')">Reject</button>`:''}</td></tr>`}).join('')}</table></div>`);
 }
-async function apprWfh(id,v){await sb.from('wfh_leave').update({approved:v}).eq('id',id);wfh()}
+// Approved WFH/Leave → attendance code. WFH→W, Half Day→H, all leave kinds→OL (Paid Leave).
+const LEAVE_TO_ATT={'WFH':'W','Half Day':'H','Leave':'OL','Sick Leave':'OL','Emergency Leave':'OL'};
+// Inclusive list of YYYY-MM-DD dates from a to b (b defaults to a).
+function leaveDates(a,b){const out=[];const d=new Date(a+'T00:00:00'),end=new Date((b||a)+'T00:00:00');
+  while(d<=end){out.push(isoD(d));d.setDate(d.getDate()+1);}return out;}
+async function apprWfh(id,v){
+  const{error}=await sb.from('wfh_leave').update({approved:v}).eq('id',id);
+  if(error)return alert(error.message);
+  // On approval, auto-stamp the attendance log for every day in the request so the
+  // employee's status reflects the grant. Employees can't self-mark Present on these
+  // days; only an admin can override to P from Daily Attendance.
+  if(v==='Yes'){
+    const{data:req}=await sb.from('wfh_leave').select('*').eq('id',id).single();
+    if(req){const code=LEAVE_TO_ATT[req.status]||'OL';
+      const ups=leaveDates(req.req_date,req.end_date).map(dt=>({employee_id:req.employee_id,att_date:dt,status:code,remarks:req.status+' (approved)'}));
+      const{error:e2}=await sb.from('attendance').upsert(ups,{onConflict:'employee_id,att_date'});
+      if(e2)alert('Approved, but attendance auto-update failed: '+e2.message);}
+  }
+  wfh();
+}
 
 /* ---------- PAYROLL ---------- */
 function autoPay(e,y,m,att){const dim=new Date(y,m,0).getDate();
@@ -1718,12 +1737,15 @@ async function resetDocHtml(t,id){
 async function mydash(){
   if(!ME.employee){M('<h2>Welcome</h2><div class="warnbar">Your account is not yet linked to an employee record. Ask your admin to add your email to the Employee List, then sign out and back in.</div>');return}
   const d=today();
-  const [{data:t},{data:a},{data:slips}]=await Promise.all([
+  const [{data:t},{data:a},{data:slips},{data:lv}]=await Promise.all([
     sb.from('task_updates').select('id').eq('employee_id',ME.employee.id).eq('upd_date',d),
     sb.from('attendance').select('*').eq('employee_id',ME.employee.id).eq('att_date',d),
     // RLS only returns payslips the admin has released to this full-time employee.
-    sb.from('payroll').select('pay_year,pay_month').eq('employee_id',ME.employee.id).order('pay_year',{ascending:false}).order('pay_month',{ascending:false}).limit(1)]);
+    sb.from('payroll').select('pay_year,pay_month').eq('employee_id',ME.employee.id).order('pay_year',{ascending:false}).order('pay_month',{ascending:false}).limit(1),
+    sb.from('wfh_leave').select('status,req_date,end_date').eq('employee_id',ME.employee.id).eq('approved','Yes').lte('req_date',d)]);
   const rec=(a||[])[0]||{};
+  // An approved WFH/Leave that covers today blocks self check-in (only admin can mark Present).
+  const leaveToday=(lv||[]).find(r=>(r.end_date||r.req_date)>=d);
   const slip=(slips||[])[0];
   const slipNote=slip?`<div class="warnbar" style="background:#E6F7EC;border-color:#B7E4C7"><i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i> Your payslip for <b>${MONTHS[slip.pay_month-1]} ${slip.pay_year}</b> is available. <a href="#" onclick="go('myslip');return false" style="color:#1E8449;font-weight:700">Download now ›</a></div>`:'';
   const locLink=(lat,lng,label)=>lat?`<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" style="font-size:12px"><i class="fa-solid fa-location-dot"></i> ${label}</a>`:'';
@@ -1734,7 +1756,7 @@ async function mydash(){
     <div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Check In</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.entry_time?rec.entry_time.slice(0,5):'—'}</div>
     ${locLink(rec.in_lat,rec.in_lng,esc(rec.in_loc||'Location'))}
-    <div style="margin-top:10px">${rec.entry_time?'<span class="badge stP">Checked in <i class="fa-solid fa-check"></i></span>':`<button class="btn" style="background:#1E8449" onclick="checkIn(event)"><i class="fa-solid fa-arrow-right-to-bracket"></i> Check In</button>`}</div></div>
+    <div style="margin-top:10px">${rec.entry_time?'<span class="badge stP">Checked in <i class="fa-solid fa-check"></i></span>':leaveToday?`<span class="badge st${LEAVE_TO_ATT[leaveToday.status]||'OL'}">${esc(leaveToday.status)} (approved)</span><div style="font-size:11px;color:#889;margin-top:6px">Only your admin can mark you present.</div>`:`<button class="btn" style="background:#1E8449" onclick="checkIn(event)"><i class="fa-solid fa-arrow-right-to-bracket"></i> Check In</button>`}</div></div>
   <div class="card" style="margin:0;text-align:center">
     <div style="font-size:13px;color:#6b7a90;margin-bottom:8px">Check Out</div>
     <div style="font-size:24px;font-weight:800;color:#14284B">${rec.exit_time?rec.exit_time.slice(0,5):'—'}</div>
@@ -1787,6 +1809,11 @@ async function checkIn(ev){
   if(btn){btn.disabled=true;btn.style.opacity=.6;}
   const g=$('geoerr');if(g){g.style.color='#6b7a90';g.textContent='Getting your location…';}
   try{
+    // Block self check-in when an approved WFH/Leave covers today — only admin can mark Present.
+    const dt=today();
+    const{data:lv}=await sb.from('wfh_leave').select('status,req_date,end_date').eq('employee_id',ME.employee.id).eq('approved','Yes').lte('req_date',dt);
+    const lt=(lv||[]).find(r=>(r.end_date||r.req_date)>=dt);
+    if(lt){if(g){g.style.color='var(--red)';g.textContent=`You have approved ${lt.status} for today — only your admin can mark you present.`;}if(btn){btn.disabled=false;btn.style.opacity=1;}return;}
     const {coords,err}=await getPos();
     const loc=coords?await geoName(coords.latitude,coords.longitude):'';
     const t=new Date().toTimeString().slice(0,5);
