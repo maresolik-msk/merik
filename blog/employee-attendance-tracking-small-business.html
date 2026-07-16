@@ -35,7 +35,7 @@
 {
   "@context":"https://schema.org",
   "@graph":[
-    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/employee-attendance-tracking-small-business#post","headline":"How to Track Employee Attendance in a Small Business (Without Spreadsheets)","description":"A practical step-by-step guide to tracking employee attendance accurately in a small business and feeding it into payroll.","datePublished":"2026-07-11","dateModified":"2026-07-11","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/employee-attendance-tracking-small-business","image":"https://www.merik.in/assets/images/blog/attendance.svg","isPartOf":{"@id":"https://www.merik.in/blog/#blog"}},
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/employee-attendance-tracking-small-business#post","headline":"How to Track Employee Attendance in a Small Business (Without Spreadsheets)","description":"A practical step-by-step guide to tracking employee attendance accurately in a small business and feeding it into payroll.","datePublished":"2026-07-11","dateModified":"2026-07-16","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/employee-attendance-tracking-small-business","image":"https://www.merik.in/assets/images/blog/attendance.svg","isPartOf":{"@id":"https://www.merik.in/blog/#blog"}},
     {"@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
       {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
@@ -43,7 +43,9 @@
     {"@type":"FAQPage","mainEntity":[
       {"@type":"Question","name":"What is the best way to track employee attendance in a small business?","acceptedAnswer":{"@type":"Answer","text":"The most reliable way is a single system where employees mark entry and exit each day with a status (present, absent, late or half-day), so records are captured once and flow directly into monthly payroll — instead of being re-typed from spreadsheets or chat messages."}},
       {"@type":"Question","name":"What should you record for each employee's attendance?","acceptedAnswer":{"@type":"Answer","text":"Record the date, entry and exit time, a status such as present, absent, late or half-day, and any remarks. Track paid and unpaid leave separately so monthly summaries stay accurate for payroll."}},
-      {"@type":"Question","name":"Why are spreadsheets a poor way to track attendance?","acceptedAnswer":{"@type":"Answer","text":"Spreadsheets are edited by hand, so they drift out of date, get copied incorrectly between months, and have to be re-keyed into payroll — which introduces errors and wastes hours every month."}}
+      {"@type":"Question","name":"Why are spreadsheets a poor way to track attendance?","acceptedAnswer":{"@type":"Answer","text":"Spreadsheets are edited by hand, so they drift out of date, get copied incorrectly between months, and have to be re-keyed into payroll — which introduces errors and wastes hours every month."}},
+      {"@type":"Question","name":"Which attendance statuses affect payroll?","acceptedAnswer":{"@type":"Answer","text":"Only unpaid statuses reduce a salary: absent days, unpaid leave, and the unpaid half of a half-day. Present, late, work-from-home and approved paid leave all count as paid days. Keeping paid and unpaid clearly separated is what keeps the monthly pay calculation correct."}},
+      {"@type":"Question","name":"How do you handle work-from-home and approved leave in attendance?","acceptedAnswer":{"@type":"Answer","text":"Decide in advance whether remote work is marked as WFH or Present, and tie leave approval to the attendance record so approved days update automatically. That way an employee on approved leave is never counted as absent at payroll time."}}
     ]}
   ]
 }
@@ -80,8 +82,8 @@
 <section>
   <div class="wrap prose">
     <img class="article-hero-img" src="../assets/images/blog/attendance.svg" alt="Employee attendance tracking illustration" width="640" height="384">
-    <p class="post-meta">Published 11 July 2026 · Merik team · 6 min read</p>
-    <p class="lede"><b>Attendance is the foundation of payroll.</b> If the record of who worked which days is wrong, everything downstream — pay, leave balances, overtime — is wrong too. Yet most small businesses still track attendance in a spreadsheet or a group chat, then re-type it at month-end. Here's a cleaner way.</p>
+    <p class="post-meta">Published 11 July 2026 · Updated 16 July 2026 · Merik team · 9 min read</p>
+    <p class="lede"><b>Attendance is the foundation of payroll.</b> If the record of who worked which days is wrong, everything downstream — pay, leave balances, overtime — is wrong too. Yet most small businesses still track attendance in a spreadsheet or a group chat, then re-type it at month-end. Here's a cleaner way, from what to capture each day to how it becomes a correct pay run.</p>
 
     <h2>Why spreadsheets fail at attendance</h2>
     <p>A spreadsheet works fine for five people in one office. It breaks down the moment you have real-world complexity:</p>
@@ -90,7 +92,9 @@
       <li><b>They get copied wrong.</b> Each month is a duplicate of the last, and small mistakes carry forward.</li>
       <li><b>They don't connect to pay.</b> The numbers have to be re-keyed into payroll — the single biggest source of payroll errors.</li>
       <li><b>There's no self-service.</b> Employees can't mark their own attendance or see their record, so HR becomes a bottleneck.</li>
+      <li><b>There's no audit trail.</b> When a row is overwritten, the previous value is gone — so a disputed day becomes one person's word against another's.</li>
     </ul>
+    <p>None of these are visible on any single day. They surface all at once at month-end, when a payslip is wrong and nobody can reconstruct why. The cost isn't just the correction — it's the trust you lose with the employee whose pay was short.</p>
 
     <h2>What to record for every employee, every day</h2>
     <p>Good attendance data is specific. For each employee, each working day, capture:</p>
@@ -99,21 +103,58 @@
       <li>A clear <b>status</b>: present, absent, late, or half-day</li>
       <li><b>Remarks</b> for anything unusual (client visit, approved early leave)</li>
       <li><b>Leave type</b> where relevant — paid or unpaid — tracked separately from attendance</li>
+      <li><b>Location</b> for field or remote staff, so "present" means something verifiable</li>
     </ul>
     <blockquote>Record it once, at the source, on the day it happens. Every time attendance is re-entered later, accuracy drops.</blockquote>
 
+    <h2>The attendance statuses that matter — and how each affects pay</h2>
+    <p>Vague attendance ("in" or "out") can't drive payroll. A small, consistent set of statuses can, because each one has a defined effect on the monthly pay calculation:</p>
+    <ul>
+      <li><b>Present (P)</b> — a normal paid working day.</li>
+      <li><b>Absent (A)</b> — not at work and not on approved leave; typically an unpaid day (loss of pay).</li>
+      <li><b>Late (L)</b> — present but after the grace window; paid, but tracked so a pattern is visible.</li>
+      <li><b>Half-day (H)</b> — half the working day; usually counts as half a paid day.</li>
+      <li><b>Work from home (W)</b> — a paid working day worked remotely.</li>
+      <li><b>Paid leave (OL)</b> — approved leave that does not reduce pay.</li>
+      <li><b>Unpaid leave (UL)</b> — approved leave that does reduce pay.</li>
+    </ul>
+    <p>The distinction that matters most for money is <b>paid vs unpaid</b>. Only absent days, unpaid leave, and the unpaid half of a half-day should reduce a salary; everything else is a paid day. Getting this mapping right once — and applying it consistently — is what keeps payroll defensible. We break the tricky cases down in <a href="/blog/calculating-late-marks-half-days-fairly">calculating late marks and half-days fairly</a>.</p>
+
     <h2>A simple daily workflow</h2>
     <h3>1. Let employees mark their own attendance</h3>
-    <p>Self-service removes the HR bottleneck and gives people ownership of their record. Employees mark entry and exit; managers only step in for exceptions.</p>
+    <p>Self-service removes the HR bottleneck and gives people ownership of their record. Employees mark entry and exit; managers only step in for exceptions. When someone checks in from their own phone with a timestamp (and, for field roles, a location), you also get a record that's far harder to fake than a name written into a shared sheet.</p>
     <h3>2. Review exceptions, not everything</h3>
-    <p>Instead of chasing every person, look at a live daily view and act only on the anomalies — who's absent, who's late, who's on half-day.</p>
+    <p>Instead of chasing every person, look at a live daily view and act only on the anomalies — who's absent, who's late, who's on half-day. On a 30-person team that's usually two or three names a day, not thirty.</p>
     <h3>3. Track leave alongside attendance</h3>
-    <p>Approve paid and unpaid leave in the same place, so monthly totals stay accurate without reconciling two systems.</p>
+    <p>Approve paid and unpaid leave in the same place, so monthly totals stay accurate without reconciling two systems. When a leave request is approved, the matching days should update on the attendance record automatically — so an approved leave can never quietly show up as an absent day at payroll time.</p>
     <h3>4. Let payroll read the same data</h3>
     <p>This is the payoff: at month-end, payroll should be calculated from the attendance and leave you already captured — not re-typed. We cover this in detail in <a href="/blog/attendance-to-payroll-automation">From attendance to payroll</a>.</p>
 
+    <h2>Handling the edge cases that trip teams up</h2>
+    <p>Clean attendance isn't about the ordinary days — it's about having a rule ready for the awkward ones before they happen:</p>
+    <ul>
+      <li><b>Work from home and field visits.</b> Decide up front whether these are marked WFH or Present, and whether a location is required. Ambiguity here is where "I was working!" disputes start.</li>
+      <li><b>Approved leave vs. absence.</b> An employee on approved leave should never be counted absent. Tie approval to the attendance record so the status flips automatically.</li>
+      <li><b>Forgotten check-ins.</b> Give managers a way to correct a genuinely missed mark — with the correction visible in the record, not silently overwritten.</li>
+      <li><b>Half-days and short leave.</b> Fix one definition of a half-day (e.g. under a set number of hours) and apply it to everyone, every time.</li>
+    </ul>
+
+    <h2>From daily marks to a monthly summary</h2>
+    <p>The reason you record all of this is a single, trustworthy monthly number per person: total working days, days present, paid leave, unpaid leave, and the resulting paid days. If that summary is generated from the same data employees marked each day, there's nothing to reconcile — the month simply adds up. If it's re-typed from a spreadsheet, every month is a fresh chance to introduce an error into someone's salary.</p>
+
+    <h2>Choosing how to capture attendance</h2>
+    <p>Broadly there are three methods: manual (a register or spreadsheet), biometric (a fingerprint or face device at a fixed location), and app-based check-in with a timestamp and optional GPS. Each suits a different kind of team — a single-office shop, a factory floor, or distributed field staff. We compare the trade-offs in <a href="/blog/biometric-vs-gps-vs-manual-attendance">biometric vs GPS vs manual attendance</a>. Whichever you choose, the principle is the same: capture it once, at the source, in a form payroll can read directly.</p>
+
+    <h2>Common mistakes to avoid</h2>
+    <ul>
+      <li><b>Tracking hours but not leave type.</b> Without paid vs unpaid, you can't calculate pay correctly.</li>
+      <li><b>Two systems for attendance and leave.</b> Reconciling them monthly is slow and error-prone.</li>
+      <li><b>Editing history in place.</b> Corrections should be traceable, or disputes are unwinnable.</li>
+      <li><b>Re-keying into payroll.</b> Every manual transfer is a chance to get someone's salary wrong.</li>
+    </ul>
+
     <h2>How Merik handles it</h2>
-    <p>Merik gives every employee a dashboard to mark their own attendance and request leave, while HR gets a live company-wide view and a full monthly summary for each person. Because attendance, leave and payroll share one dataset, the numbers you record each day flow straight into monthly pay — no spreadsheets, no re-keying. See the <a href="/features">features</a> or <a href="/how-it-works">how it works</a> in three steps.</p>
+    <p>Merik gives every employee a dashboard to mark their own attendance and request leave, while HR gets a live company-wide view and a full monthly summary for each person. Approved WFH and leave update the attendance record automatically, corrections stay visible, and because attendance, leave and payroll share one dataset, the numbers you record each day flow straight into monthly pay — no spreadsheets, no re-keying. See the <a href="/features">features</a> or <a href="/how-it-works">how it works</a> in three steps.</p>
 
     <p><a class="btn btn-primary" href="../app/">Create your workspace →</a></p>
     <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
