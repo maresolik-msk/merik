@@ -1205,8 +1205,16 @@ async function taskForm(eid,d,r){
     seed=[{task:r.task_assigned||'',status:r.completed?'Done':'In Progress',completed:r.completed||'',blocker:r.blocker||'',proof:r.proof_link||'',next:r.next_task||''}];
   (seed||[{}]).forEach(addTaskRow);
 }
+// Split total minutes into {h,m} for the hours/minutes duration picker (0 → blank).
+function minToHM(mins){const m=+mins||0;return{h:Math.floor(m/60),m:m%60};}
+// Combine a task row's hours + minutes inputs back into total minutes (null when empty).
+function hmToMin(row,cls){const h=+row.querySelector('.'+cls+'-h').value||0,m=+row.querySelector('.'+cls+'-m').value||0;return (h*60+m)||null;}
+// Hours + minutes duration picker markup, e.g. hmField('tk-est',{h:1,m:30}).
+function hmField(cls,hm){const box=(unit,val,mx,st)=>`<div style="position:relative;flex:1"><input class="${cls}-${unit==='h'?'h':'m'}" type="number" min="0"${mx?` max="${mx}"`:''} step="${st}" placeholder="0" value="${val||''}" style="width:100%;padding-right:34px"><span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#889;font-size:12px;pointer-events:none">${unit}</span></div>`;
+  return `<div style="display:flex;gap:8px;align-items:center">${box('h',hm.h,99,1)}${box('min',hm.m,59,5)}</div>`;}
 function addTaskRow(t){t=t||{};
   const list=$('tasklist');if(!list)return;
+  const estHM=minToHM(t.est_min),actHM=minToHM(t.act_min);
   const opt=TASK_ITEM_STATUS.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('');
   const dfltProj=t.project||'';
   // Default client comes from the project's own client if we know it, else the first client with projects.
@@ -1229,8 +1237,8 @@ function addTaskRow(t){t=t||{};
    <div><label>Status</label><select class="tk-status">${opt}</select></div></div>
    <div class="row"><div><label>Client <span style="color:#889;font-weight:400">— pick the client first to narrow the project list</span></label><select class="tk-client" onchange="onTaskClientChange(this)">${clientOpts}</select></div>
    <div><label>Project <span style="color:#889;font-weight:400">— which project is this task for?</span></label><select class="tk-project" onchange="suggestTime(this.closest('.taskrow').querySelector('.tk-task'))">${projOpts}</select></div></div>
-   <div class="row"><div><label>Estimated (min) <span style="color:#C0392B">*</span></label><input class="tk-est" type="number" min="0" step="5" required value="${t.est_min||''}"></div>
-   <div><label>Actual time (min) <span style="color:#C0392B">*</span></label><input class="tk-act" type="number" min="0" step="5" required value="${t.act_min||''}"></div></div>
+   <div class="row"><div><label>Estimated time <span style="color:#C0392B">*</span></label>${hmField('tk-est',estHM)}</div>
+   <div><label>Actual time <span style="color:#C0392B">*</span></label>${hmField('tk-act',actHM)}</div></div>
    <div class="tk-suggest" style="font-size:12px;color:#2563A8;margin:2px 0 6px;min-height:14px"></div>
    <div class="row" style="align-items:flex-start"><div><label>Completed / proof note</label><textarea class="tk-completed" rows="3" maxlength="1000" placeholder="Add notes about what was completed… (What changed, What was updated, Key points)" oninput="tkCount(this)">${esc(t.completed||'')}</textarea><div class="tk-count" style="text-align:right;font-size:11px;color:#9aa8bf;margin-top:2px">${(t.completed||'').length} / 1000</div></div>
    <div><label>Proof link</label><input class="tk-proof" placeholder="Paste link here…" value="${esc(t.proof||'')}"></div></div>
@@ -1248,7 +1256,8 @@ function suggestTime(inp){
   const p=predictTime(text,proj,client);
   if(!p||!el){if(el)el.textContent='';return;}
   el.innerHTML=`<i class="fa-solid fa-wand-magic-sparkles"></i> Model suggests ~<b>${fmtMin(p.mins)}</b> (from ${p.n} ${p.how}).`;
-  const est=row.querySelector('.tk-est');if(est&&!est.value)est.value=p.mins;
+  const eh=row.querySelector('.tk-est-h'),em=row.querySelector('.tk-est-m');
+  if(eh&&em&&!eh.value&&!em.value){const hm=minToHM(p.mins);eh.value=hm.h||'';em.value=hm.m||'';}
 }
 // Re-populate a task row's Project dropdown to only the projects for the newly picked client.
 function onTaskClientChange(clientSel){
@@ -1268,8 +1277,8 @@ function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow
   task:row.querySelector('.tk-task').value.trim(),
   status:row.querySelector('.tk-status').value,
   project:row.querySelector('.tk-project')?.value||null,
-  est_min:+row.querySelector('.tk-est').value||null,
-  act_min:+row.querySelector('.tk-act').value||null,
+  est_min:hmToMin(row,'tk-est'),
+  act_min:hmToMin(row,'tk-act'),
   completed:row.querySelector('.tk-completed').value.trim()||null,
   proof:row.querySelector('.tk-proof').value.trim()||null,
   blocker:row.querySelector('.tk-blocker').value.trim()||null,
