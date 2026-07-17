@@ -1180,6 +1180,8 @@ async function projintDetail(name){
 }
 let FORM_PROJECTS=[];
 let PROJECTS_BY_CLIENT={};
+// Task Sheet rows queued for the next task form to append (see sheetToLog).
+let PENDING_SHEET=[];
 async function taskForm(eid,d,r){
   const{data:pjs}=await sb.from('projects').select('name,status,clients(name)').order('name');
   const clientOf={};(pjs||[]).forEach(p=>clientOf[p.name]=p.clients?.name||'Internal');
@@ -1204,7 +1206,10 @@ async function taskForm(eid,d,r){
   let seed=Array.isArray(r.tasks)&&r.tasks.length?r.tasks:null;
   if(!seed&&(r.task_assigned||r.completed||r.blocker||r.next_task||r.proof_link))
     seed=[{task:r.task_assigned||'',status:r.completed?'Done':'In Progress',completed:r.completed||'',blocker:r.blocker||'',proof:r.proof_link||'',next:r.next_task||''}];
-  (seed||[{}]).forEach(addTaskRow);
+  // Anything queued from the Task Sheet is appended, and consumed exactly once.
+  const pend=PENDING_SHEET;PENDING_SHEET=[];
+  const rows=(seed||[]).concat(pend);
+  (rows.length?rows:[{}]).forEach(addTaskRow);
 }
 // Split total minutes into {h,m} for the hours/minutes duration picker (0 → blank).
 function minToHM(mins){const m=+mins||0;return{h:Math.floor(m/60),m:m%60};}
@@ -1227,6 +1232,8 @@ function addTaskRow(t){t=t||{};
   const projList=[...new Set([...projForClient,...(dfltProj?[dfltProj]:[])])];
   const projOpts=`<option value="">— No project —</option>`+projList.map(n=>`<option value="${esc(n)}" ${n===dfltProj?'selected':''}>${esc(n)}</option>`).join('');
   const row=document.createElement('div');row.className='taskrow';
+  // Links this row back to the Task Sheet entry it came from, so saveTask can stamp it as logged.
+  if(t.sheet_id)row.dataset.sheetId=t.sheet_id;
   row.style.cssText='border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--bg)';
   row.innerHTML=`
    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b class="tasknum" style="color:var(--navy)"></b>
@@ -1284,6 +1291,7 @@ function collectTasks(){return [...document.querySelectorAll('#tasklist .taskrow
   proof:row.querySelector('.tk-proof').value.trim()||null,
   blocker:row.querySelector('.tk-blocker').value.trim()||null,
   next:row.querySelector('.tk-next').value.trim()||null,
+  sheet_id:row.dataset.sheetId||null,
 })).filter(t=>t.task);}
 async function saveTask(eid,d){
   const tasks=collectTasks();
@@ -1304,7 +1312,15 @@ async function saveTask(eid,d){
     next_task:tasks.filter(t=>t.next).map(t=>t.next).join('; ')||null,
     not_working:null};
   const{error}=await sb.from('task_updates').upsert(o,{onConflict:'employee_id,upd_date'});
-  if(error)return alert(error.message);document.querySelector('.modal').remove();
+  if(error)return alert(error.message);
+  // Stamp any Task Sheet rows that reached a log through this save. Done only on a
+  // successful save, so cancelling the form never marks a task as logged.
+  const ids=[...new Set(tasks.map(t=>t.sheet_id).filter(Boolean))];
+  if(ids.length){
+    await sb.from('emp_tasks').update({first_logged_on:d}).in('id',ids).is('first_logged_on',null);
+    await sb.from('emp_tasks').update({last_logged_on:d}).in('id',ids);
+  }
+  document.querySelector('.modal').remove();
   ME.profile.role==='admin'?task(d):myupd();
 }
 
@@ -2242,14 +2258,64 @@ async function reqWfh(){
   if(to<from)return alert('The "To" date cannot be before the "From" date.');
   const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:from,end_date:to,status:$('w_status').value,reason:$('w_reason').value||null});
   error?alert(error.message):mywfh()}
+/* ----- task sheet: draft tasks once, push them to the daily Task Log ----- */
+let SHEET=[];
+// Frozen once it was reported on an EARLIER day — a task re-logged today must stay
+// locked if it first went in yesterday. Mirrors the emp_tasks_lock() DB trigger.
+const sheetLocked=t=>!!t.first_logged_on&&String(t.first_logged_on).slice(0,10)<today();
+// Build the client -> projects maps the task pickers need (same shape taskForm uses).
+async function loadProjectMaps(){
+  const{data:pjs}=await sb.from('projects').select('name,status,clients(name)').order('name');
+  const clientOf={};(pjs||[]).forEach(p=>clientOf[p.name]=p.clients?.name||'Internal');
+  FORM_PROJECTS=[...new Set((pjs||[]).filter(x=>x.status==='Active').map(x=>x.name))].map(n=>({name:n,client:clientOf[n]||'Internal'}));
+  PROJECTS_BY_CLIENT={};FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.name)});
+}
+const sheetClients=()=>Object.keys(PROJECTS_BY_CLIENT).sort((a,b)=>a==='Internal'?1:b==='Internal'?-1:a.localeCompare(b));
+function tsProjOpts(client,cur){const list=PROJECTS_BY_CLIENT[client]||[];
+  return `<option value="">— No project —</option>`+list.map(n=>`<option ${n===cur?'selected':''}>${esc(n)}</option>`).join('');}
+function tsClientChange(){$('ts_project').innerHTML=tsProjOpts($('ts_client').value,'');}
 async function mynotes(){
   if(!ME.employee)return mydash();
-  const{data,error}=await sb.from('emp_notes').select('*').eq('employee_id',ME.employee.id).order('created_at',{ascending:false});
+  const [{data,error},{data:sheet},] = await Promise.all([
+    sb.from('emp_notes').select('*').eq('employee_id',ME.employee.id).order('created_at',{ascending:false}),
+    sb.from('emp_tasks').select('*').eq('employee_id',ME.employee.id).order('done').order('created_at',{ascending:false}),
+    loadProjectMaps()]);
   if(error)return M(`<h2>Notes & To-Do</h2><div class="warnbar">${esc(error.message)}</div>`);
   const notes=(data||[]).filter(n=>n.kind==='note');
   const todos=(data||[]).filter(n=>n.kind==='todo');
   const pend=todos.filter(t=>!t.done).length;
-  M(`<h2>Notes &amp; To-Do</h2>
+  SHEET=sheet||[];
+  const cls=sheetClients(),c0=cls[0]||'Internal';
+  M(`<h2>Task Sheet, Notes &amp; To-Do</h2>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">
+      <label style="margin:0">Task Sheet</label>
+      <span style="font-size:12px;color:#889">Write a task once here, then add it to your daily Task Log without retyping it.</span></div>
+    <div class="row" style="align-items:flex-end;margin-top:8px">
+      <div style="flex:2;min-width:200px"><label>Task</label><input id="ts_task" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')addSheetTask()"></div>
+      <div><label>Client</label><select id="ts_client" onchange="tsClientChange()">${cls.length?cls.map(c=>`<option ${c===c0?'selected':''}>${esc(c)}</option>`).join(''):'<option>Internal</option>'}</select></div>
+      <div><label>Project</label><select id="ts_project">${tsProjOpts(c0,'')}</select></div>
+      <div><label>Estimated time</label>${hmField('ts-est',{h:'',m:''})}</div>
+      <div><button class="btn" onclick="addSheetTask()"><i class="fa-solid fa-plus"></i> Add</button></div>
+    </div>
+    <div style="overflow:auto"><table style="margin-top:10px"><tr><th style="width:34px"></th><th>Task</th><th>Client / Project</th><th>Est.</th><th>Logged</th><th></th></tr>
+    ${SHEET.map(t=>{const lk=sheetLocked(t);const onToday=String(t.last_logged_on||'').slice(0,10)===today();
+      return `<tr><td><input type="checkbox" ${t.done?'checked':''} onchange="toggleSheetDone('${t.id}',this.checked)" style="width:18px;height:18px" title="Mark done"></td>
+      <td style="max-width:280px;${t.done?'text-decoration:line-through;color:#99a':''}">${esc(t.task)}</td>
+      <td style="white-space:nowrap">${t.project?esc(t.project):'<span class="tl-dash">—</span>'}${t.client?`<div class="tl-sub">${esc(t.client)}</div>`:''}</td>
+      <td style="white-space:nowrap">${t.est_min?fmtMin(t.est_min):'<span class="tl-dash">—</span>'}</td>
+      <td style="white-space:nowrap">${t.first_logged_on
+        ?`<span class="badge stP">Logged</span><div class="tl-sub">last ${fmtDate(t.last_logged_on)}</div>`
+        :'<span class="tl-dash">not yet</span>'}</td>
+      <td class="noprint" style="white-space:nowrap">
+        ${t.done?'<span style="font-size:11.5px;color:#889">Done</span>'
+          :onToday?'<span class="badge stW" title="Already on today&#39;s task log">On today&#39;s log</span>'
+          :`<button class="btn sm" onclick="sheetToLog('${t.id}')" title="Add to today&#39;s task log">Add to Log</button>`}
+        ${lk?`<button class="btn sm sec" disabled title="Reported in a task log on ${fmtDate(t.first_logged_on)} — the details are locked. You can still mark it done."><i class="fa-solid fa-lock"></i></button>`
+            :`<button class="btn sm sec" onclick="editSheetTask('${t.id}')">Edit</button>`}
+        <button class="btn sm warn" onclick="delSheetTask('${t.id}')">Del</button></td></tr>`}).join('')
+      ||'<tr><td colspan="6" style="text-align:center;color:#889;padding:20px">No tasks on your sheet yet.</td></tr>'}</table></div>
+  </div>
   <div class="row" style="align-items:flex-start;gap:16px">
   <div style="flex:1;min-width:280px"><div class="card">
     <label>Add a note</label>
@@ -2272,6 +2338,46 @@ async function mynotes(){
     <span style="flex:1;font-size:14px;${t.done?'text-decoration:line-through;color:#99a':''}">${esc(t.content||'')}</span>
     <button class="btn sm warn" onclick="delNote('${t.id}')">Del</button></div>`).join(''):'<p style="font-size:13px;color:#889">Nothing to do yet.</p>'}</div>
   </div></div>`);
+}
+async function addSheetTask(){
+  const task=$('ts_task').value.trim();if(!task)return alert('Write the task first.');
+  const o={employee_id:ME.employee.id,task,client:$('ts_client').value||null,project:$('ts_project').value||null,
+    est_min:hmToMin(document,'ts-est')};
+  const{error}=await sb.from('emp_tasks').insert(o);
+  error?alert(error.message):mynotes();
+}
+function editSheetTask(id){
+  const t=SHEET.find(x=>x.id===id);if(!t)return;
+  const cls=sheetClients();const cur=t.client||cls[0]||'Internal';
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Edit task</h2>
+  <label>Task</label><input id="te_task" value="${esc(t.task||'')}">
+  <div class="row"><div><label>Client</label><select id="te_client" onchange="$('te_project').innerHTML=tsProjOpts(this.value,'')">${cls.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+  <div><label>Project</label><select id="te_project">${tsProjOpts(cur,t.project||'')}</select></div></div>
+  <label>Estimated time</label>${hmField('te-est',minToHM(t.est_min))}
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveSheetTask('${id}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveSheetTask(id){
+  const task=$('te_task').value.trim();if(!task)return alert('Write the task first.');
+  const{error}=await sb.from('emp_tasks').update({task,client:$('te_client').value||null,project:$('te_project').value||null,
+    est_min:hmToMin(document,'te-est')}).eq('id',id);
+  // The DB trigger rejects edits to a task already reported on an earlier day.
+  if(error)return alert(error.message);
+  document.querySelector('.modal').remove();mynotes();
+}
+async function toggleSheetDone(id,done){const{error}=await sb.from('emp_tasks').update({done}).eq('id',id);
+  error?alert(error.message):mynotes()}
+async function delSheetTask(id){if(!confirm('Remove this task from your sheet? Anything already reported in a task log stays there.'))return;
+  const{error}=await sb.from('emp_tasks').delete().eq('id',id);error?alert(error.message):mynotes()}
+// Open today's task log with this sheet task appended as a new row. The sheet is
+// only stamped as logged once the update is actually saved (see saveTask).
+async function sheetToLog(id){
+  const t=SHEET.find(x=>x.id===id);if(!t)return;
+  const{data}=await sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).eq('upd_date',today()).limit(1);
+  PENDING_SHEET=[{task:t.task,project:t.project||'',est_min:t.est_min,status:'In Progress',sheet_id:t.id}];
+  await taskForm(ME.employee.id,today(),(data&&data[0])||{});
 }
 async function addNote(){const v=$('nt_new').value.trim();if(!v)return;
   const{error}=await sb.from('emp_notes').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,kind:'note',content:v});
