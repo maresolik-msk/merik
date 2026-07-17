@@ -2305,26 +2305,22 @@ async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return alert(
   const{error}=await sb.from('feedback').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,category:$('fb_cat').value,message:msg});
   error?alert(error.message):myfb()}
 // ---- Tenant admin: submit & manage the org's feedback ----
-async function adminfb(){
-  const{data,error}=await sb.from('feedback').select('*,employees(full_name,emp_code)').order('created_at',{ascending:false});
-  if(error)return M(`<h2>Feedback</h2><div class="warnbar">${esc(error.message)}</div>`);
-  const rows=data||[];
-  M(pgh('Feedback','Share feedback or a feature request, and manage what your team has raised.')+
-  `<div class="card"><div class="row">
+// Submit-only by design. Feedback is private to the Merik super admin — a tenant
+// admin can raise it but never read anyone's (including their own), so there is
+// no list here and RLS (p_fb_adm_i is INSERT-only) enforces the same server-side.
+function adminfb(){
+  M(pgh('Feedback','Share feedback or a feature request with the Merik team.')+
+  `<div class="warnbar"><i class="fa-solid fa-lock" style="color:#E8682A"></i> Feedback goes straight to the Merik team and is visible only to them — not to anyone else in your company.</div>
+  <div class="card"><div class="row">
     <div style="max-width:200px"><label>Category</label><select id="afb_cat">${FB_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
-    <label>Your feedback / requirement</label><textarea id="afb_msg" rows="3" placeholder="Describe your feedback or requirement…"></textarea>
-    <div style="margin-top:10px"><button class="btn" onclick="sendAdminFb()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button></div></div>
-  <div class="card"><table><tr><th>Date</th><th>From</th><th>Category</th><th>Feedback</th><th>Status</th><th>Reply</th></tr>
-  ${rows.map(r=>`<tr data-fid="${r.id}"><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td>
-  <td style="white-space:nowrap">${esc(r.employees?.full_name||'Admin')}</td><td>${esc(r.category)}</td>
-  <td style="max-width:320px">${esc(r.message)}</td>
-  <td><select onchange="setFbStatus('${r.id}',this.value)" style="width:120px">${FB_STATUS.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
-  <td style="min-width:200px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Reply…" onblur="setFbReply('${r.id}',this.value)">${esc(r.admin_reply||'')}</textarea></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No feedback submitted yet.</td></tr>'}</table></div>`);
+    <label>Your feedback / requirement</label><textarea id="afb_msg" rows="4" placeholder="Describe your feedback or requirement…"></textarea>
+    <div style="margin-top:10px"><button class="btn" onclick="sendAdminFb()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button></div></div>`);
 }
 async function sendAdminFb(){const msg=$('afb_msg').value.trim();if(!msg)return alert('Please write your feedback.');
   const{error}=await sb.from('feedback').insert({employee_id:ME.employee?.id||null,org_id:ME.org?.id||null,category:$('afb_cat').value,message:msg});
-  error?alert(error.message):adminfb()}
-// ---- Admin: review feedback ----
+  if(error)return alert(error.message);
+  $('afb_msg').value='';
+  alert('Thanks — your feedback has been sent to the Merik team.');}
 /* ================= MERIK SUPER ADMIN — product management ================= */
 const suStat=(ic,bg,col,label,val,sub)=>`<div class="card" style="margin:0;flex:1;min-width:190px"><div style="display:flex;gap:14px;align-items:flex-start">
   <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
