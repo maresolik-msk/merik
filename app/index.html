@@ -1550,12 +1550,20 @@ async function delCli(id){if(confirm('Delete client?')){await sb.from('clients')
 /* ---------- ASSET MANAGEMENT (hardware + software) ---------- */
 const ASSET_CATS=['Laptop','Desktop','Monitor','Phone','Tool','Other'];
 const ASSET_STATUS=['Available','In Use','Repair','Retired'];
-const BILLING=['Monthly','Annual'];
+const PAYG='Pay as you go';
+const BILLING=['Monthly','Annual',PAYG];
 const AST_BADGE={'Available':'stP','In Use':'stW','Repair':'stL','Retired':'stA'};
+// Usage-based services (AWS, Supabase, MongoDB, Google AI Studio) have no fixed
+// price, no seats you buy and nothing to renew — they bill on what you use.
+const isPayg=s=>s.billing_cycle===PAYG;
 // Active employees for the assign / seat pickers, cached by the page that rendered.
 let ASSET_EMPS=[];
-// Normalise to a monthly figure so Monthly and Annual subscriptions can be summed.
-const monthlyCost=s=>{const c=+s.cost||0;return s.billing_cycle==='Annual'?c/12:c;};
+// 'Jul 2026' from a stored spend_month ('2026-07-01').
+const fmtMon=d=>{const p=String(d).slice(0,7).split('-');return p.length===2&&+p[1]?`${MONTHS[+p[1]-1].slice(0,3)} ${p[0]}`:String(d);};
+// Fixed plans normalise to a monthly figure. A usage-based service has no fixed
+// price, so its monthly cost is whatever the latest logged month actually was.
+const monthlyCost=(s,latest)=>{if(isPayg(s))return +(latest&&latest.amount)||0;
+  const c=+s.cost||0;return s.billing_cycle==='Annual'?c/12:c;};
 // Whole days from today to a date (null when unset); negative means already past.
 const daysTo=d=>d?Math.round((new Date(String(d).slice(0,10)+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5):null;
 
@@ -1657,39 +1665,53 @@ async function assetHist(id){
 
 /* ----- software subscriptions (owned by a team, held by employees) ----- */
 async function soft(){
-  const [{data:rows},{data:seats},{data:emps}]=await Promise.all([
+  const [{data:rows},{data:seats},{data:emps},{data:spend}]=await Promise.all([
     sb.from('software').select('*').order('name'),
     sb.from('software_seats').select('software_id,employee_id'),
-    sb.from('employees').select('id,full_name,emp_code,department').eq('status','Active').order('full_name')]);
+    sb.from('employees').select('id,full_name,emp_code,department').eq('status','Active').order('full_name'),
+    sb.from('software_spend').select('software_id,spend_month,amount').order('spend_month',{ascending:false})]);
   const list=rows||[];ASSET_EMPS=emps||[];
   const used={};(seats||[]).forEach(s=>used[s.software_id]=(used[s.software_id]||0)+1);
+  // Query is sorted newest-first, so the first row seen per service is its latest month.
+  const latest={};(spend||[]).forEach(r=>{if(!latest[r.software_id])latest[r.software_id]=r;});
   const active=list.filter(s=>s.status==='Active');
-  const perMonth=active.reduce((n,s)=>n+monthlyCost(s),0);
-  const soon=active.filter(s=>{const d=daysTo(s.renewal_date);return d!==null&&d<=30;});
+  const perMonth=active.reduce((n,s)=>n+monthlyCost(s,latest[s.id]),0);
+  const soon=active.filter(s=>{if(isPayg(s))return false;const d=daysTo(s.renewal_date);return d!==null&&d<=30;});
+  const unlogged=active.filter(s=>isPayg(s)&&!latest[s.id]);
   M(pgh('Software','Subscriptions by team — seats, cost and upcoming renewals.','<button class="btn" onclick="softForm()">＋ Add Software</button>')+
   kpis([['<i class="fa-solid fa-cubes"></i>','#E8EEFB','Subscriptions',list.length],
     ['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Active',active.length],
-    ['<i class="fa-solid fa-indian-rupee-sign"></i>','#F3ECFB','Cost / month',inr(Math.round(perMonth)),'Annual plans spread over 12'],
+    ['<i class="fa-solid fa-indian-rupee-sign"></i>','#F3ECFB','Cost / month',inr(Math.round(perMonth)),'Annual ÷ 12 + latest usage'],
     ['<i class="fa-solid fa-bell"></i>','#FDEBD0','Renewing ≤ 30 days',soon.length,soon.length?'Needs attention':'All clear']])+
+  // Usage-based spend only counts once it's logged — say so rather than quietly under-reporting.
+  (unlogged.length?`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i>
+    <b>${unlogged.length}</b> usage-based ${unlogged.length===1?'service has':'services have'} no spend logged yet (${unlogged.map(s=>esc(s.name)).join(', ')}), so ${unlogged.length===1?'it isn’t':'they aren’t'} counted in cost / month. Use <b>Spend</b> to log what you were billed.</div>`:'')+
   `<div class="card" style="overflow:auto"><table><tr><th>Software</th><th>Vendor</th><th>Team</th><th>Seats</th><th>Cost</th><th>Renewal</th><th>Status</th><th></th></tr>
-  ${list.map(s=>{const u=used[s.id]||0;const d=daysTo(s.renewal_date);const rj=JSON.stringify(s).replace(/'/g,"&#39;");
-    const over=s.seats!=null&&u>s.seats;
-    return `<tr><td style="white-space:nowrap">${av(s.name)}<b>${esc(s.name)}</b></td>
+  ${list.map(s=>{const u=used[s.id]||0;const pg=isPayg(s);const lt=latest[s.id];
+    const d=pg?null:daysTo(s.renewal_date);const rj=JSON.stringify(s).replace(/'/g,"&#39;");
+    const over=!pg&&s.seats!=null&&u>s.seats;
+    return `<tr><td style="white-space:nowrap">${av(s.name)}<b>${esc(s.name)}</b>${pg?'<div class="tl-sub">usage-based</div>':''}</td>
     <td>${s.vendor?esc(s.vendor):'<span class="tl-dash">—</span>'}</td>
     <td>${s.department?esc(s.department):'<span class="tl-dash">—</span>'}</td>
-    <td style="white-space:nowrap"><b style="color:${over?'#C0392B':'inherit'}">${u}</b> / ${s.seats??'—'}${over?' <span class="badge stA" title="More people than seats bought">over</span>':''}</td>
-    <td style="white-space:nowrap">${s.cost!=null?`${inr(s.cost)}<div class="tl-sub">${esc(s.billing_cycle)}</div>`:'<span class="tl-dash">—</span>'}</td>
-    <td style="white-space:nowrap">${s.renewal_date?`${fmtDate(s.renewal_date)}${d!==null&&d<=30?`<div class="tl-sub" style="color:${d<0?'#C0392B':'#D35400'};font-weight:600">${d<0?'overdue':'in '+d+'d'}</div>`:''}`:'<span class="tl-dash">—</span>'}</td>
+    <td style="white-space:nowrap">${pg?`<b>${u}</b><div class="tl-sub">with access</div>`
+      :`<b style="color:${over?'#C0392B':'inherit'}">${u}</b> / ${s.seats??'—'}${over?' <span class="badge stA" title="More people than seats bought">over</span>':''}`}</td>
+    <td style="white-space:nowrap">${pg
+      ?(lt?`${inr(lt.amount)}<div class="tl-sub">${fmtMon(lt.spend_month)} · actual</div>`
+          :'<span class="tl-dash">—</span><div class="tl-sub" style="color:#D35400">no spend logged</div>')
+      :(s.cost!=null?`${inr(s.cost)}<div class="tl-sub">${esc(s.billing_cycle)}</div>`:'<span class="tl-dash">—</span>')}</td>
+    <td style="white-space:nowrap">${pg?'<span class="tl-dash">—</span><div class="tl-sub">usage-based</div>'
+      :(s.renewal_date?`${fmtDate(s.renewal_date)}${d!==null&&d<=30?`<div class="tl-sub" style="color:${d<0?'#C0392B':'#D35400'};font-weight:600">${d<0?'overdue':'in '+d+'d'}</div>`:''}`:'<span class="tl-dash">—</span>')}</td>
     <td><span class="badge ${s.status==='Active'?'stP':'stA'}">${esc(s.status)}</span></td>
     <td class="noprint" style="white-space:nowrap">
-      <button class="btn sm" onclick="seatForm('${s.id}')" title="Manage who holds a seat">Seats</button>
+      ${pg?`<button class="btn sm" onclick="spendForm('${s.id}')" title="Log what you were billed each month">Spend</button>`:''}
+      <button class="btn sm ${pg?'sec':''}" onclick="seatForm('${s.id}')" title="${pg?'Who can log in':'Manage who holds a seat'}">${pg?'Access':'Seats'}</button>
       <button class="btn sm sec" onclick='softForm(${rj})'>Edit</button>
       <button class="btn sm warn" onclick="delSoft('${s.id}')">Del</button></td></tr>`}).join('')
     ||'<tr><td colspan="8" style="text-align:center;color:#889;padding:30px">No software tracked yet — add your first subscription.</td></tr>'}</table></div>`);
 }
 function softForm(s={}){
   const depts=[...new Set(ASSET_EMPS.map(e=>e.department).filter(Boolean))].sort();
-  const sel=(k,opts,cur)=>`<select id="s_${k}">${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  const sel=(k,opts,cur)=>`<select id="s_${k}"${k==='billing_cycle'?' onchange="softPaygToggle()"':''}>${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
   const div=document.createElement('div');div.className='modal';
   div.innerHTML=`<div class="card"><h2>${s.id?'Edit':'Add'} Software</h2>
   <div class="row"><div><label>Software name</label><input id="s_name" placeholder="e.g. Figma" value="${esc(s.name||'')}"></div>
@@ -1697,20 +1719,30 @@ function softForm(s={}){
   <label>Team / department <span style="color:#889;font-weight:400">— who owns this subscription</span></label>
   <input id="s_department" list="s_deptlist" value="${esc(s.department||'')}" placeholder="e.g. Design">
   <datalist id="s_deptlist">${depts.map(d=>`<option value="${esc(d)}"></option>`).join('')}</datalist>
-  <div class="row"><div><label>Seats purchased</label><input id="s_seats" type="number" min="0" step="1" value="${s.seats??''}"></div>
-  <div><label>Cost (per cycle)</label><input id="s_cost" type="number" min="0" step="0.01" value="${s.cost??''}"></div></div>
   <div class="row"><div><label>Billing cycle</label>${sel('billing_cycle',BILLING,s.billing_cycle||'Monthly')}</div>
-  <div><label>Next renewal</label><input id="s_renewal_date" type="date" value="${s.renewal_date?String(s.renewal_date).slice(0,10):''}"></div></div>
+  <div id="s_renewal_wrap"><label>Next renewal</label><input id="s_renewal_date" type="date" value="${s.renewal_date?String(s.renewal_date).slice(0,10):''}"></div></div>
+  <div class="row" id="s_fixed_wrap"><div><label>Seats purchased</label><input id="s_seats" type="number" min="0" step="1" value="${s.seats??''}"></div>
+  <div><label>Cost (per cycle)</label><input id="s_cost" type="number" min="0" step="0.01" value="${s.cost??''}"></div></div>
+  <div id="s_payg_note" class="warnbar" style="display:none;font-size:12px"><i class="fa-solid fa-circle-info" style="color:#2563A8"></i>
+    Usage-based — no seats to buy, no fixed price, nothing to renew. Log what you were billed each month with <b>Spend</b>, and record who can log in with <b>Access</b>.</div>
   <label>Status</label>${sel('status',['Active','Cancelled'],s.status||'Active')}
   <label>Notes</label><textarea id="s_notes" rows="2">${esc(s.notes||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveSoft('${s.id||''}')">Save</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  document.body.appendChild(div);softPaygToggle();
 }
+// Seats / fixed cost / renewal are meaningless for a usage-based service — hide them.
+function softPaygToggle(){const pg=$('s_billing_cycle').value===PAYG;
+  $('s_fixed_wrap').style.display=pg?'none':'';
+  $('s_renewal_wrap').style.display=pg?'none':'';
+  $('s_payg_note').style.display=pg?'':'none';}
 async function saveSoft(id){
-  const o={};['name','vendor','department','billing_cycle','renewal_date','status','notes'].forEach(k=>o[k]=$('s_'+k).value||null);
-  o.seats=$('s_seats').value===''?null:+$('s_seats').value;
-  o.cost =$('s_cost').value===''?null:+$('s_cost').value;
+  const o={};['name','vendor','department','billing_cycle','status','notes'].forEach(k=>o[k]=$('s_'+k).value||null);
+  const pg=o.billing_cycle===PAYG;
+  // Never persist seats/cost/renewal for usage-based services — they'd be fiction.
+  o.renewal_date=pg?null:($('s_renewal_date').value||null);
+  o.seats=(pg||$('s_seats').value==='')?null:+$('s_seats').value;
+  o.cost =(pg||$('s_cost').value==='')?null:+$('s_cost').value;
   if(!o.name)return alert('Software name is required.');
   const q=id?sb.from('software').update(o).eq('id',id):sb.from('software').insert(o);
   const{error}=await q;if(error)return alert(error.message);
@@ -1722,29 +1754,64 @@ async function delSoft(id){if(confirm('Delete this software? Its seat assignment
 async function seatForm(id){
   const old=document.querySelector('.modal');if(old)old.remove();
   const [{data:sw},{data:seats},{data:emps}]=await Promise.all([
-    sb.from('software').select('name,seats').eq('id',id).single(),
+    sb.from('software').select('name,seats,billing_cycle').eq('id',id).single(),
     sb.from('software_seats').select('id,employee_id').eq('software_id',id),
     sb.from('employees').select('id,full_name,emp_code,department').eq('status','Active').order('full_name')]);
   const byId={};(emps||[]).forEach(e=>byId[e.id]=e);
   const held=new Set((seats||[]).map(s=>s.employee_id));
   const free=(emps||[]).filter(e=>!held.has(e.id));
-  const u=(seats||[]).length,cap=sw?.seats;
+  const u=(seats||[]).length,cap=sw?.seats;const pg=sw?isPayg(sw):false;
   const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Seats — ${esc(sw?.name||'')}</h2>
-  <p style="font-size:13px;color:#6b7a90;margin:0 0 10px">${u} of ${cap??'—'} seats used${cap!=null&&u>cap?' <b style="color:#C0392B">— over the seats you bought</b>':''}</p>
-  ${free.length?`<div class="row" style="align-items:flex-end"><div style="flex:1"><label>Give a seat to</label>
+  div.innerHTML=`<div class="card"><h2>${pg?'Access':'Seats'} — ${esc(sw?.name||'')}</h2>
+  <p style="font-size:13px;color:#6b7a90;margin:0 0 10px">${pg
+    ?`${u} ${u===1?'person has':'people have'} access to this service — keep it current so console access leaves with the person.`
+    :`${u} of ${cap??'—'} seats used${cap!=null&&u>cap?' <b style="color:#C0392B">— over the seats you bought</b>':''}`}</p>
+  ${free.length?`<div class="row" style="align-items:flex-end"><div style="flex:1"><label>${pg?'Give access to':'Give a seat to'}</label>
     <select id="se_emp">${free.map(e=>`<option value="${e.id}">${esc(e.full_name)} (${esc(e.emp_code)})${e.department?' — '+esc(e.department):''}</option>`).join('')}</select></div>
     <div><button class="btn" onclick="addSeat('${id}')">＋ Add</button></div></div>`
-   :'<p style="font-size:13px;color:#889">Every active employee already holds a seat.</p>'}
+   :`<p style="font-size:13px;color:#889">Every active employee already ${pg?'has access':'holds a seat'}.</p>`}
   <table style="margin-top:10px"><tr><th>Employee</th><th>Team</th><th></th></tr>
   ${(seats||[]).map(s=>{const e=byId[s.employee_id];
     return `<tr><td>${e?esc(e.full_name):'<span class="tl-dash">—</span>'}${e?`<div class="tl-sub">${esc(e.emp_code)}</div>`:''}</td>
     <td>${e?.department?esc(e.department):'<span class="tl-dash">—</span>'}</td>
     <td><button class="btn sm warn" onclick="delSeat('${s.id}','${id}')">Remove</button></td></tr>`}).join('')
-    ||'<tr><td colspan="3" style="text-align:center;color:#889;padding:20px">Nobody holds a seat yet.</td></tr>'}</table>
+    ||`<tr><td colspan="3" style="text-align:center;color:#889;padding:20px">${pg?'Nobody has access yet.':'Nobody holds a seat yet.'}</td></tr>`}</table>
   <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove();soft()">Close</button></div></div>`;
   document.body.appendChild(div);
 }
+// Monthly spend log — the only honest way to cost a usage-based service.
+async function spendForm(id){
+  const old=document.querySelector('.modal');if(old)old.remove();
+  const [{data:sw},{data:rows}]=await Promise.all([
+    sb.from('software').select('name').eq('id',id).single(),
+    sb.from('software_spend').select('*').eq('software_id',id).order('spend_month',{ascending:false})]);
+  const tot=(rows||[]).reduce((n,r)=>n+(+r.amount||0),0);
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Monthly spend — ${esc(sw&&sw.name||'')}</h2>
+  <p style="font-size:13px;color:#6b7a90;margin:0 0 10px">Log what you were actually billed each month. Saving a month again updates it.</p>
+  <div class="row" style="align-items:flex-end"><div><label>Month</label><input id="sp_month" type="month" value="${today().slice(0,7)}"></div>
+  <div><label>Amount billed</label><input id="sp_amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+  <div style="flex:1"><label>Notes</label><input id="sp_notes" placeholder="Optional — e.g. spike from data transfer"></div>
+  <div><button class="btn" onclick="saveSpend('${id}')">Save</button></div></div>
+  <table style="margin-top:10px"><tr><th>Month</th><th>Amount</th><th>Notes</th><th></th></tr>
+  ${(rows||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtMon(r.spend_month)}</td>
+    <td style="white-space:nowrap"><b>${inr(r.amount)}</b></td>
+    <td style="font-size:12px">${r.notes?esc(r.notes):'<span class="tl-dash">—</span>'}</td>
+    <td><button class="btn sm warn" onclick="delSpend('${r.id}','${id}')">Del</button></td></tr>`).join('')
+    ||'<tr><td colspan="4" style="text-align:center;color:#889;padding:20px">No spend logged yet.</td></tr>'}</table>
+  ${rows&&rows.length?`<p style="font-size:12px;color:#6b7a90;margin-top:8px">${rows.length} ${rows.length===1?'month':'months'} logged · total ${inr(tot)} · average ${inr(Math.round(tot/rows.length))}/month</p>`:''}
+  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove();soft()">Close</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveSpend(id){
+  const m=$('sp_month').value,a=$('sp_amount').value;
+  if(!m)return alert('Pick the month this bill covers.');
+  if(a==='')return alert('Enter the amount you were billed.');
+  const{error}=await sb.from('software_spend').upsert({software_id:id,spend_month:m+'-01',amount:+a,notes:$('sp_notes').value||null},{onConflict:'software_id,spend_month'});
+  if(error)return alert(error.message);spendForm(id);
+}
+async function delSpend(rid,id){const{error}=await sb.from('software_spend').delete().eq('id',rid);
+  if(error)return alert(error.message);spendForm(id);}
 async function addSeat(id){
   const eid=$('se_emp').value;if(!eid)return;
   const{error}=await sb.from('software_seats').insert({software_id:id,employee_id:eid});
