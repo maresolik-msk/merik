@@ -287,6 +287,7 @@ const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>
 const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2});
 const today=()=>new Date().toISOString().slice(0,10);
 const fmtDate=d=>{if(!d)return '—';const p=String(d).slice(0,10).split('-');return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:d;};
+const fmtTime=t=>t?new Date(t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function words(n){n=Math.round(n);if(n===0)return'Zero';const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
 const two=x=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'');
@@ -2298,12 +2299,13 @@ async function mynotes(){
       <div><label>Estimated time</label>${hmField('ts-est',{h:'',m:''})}</div>
       <div><button class="btn" onclick="addSheetTask()"><i class="fa-solid fa-plus"></i> Add</button></div>
     </div>
-    <div style="overflow:auto"><table style="margin-top:10px"><tr><th style="width:34px"></th><th>Task</th><th>Client / Project</th><th>Est.</th><th>Logged</th><th></th></tr>
+    <div style="overflow:auto"><table style="margin-top:10px"><tr><th style="width:34px"></th><th>Task</th><th>Client / Project</th><th>Est.</th><th>Added</th><th>Logged</th><th></th></tr>
     ${SHEET.map(t=>{const lk=sheetLocked(t);const onToday=String(t.last_logged_on||'').slice(0,10)===today();
       return `<tr><td><input type="checkbox" ${t.done?'checked':''} onchange="toggleSheetDone('${t.id}',this.checked)" style="width:18px;height:18px" title="Mark done"></td>
       <td style="max-width:280px;${t.done?'text-decoration:line-through;color:#99a':''}">${esc(t.task)}</td>
       <td style="white-space:nowrap">${t.project?esc(t.project):'<span class="tl-dash">—</span>'}${t.client?`<div class="tl-sub">${esc(t.client)}</div>`:''}</td>
       <td style="white-space:nowrap">${t.est_min?fmtMin(t.est_min):'<span class="tl-dash">—</span>'}</td>
+      <td style="white-space:nowrap">${fmtDate(String(t.created_at).slice(0,10))}<div class="tl-sub">${fmtTime(t.created_at)}</div></td>
       <td style="white-space:nowrap">${t.first_logged_on
         ?`<span class="badge stP">Logged</span><div class="tl-sub">last ${fmtDate(t.last_logged_on)}</div>`
         :'<span class="tl-dash">not yet</span>'}</td>
@@ -2314,7 +2316,7 @@ async function mynotes(){
         ${lk?`<button class="btn sm sec" disabled title="Reported in a task log on ${fmtDate(t.first_logged_on)} — the details are locked. You can still mark it done."><i class="fa-solid fa-lock"></i></button>`
             :`<button class="btn sm sec" onclick="editSheetTask('${t.id}')">Edit</button>`}
         <button class="btn sm warn" onclick="delSheetTask('${t.id}')">Del</button></td></tr>`}).join('')
-      ||'<tr><td colspan="6" style="text-align:center;color:#889;padding:20px">No tasks on your sheet yet.</td></tr>'}</table></div>
+      ||'<tr><td colspan="7" style="text-align:center;color:#889;padding:20px">No tasks on your sheet yet.</td></tr>'}</table></div>
   </div>
   <div class="row" style="align-items:flex-start;gap:16px">
   <div style="flex:1;min-width:280px"><div class="card">
