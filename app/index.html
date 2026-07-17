@@ -2310,8 +2310,7 @@ async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return alert(
 // no list here and RLS (p_fb_adm_i is INSERT-only) enforces the same server-side.
 function adminfb(){
   M(pgh('Feedback','Share feedback or a feature request with the Merik team.')+
-  `<div class="warnbar"><i class="fa-solid fa-lock" style="color:#E8682A"></i> Feedback goes straight to the Merik team and is visible only to them — not to anyone else in your company.</div>
-  <div class="card"><div class="row">
+  `<div class="card"><div class="row">
     <div style="max-width:200px"><label>Category</label><select id="afb_cat">${FB_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
     <label>Your feedback / requirement</label><textarea id="afb_msg" rows="4" placeholder="Describe your feedback or requirement…"></textarea>
     <div style="margin-top:10px"><button class="btn" onclick="sendAdminFb()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button></div></div>`);
