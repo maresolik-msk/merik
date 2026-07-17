@@ -387,6 +387,7 @@ const ADMIN_GROUPS=[
  ['Team Management',[['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays']]],
  ['Task Management',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project" style="color:#2563A8"></i>','Project Intelligence']]],
  ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
+ ['Asset Management',[['asset','<i class="fa-solid fa-laptop"></i>','Assets'],['soft','<i class="fa-solid fa-cubes" style="color:#7B3FE4"></i>','Software']]],
  ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings'],['adminfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
@@ -396,8 +397,8 @@ const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
 // Tenant-enablable admin modules (map a nav group to a module key).
-const MODULES=[['employee','Employee Management'],['team','Team Management'],['task','Task Management'],['client','Client Management']];
-const GROUP_MODULE={'Employee Management':'employee','Team Management':'team','Task Management':'task','Client Management':'client'};
+const MODULES=[['employee','Employee Management'],['team','Team Management'],['task','Task Management'],['client','Client Management'],['asset','Asset Management']];
+const GROUP_MODULE={'Employee Management':'employee','Team Management':'team','Task Management':'task','Client Management':'client','Asset Management':'asset'};
 let ALLOWED_VIEWS=null;
 function renderShell(){
   const role=ME.profile?.role;
@@ -433,7 +434,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,asset,soft,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -1545,6 +1546,214 @@ async function saveCli(id){const o={};['name','contact_person','phone','email','
   const q=id?sb.from('clients').update(o).eq('id',id):sb.from('clients').insert(o);
   const{error}=await q;if(error)return alert(error.message);document.querySelector('.modal').remove();cli()}
 async function delCli(id){if(confirm('Delete client?')){await sb.from('clients').delete().eq('id',id);cli()}}
+
+/* ---------- ASSET MANAGEMENT (hardware + software) ---------- */
+const ASSET_CATS=['Laptop','Desktop','Monitor','Phone','Tool','Other'];
+const ASSET_STATUS=['Available','In Use','Repair','Retired'];
+const BILLING=['Monthly','Annual'];
+const AST_BADGE={'Available':'stP','In Use':'stW','Repair':'stL','Retired':'stA'};
+// Active employees for the assign / seat pickers, cached by the page that rendered.
+let ASSET_EMPS=[];
+// Normalise to a monthly figure so Monthly and Annual subscriptions can be summed.
+const monthlyCost=s=>{const c=+s.cost||0;return s.billing_cycle==='Annual'?c/12:c;};
+// Whole days from today to a date (null when unset); negative means already past.
+const daysTo=d=>d?Math.round((new Date(String(d).slice(0,10)+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5):null;
+
+/* ----- hardware assets ----- */
+async function asset(){
+  const [{data:rows},{data:emps}]=await Promise.all([
+    sb.from('assets').select('*').order('name'),
+    sb.from('employees').select('id,full_name,emp_code,department').eq('status','Active').order('full_name')]);
+  const list=rows||[];ASSET_EMPS=emps||[];
+  const byId={};ASSET_EMPS.forEach(e=>byId[e.id]=e);
+  const c=k=>list.filter(a=>a.status===k).length;
+  M(pgh('Assets','Track company hardware and who currently holds it.','<button class="btn" onclick="assetForm()">＋ Add Asset</button>')+
+  kpis([['<i class="fa-solid fa-laptop"></i>','#E8EEFB','Total Assets',list.length],
+    ['<i class="fa-solid fa-user-check"></i>','#E6F7EC','In Use',c('In Use')],
+    ['<i class="fa-solid fa-box-open"></i>','#FFE9DC','Available',c('Available')],
+    ['<i class="fa-solid fa-screwdriver-wrench"></i>','#FDEBD0','Repair / Retired',c('Repair')+c('Retired')]])+
+  `<div class="card" style="overflow:auto"><table><tr><th>Asset</th><th>Category</th><th>Serial No</th><th>Status</th><th>Assigned To</th><th>Notes</th><th></th></tr>
+  ${list.map(a=>{const e=byId[a.assigned_to];const rj=JSON.stringify(a).replace(/'/g,"&#39;");
+    return `<tr><td style="white-space:nowrap">${av(a.name)}<b>${esc(a.name)}</b></td>
+    <td>${esc(a.category)}</td><td style="font-size:12px">${a.serial_no?esc(a.serial_no):'<span class="tl-dash">—</span>'}</td>
+    <td><span class="badge ${AST_BADGE[a.status]||'stA'}">${esc(a.status)}</span></td>
+    <td>${e?`${esc(e.full_name)}<div class="tl-sub">${esc(e.emp_code)}</div>`:'<span class="tl-dash">—</span>'}</td>
+    <td style="max-width:200px;font-size:12px">${a.notes?esc(a.notes):'<span class="tl-dash">—</span>'}</td>
+    <td class="noprint" style="white-space:nowrap">
+      ${a.assigned_to?`<button class="btn sm sec" onclick="returnAsset('${a.id}')" title="Mark returned to store">Return</button>`
+                     :`<button class="btn sm" onclick="assignForm('${a.id}')" title="Assign to an employee">Assign</button>`}
+      <button class="btn sm sec" onclick="assetHist('${a.id}')" title="Assignment history"><i class="fa-solid fa-clock-rotate-left"></i></button>
+      <button class="btn sm sec" onclick='assetForm(${rj})'>Edit</button>
+      <button class="btn sm warn" onclick="delAsset('${a.id}')">Del</button></td></tr>`}).join('')
+    ||'<tr><td colspan="7" style="text-align:center;color:#889;padding:30px">No assets yet — add your first one.</td></tr>'}</table></div>`);
+}
+function assetForm(a={}){
+  const sel=(k,opts,cur)=>`<select id="a_${k}">${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>${a.id?'Edit':'Add'} Asset</h2>
+  <label>Asset name</label><input id="a_name" placeholder='e.g. MacBook Pro 14"' value="${esc(a.name||'')}">
+  <div class="row"><div><label>Category</label>${sel('category',ASSET_CATS,a.category||'Laptop')}</div>
+  <div><label>Serial number</label><input id="a_serial_no" value="${esc(a.serial_no||'')}"></div></div>
+  <label>Status</label>${sel('status',ASSET_STATUS,a.status||'Available')}
+  <div style="font-size:11.5px;color:#889;margin-top:4px">Use <b>Assign</b> / <b>Return</b> on the list to change who holds it — that keeps the history.</div>
+  <label>Notes</label><textarea id="a_notes" rows="2">${esc(a.notes||'')}</textarea>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveAsset('${a.id||''}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveAsset(id){
+  const o={};['name','category','serial_no','status','notes'].forEach(k=>o[k]=$('a_'+k).value||null);
+  if(!o.name)return alert('Asset name is required.');
+  const q=id?sb.from('assets').update(o).eq('id',id):sb.from('assets').insert(o);
+  const{error}=await q;if(error)return alert(error.message);
+  document.querySelector('.modal').remove();asset();
+}
+async function delAsset(id){if(confirm('Delete this asset? Its assignment history goes with it.')){
+  const{error}=await sb.from('assets').delete().eq('id',id);if(error)return alert(error.message);asset();}}
+// Assign: close any open holding, open a new one, and mirror the holder onto the asset row.
+function assignForm(id){
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Assign asset</h2>
+  <label>Assign to</label><select id="as_emp">${ASSET_EMPS.map(e=>`<option value="${e.id}">${esc(e.full_name)} (${esc(e.emp_code)})</option>`).join('')}</select>
+  <div class="row"><div><label>From date</label><input id="as_date" type="date" value="${today()}"></div>
+  <div><label>Notes</label><input id="as_notes" placeholder="Optional"></div></div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="doAssign('${id}')">Assign</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function doAssign(id){
+  const eid=$('as_emp').value,on=$('as_date').value||today();
+  if(!eid)return alert('Add an active employee first.');
+  await sb.from('asset_assignments').update({returned_on:on}).eq('asset_id',id).is('returned_on',null);
+  const{error}=await sb.from('asset_assignments').insert({asset_id:id,employee_id:eid,assigned_on:on,notes:$('as_notes').value||null});
+  if(error)return alert(error.message);
+  const{error:e2}=await sb.from('assets').update({assigned_to:eid,status:'In Use'}).eq('id',id);
+  if(e2)return alert(e2.message);
+  document.querySelector('.modal').remove();asset();
+}
+async function returnAsset(id){
+  if(!confirm('Mark this asset returned to the store?'))return;
+  const d=today();
+  await sb.from('asset_assignments').update({returned_on:d}).eq('asset_id',id).is('returned_on',null);
+  const{error}=await sb.from('assets').update({assigned_to:null,status:'Available'}).eq('id',id);
+  if(error)return alert(error.message);asset();
+}
+async function assetHist(id){
+  const [{data:h},{data:emps}]=await Promise.all([
+    sb.from('asset_assignments').select('*').eq('asset_id',id).order('assigned_on',{ascending:false}),
+    sb.from('employees').select('id,full_name,emp_code')]);
+  const byId={};(emps||[]).forEach(e=>byId[e.id]=e);
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Assignment history</h2>
+  <table><tr><th>Employee</th><th>From</th><th>To</th><th>Notes</th></tr>
+  ${(h||[]).map(r=>{const e=byId[r.employee_id];
+    return `<tr><td>${e?esc(e.full_name):'<span class="tl-dash">—</span>'}</td><td style="white-space:nowrap">${fmtDate(r.assigned_on)}</td>
+    <td style="white-space:nowrap">${r.returned_on?fmtDate(r.returned_on):'<span class="badge stW">Holding now</span>'}</td>
+    <td style="font-size:12px">${r.notes?esc(r.notes):'<span class="tl-dash">—</span>'}</td></tr>`}).join('')
+    ||'<tr><td colspan="4" style="text-align:center;color:#889;padding:20px">Never assigned yet.</td></tr>'}</table>
+  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
+  document.body.appendChild(div);
+}
+
+/* ----- software subscriptions (owned by a team, held by employees) ----- */
+async function soft(){
+  const [{data:rows},{data:seats},{data:emps}]=await Promise.all([
+    sb.from('software').select('*').order('name'),
+    sb.from('software_seats').select('software_id,employee_id'),
+    sb.from('employees').select('id,full_name,emp_code,department').eq('status','Active').order('full_name')]);
+  const list=rows||[];ASSET_EMPS=emps||[];
+  const used={};(seats||[]).forEach(s=>used[s.software_id]=(used[s.software_id]||0)+1);
+  const active=list.filter(s=>s.status==='Active');
+  const perMonth=active.reduce((n,s)=>n+monthlyCost(s),0);
+  const soon=active.filter(s=>{const d=daysTo(s.renewal_date);return d!==null&&d<=30;});
+  M(pgh('Software','Subscriptions by team — seats, cost and upcoming renewals.','<button class="btn" onclick="softForm()">＋ Add Software</button>')+
+  kpis([['<i class="fa-solid fa-cubes"></i>','#E8EEFB','Subscriptions',list.length],
+    ['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Active',active.length],
+    ['<i class="fa-solid fa-indian-rupee-sign"></i>','#F3ECFB','Cost / month',inr(Math.round(perMonth)),'Annual plans spread over 12'],
+    ['<i class="fa-solid fa-bell"></i>','#FDEBD0','Renewing ≤ 30 days',soon.length,soon.length?'Needs attention':'All clear']])+
+  `<div class="card" style="overflow:auto"><table><tr><th>Software</th><th>Vendor</th><th>Team</th><th>Seats</th><th>Cost</th><th>Renewal</th><th>Status</th><th></th></tr>
+  ${list.map(s=>{const u=used[s.id]||0;const d=daysTo(s.renewal_date);const rj=JSON.stringify(s).replace(/'/g,"&#39;");
+    const over=s.seats!=null&&u>s.seats;
+    return `<tr><td style="white-space:nowrap">${av(s.name)}<b>${esc(s.name)}</b></td>
+    <td>${s.vendor?esc(s.vendor):'<span class="tl-dash">—</span>'}</td>
+    <td>${s.department?esc(s.department):'<span class="tl-dash">—</span>'}</td>
+    <td style="white-space:nowrap"><b style="color:${over?'#C0392B':'inherit'}">${u}</b> / ${s.seats??'—'}${over?' <span class="badge stA" title="More people than seats bought">over</span>':''}</td>
+    <td style="white-space:nowrap">${s.cost!=null?`${inr(s.cost)}<div class="tl-sub">${esc(s.billing_cycle)}</div>`:'<span class="tl-dash">—</span>'}</td>
+    <td style="white-space:nowrap">${s.renewal_date?`${fmtDate(s.renewal_date)}${d!==null&&d<=30?`<div class="tl-sub" style="color:${d<0?'#C0392B':'#D35400'};font-weight:600">${d<0?'overdue':'in '+d+'d'}</div>`:''}`:'<span class="tl-dash">—</span>'}</td>
+    <td><span class="badge ${s.status==='Active'?'stP':'stA'}">${esc(s.status)}</span></td>
+    <td class="noprint" style="white-space:nowrap">
+      <button class="btn sm" onclick="seatForm('${s.id}')" title="Manage who holds a seat">Seats</button>
+      <button class="btn sm sec" onclick='softForm(${rj})'>Edit</button>
+      <button class="btn sm warn" onclick="delSoft('${s.id}')">Del</button></td></tr>`}).join('')
+    ||'<tr><td colspan="8" style="text-align:center;color:#889;padding:30px">No software tracked yet — add your first subscription.</td></tr>'}</table></div>`);
+}
+function softForm(s={}){
+  const depts=[...new Set(ASSET_EMPS.map(e=>e.department).filter(Boolean))].sort();
+  const sel=(k,opts,cur)=>`<select id="s_${k}">${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>${s.id?'Edit':'Add'} Software</h2>
+  <div class="row"><div><label>Software name</label><input id="s_name" placeholder="e.g. Figma" value="${esc(s.name||'')}"></div>
+  <div><label>Vendor</label><input id="s_vendor" placeholder="e.g. Figma Inc." value="${esc(s.vendor||'')}"></div></div>
+  <label>Team / department <span style="color:#889;font-weight:400">— who owns this subscription</span></label>
+  <input id="s_department" list="s_deptlist" value="${esc(s.department||'')}" placeholder="e.g. Design">
+  <datalist id="s_deptlist">${depts.map(d=>`<option value="${esc(d)}"></option>`).join('')}</datalist>
+  <div class="row"><div><label>Seats purchased</label><input id="s_seats" type="number" min="0" step="1" value="${s.seats??''}"></div>
+  <div><label>Cost (per cycle)</label><input id="s_cost" type="number" min="0" step="0.01" value="${s.cost??''}"></div></div>
+  <div class="row"><div><label>Billing cycle</label>${sel('billing_cycle',BILLING,s.billing_cycle||'Monthly')}</div>
+  <div><label>Next renewal</label><input id="s_renewal_date" type="date" value="${s.renewal_date?String(s.renewal_date).slice(0,10):''}"></div></div>
+  <label>Status</label>${sel('status',['Active','Cancelled'],s.status||'Active')}
+  <label>Notes</label><textarea id="s_notes" rows="2">${esc(s.notes||'')}</textarea>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveSoft('${s.id||''}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveSoft(id){
+  const o={};['name','vendor','department','billing_cycle','renewal_date','status','notes'].forEach(k=>o[k]=$('s_'+k).value||null);
+  o.seats=$('s_seats').value===''?null:+$('s_seats').value;
+  o.cost =$('s_cost').value===''?null:+$('s_cost').value;
+  if(!o.name)return alert('Software name is required.');
+  const q=id?sb.from('software').update(o).eq('id',id):sb.from('software').insert(o);
+  const{error}=await q;if(error)return alert(error.message);
+  document.querySelector('.modal').remove();soft();
+}
+async function delSoft(id){if(confirm('Delete this software? Its seat assignments go with it.')){
+  const{error}=await sb.from('software').delete().eq('id',id);if(error)return alert(error.message);soft();}}
+// Seat manager: who on the team actually holds a licence.
+async function seatForm(id){
+  const old=document.querySelector('.modal');if(old)old.remove();
+  const [{data:sw},{data:seats},{data:emps}]=await Promise.all([
+    sb.from('software').select('name,seats').eq('id',id).single(),
+    sb.from('software_seats').select('id,employee_id').eq('software_id',id),
+    sb.from('employees').select('id,full_name,emp_code,department').eq('status','Active').order('full_name')]);
+  const byId={};(emps||[]).forEach(e=>byId[e.id]=e);
+  const held=new Set((seats||[]).map(s=>s.employee_id));
+  const free=(emps||[]).filter(e=>!held.has(e.id));
+  const u=(seats||[]).length,cap=sw?.seats;
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Seats — ${esc(sw?.name||'')}</h2>
+  <p style="font-size:13px;color:#6b7a90;margin:0 0 10px">${u} of ${cap??'—'} seats used${cap!=null&&u>cap?' <b style="color:#C0392B">— over the seats you bought</b>':''}</p>
+  ${free.length?`<div class="row" style="align-items:flex-end"><div style="flex:1"><label>Give a seat to</label>
+    <select id="se_emp">${free.map(e=>`<option value="${e.id}">${esc(e.full_name)} (${esc(e.emp_code)})${e.department?' — '+esc(e.department):''}</option>`).join('')}</select></div>
+    <div><button class="btn" onclick="addSeat('${id}')">＋ Add</button></div></div>`
+   :'<p style="font-size:13px;color:#889">Every active employee already holds a seat.</p>'}
+  <table style="margin-top:10px"><tr><th>Employee</th><th>Team</th><th></th></tr>
+  ${(seats||[]).map(s=>{const e=byId[s.employee_id];
+    return `<tr><td>${e?esc(e.full_name):'<span class="tl-dash">—</span>'}${e?`<div class="tl-sub">${esc(e.emp_code)}</div>`:''}</td>
+    <td>${e?.department?esc(e.department):'<span class="tl-dash">—</span>'}</td>
+    <td><button class="btn sm warn" onclick="delSeat('${s.id}','${id}')">Remove</button></td></tr>`}).join('')
+    ||'<tr><td colspan="3" style="text-align:center;color:#889;padding:20px">Nobody holds a seat yet.</td></tr>'}</table>
+  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove();soft()">Close</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function addSeat(id){
+  const eid=$('se_emp').value;if(!eid)return;
+  const{error}=await sb.from('software_seats').insert({software_id:id,employee_id:eid});
+  if(error)return alert(error.message);seatForm(id);
+}
+async function delSeat(seatId,id){
+  const{error}=await sb.from('software_seats').delete().eq('id',seatId);
+  if(error)return alert(error.message);seatForm(id);
+}
 
 /* ---------- QUOTES & INVOICES (shared doc engine) ---------- */
 async function prj(){
