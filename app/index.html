@@ -575,6 +575,7 @@ async function prevEmp(){
   ${rows.map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td>
   <td>${e.doj?fmtDate(e.doj):'—'}</td><td style="white-space:nowrap"><span class="badge stA">${e.left_on?fmtDate(e.left_on):'—'}</span></td><td>${e.ctc?inr(e.ctc):''}</td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="empDetail('${e.id}')"><i class="fa-solid fa-eye"></i> View</button>
+  <button class="btn sm sec" title="Change the last working day" onclick='editLeftDate("${e.id}",${JSON.stringify(e.full_name||"").replace(/'/g,"&#39;")},"${e.left_on||''}")'><i class="fa-regular fa-calendar"></i> Last day</button>
   <button class="btn sm sec" title="Salary & hike history" onclick="salaryHistory('${e.id}')"><i class="fa-solid fa-arrow-trend-up"></i> Salary</button>
   <button class="btn sm" onclick="restoreEmp('${e.id}')" title="Bring back to the active team"><i class="fa-solid fa-rotate-left"></i> Restore</button></td></tr>`).join('')
   ||'<tr><td colspan="8" style="text-align:center;color:#889;padding:24px">No former employees.</td></tr>'}</table></div>`);
@@ -755,6 +756,23 @@ async function doRemoveEmp(id){
 async function restoreEmp(id){if(!confirm('Restore this employee to the active team?'))return;
   const{error}=await sb.from('employees').update({status:'Active',left_on:null}).eq('id',id);
   if(error)return alert(error.message);prevEmp();}
+// Correct the last working day of an already-archived employee — re-pro-rates
+// their final-month pay and shifts where attendance stops.
+function editLeftDate(id,name,cur){
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Last working day</h2>
+  <p style="font-size:13px;color:#445;margin:0 0 8px">Update the last working day for <b>${esc(name||'')}</b>. Their final month's pay re-pro-rates to this date, and attendance/tasks show up to it.</p>
+  <label>Last working day</label><input id="ld_date" type="date" value="${cur?String(cur).slice(0,10):today()}" max="${today()}">
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveLeftDate('${id}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveLeftDate(id){
+  const d=$('ld_date').value;if(!d)return alert('Pick the last working day.');
+  const{error}=await sb.from('employees').update({left_on:d}).eq('id',id);
+  if(error)return alert(error.message);
+  document.querySelector('.modal').remove();prevEmp();
+}
 
 /* ---------- DAILY ATTENDANCE ---------- */
 async function att(d){
