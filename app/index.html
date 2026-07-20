@@ -1879,11 +1879,22 @@ async function prj(){
   const [{data:ps},{data:cls}]=await Promise.all([
     sb.from('projects').select('*,clients(name)').order('start_date',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('clients').select('id,name').order('name')]);
+  // Distinct names already in use, so the same project (e.g. "Website") is one pick, not retyped.
+  const distinctNames=[...new Set((ps||[]).map(p=>p.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   M(pgh('Projects','Manage all projects and their status.')+`<div class="card"><div class="row">
-  <div><label>Project Name</label><input id="pj_name"></div>
-  <div><label>Client</label><select id="pj_client"><option value="">— Internal —</option>${(cls||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
+  <div style="flex:1;min-width:220px"><label>Project Name</label><input id="pj_name" list="pj_names" placeholder="e.g. Website" autocomplete="off">
+    <datalist id="pj_names">${distinctNames.map(n=>`<option value="${esc(n)}"></option>`).join('')}</datalist></div>
   <div><label>Status</label><select id="pj_status">${['Active','On Hold','Completed'].map(s=>`<option>${s}</option>`).join('')}</select></div>
-  </div><label>Description</label><textarea id="pj_desc" rows="2" placeholder="What is this project about?"></textarea>
+  </div>
+  <label>Clients <span style="color:#889;font-weight:400">— tick everyone this project is for; one project is created per client, and any client that already has it is skipped</span></label>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <label style="margin:0;cursor:pointer;font-weight:600"><input type="checkbox" id="pj_all" onchange="document.querySelectorAll('.pj-cl').forEach(c=>c.checked=this.checked);pjSelCount()" style="width:auto;margin-right:7px">Select all</label>
+    <span id="pj_seln" style="font-size:12px;color:#889"></span></div>
+  <div style="max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:9px 12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:5px" onchange="pjSelCount()">
+    <label style="margin:0;font-size:13px;cursor:pointer;color:var(--muted)"><input type="checkbox" class="pj-cl" value="__internal__" style="width:auto;margin-right:7px">Internal (no client)</label>
+    ${(cls||[]).map(c=>`<label style="margin:0;font-size:13px;cursor:pointer"><input type="checkbox" class="pj-cl" value="${c.id}" style="width:auto;margin-right:7px">${esc(c.name)}</label>`).join('')}
+  </div>
+  <label>Description</label><textarea id="pj_desc" rows="2" placeholder="What is this project about?"></textarea>
   <div style="margin-top:10px"><button class="btn" onclick="addPrj()">+ Add Project</button></div></div>
   <div class="card"><table><tr><th>Project</th><th>Client</th><th>Description</th><th>Start Date</th><th>Status</th><th></th></tr>
   ${(ps||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.clients?.name||'Internal')}</td>
@@ -1912,8 +1923,27 @@ async function saveProjEdit(id){
   const{error}=await sb.from('projects').update(o).eq('id',id);if(error)return alert(error.message);
   document.querySelector('.modal').remove();prj();
 }
-async function addPrj(){const{error}=await sb.from('projects').insert({name:$('pj_name').value,client_id:$('pj_client').value||null,status:$('pj_status').value,description:$('pj_desc').value||null});
-  error?alert(error.message):prj()}
+function pjSelCount(){const n=document.querySelectorAll('.pj-cl:checked').length;const el=$('pj_seln');if(el)el.textContent=n?`${n} selected`:'';
+  const all=$('pj_all');if(all)all.checked=n>0&&n===document.querySelectorAll('.pj-cl').length;}
+// Create the same project for every ticked client in one go, one row per client,
+// skipping any client that already has a project with this name.
+async function addPrj(){
+  const name=$('pj_name').value.trim();if(!name)return alert('Project name is required.');
+  const picked=[...document.querySelectorAll('.pj-cl:checked')].map(c=>c.value);
+  if(!picked.length)return alert('Tick at least one client (or Internal) to add this project for.');
+  const status=$('pj_status').value,desc=$('pj_desc').value.trim()||null;
+  // Which of the picked clients already have this exact project name.
+  const{data:ex,error:e0}=await sb.from('projects').select('client_id').eq('name',name);
+  if(e0)return alert(e0.message);
+  const have=new Set((ex||[]).map(r=>r.client_id||'__internal__'));
+  const rows=[];let skipped=0;
+  picked.forEach(v=>{if(have.has(v)){skipped++;return;}rows.push({name,client_id:v==='__internal__'?null:v,status,description:desc});});
+  if(!rows.length)return alert(`“${name}” already exists for all ${skipped} selected client${skipped===1?'':'s'}. Nothing to add.`);
+  const{error}=await sb.from('projects').insert(rows);
+  if(error)return alert(error.message);
+  alert(`Added “${name}” for ${rows.length} client${rows.length===1?'':'s'}${skipped?` — skipped ${skipped} that already had it`:''}.`);
+  prj();
+}
 async function updPrj(id,v){await sb.from('projects').update({status:v}).eq('id',id)}
 async function updDesc(id,v){const{error}=await sb.from('projects').update({description:v||null}).eq('id',id);if(error)alert(error.message)}
 async function delPrj(id){if(confirm('Delete project?')){await sb.from('projects').delete().eq('id',id);prj()}}
