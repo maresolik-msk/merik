@@ -549,11 +549,14 @@ async function dash(){
 
 /* ---------- EMPLOYEES ---------- */
 async function emp(){
-  const {data}=await sb.from('employees').select('*').order('emp_code');
-  const act=(data||[]).filter(e=>e.status==='Active').length;
-  const depts=new Set((data||[]).map(e=>e.department).filter(Boolean)).size;
-  const now=new Date();const join=(data||[]).filter(e=>e.doj&&e.doj.slice(0,7)===`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`).length;
-  M(pgh('Employees','Manage your team members and their information','<button class="btn" onclick="empForm()">＋ Add Employee</button>')+
+  const {data:all}=await sb.from('employees').select('*').order('emp_code');
+  // Current team only — former (archived) employees live under Previous Employees.
+  const data=(all||[]).filter(e=>e.status!=='Inactive');
+  const former=(all||[]).filter(e=>e.status==='Inactive').length;
+  const act=data.filter(e=>e.status==='Active').length;
+  const depts=new Set(data.map(e=>e.department).filter(Boolean)).size;
+  const now=new Date();const join=data.filter(e=>e.doj&&e.doj.slice(0,7)===`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`).length;
+  M(pgh('Employees','Manage your team members and their information',`${former?`<button class="btn sec" onclick="prevEmp()"><i class="fa-solid fa-box-archive"></i> Previous Employees (${former})</button> `:''}<button class="btn" onclick="empForm()">＋ Add Employee</button>`)+
   kpis([['<i class="fa-solid fa-users"></i>','#FFE9DC','Total Employees',(data||[]).length,'Active team members'],['<i class="fa-solid fa-building"></i>','#E8EEFB','Departments',depts,'Across the organization'],['<i class="fa-solid fa-circle" style="color:#1E8449"></i>','#E6F7EC','Active Employees',act,'Currently active'],['<i class="fa-solid fa-calendar-check"></i>','#F3ECFB','This Month Joiners',join,'New additions']])+
   `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Type</th><th>Email</th><th>DOJ</th><th>PAN</th><th>UAN</th><th>Bank A/c</th><th>Monthly CTC</th><th>Annual CTC</th><th>Status</th><th></th></tr>
   ${(data||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td>${esc(e.email)}</td><td>${e.doj?fmtDate(e.doj):''}</td><td>${esc(e.pan)}</td><td>${esc(e.uan)}</td><td>${esc(e.bank_account)}</td><td>${e.ctc?inr(e.ctc):''}</td><td style="font-weight:700">${e.ctc?inr(e.ctc*12):''}</td>
@@ -561,7 +564,20 @@ async function emp(){
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" title="View employee" onclick="empDetail('${e.id}')"><i class="fa-solid fa-eye"></i> View</button>
   <button class="btn sm sec" onclick='empForm(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Edit</button>
   <button class="btn sm sec" title="Salary & hike history" onclick="salaryHistory('${e.id}')"><i class="fa-solid fa-arrow-trend-up"></i> Salary</button>
-  <button class="btn sm warn" onclick="delEmp('${e.id}')">Del</button></td></tr>`).join('')}</table></div>`);
+  <button class="btn sm warn" title="Archive this employee (keeps their records)" onclick='removeEmp("${e.id}",${JSON.stringify(e.full_name||"").replace(/'/g,"&#39;")})'>Remove</button></td></tr>`).join('')}</table></div>`);
+}
+// Previous Employees — archived (former) staff, records preserved, read-only.
+async function prevEmp(){
+  const{data}=await sb.from('employees').select('*').eq('status','Inactive').order('left_on',{ascending:false});
+  const rows=data||[];
+  M(pgh('Previous Employees','Former team members. Their attendance, tasks and payslips are preserved — open the relevant month in Attendance or Payroll to see them.','<button class="btn sec" onclick="emp()">‹ Back to Employees</button>')+
+  `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>DOJ</th><th>Last working day</th><th>Monthly CTC</th><th></th></tr>
+  ${rows.map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td>
+  <td>${e.doj?fmtDate(e.doj):'—'}</td><td style="white-space:nowrap"><span class="badge stA">${e.left_on?fmtDate(e.left_on):'—'}</span></td><td>${e.ctc?inr(e.ctc):''}</td>
+  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="empDetail('${e.id}')"><i class="fa-solid fa-eye"></i> View</button>
+  <button class="btn sm sec" title="Salary & hike history" onclick="salaryHistory('${e.id}')"><i class="fa-solid fa-arrow-trend-up"></i> Salary</button>
+  <button class="btn sm" onclick="restoreEmp('${e.id}')" title="Bring back to the active team"><i class="fa-solid fa-rotate-left"></i> Restore</button></td></tr>`).join('')
+  ||'<tr><td colspan="8" style="text-align:center;color:#889;padding:24px">No former employees.</td></tr>'}</table></div>`);
 }
 // ---- Individual employee page: view details, email login credentials, send a document ----
 async function empDetail(eid){
@@ -635,12 +651,16 @@ function empForm(e={}){
   <div class="row"><div>${f('pan','PAN')}</div><div>${f('uan','UAN')}</div><div>${f('bank_account','Bank A/c No.')}</div></div>
   <div class="row"><div>${f('ctc','Monthly CTC (₹)','number')}</div><div><label>Annual CTC</label><span id="f_actc" style="font-weight:700;color:var(--navy)">${e.ctc?inr(e.ctc*12)+' / year':'—'}</span><br><span style="font-size:11px;color:#667">Payroll auto-fills: Basic 50% · HRA 20% · Other 30%</span></div></div>
   <label>Status</label><select id="f_status">${['Active','Inactive','On Leave'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}</select>
+  <input type="hidden" id="f_left_on" value="${e.left_on||''}">
   <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" onclick="saveEmp('${e.id||''}')">Save</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
   $('f_ctc').addEventListener('input',function(){$('f_actc').textContent=this.value?inr(this.value*12)+' / year':'—'});
 }
 async function saveEmp(id){
   const o={};['emp_code','full_name','department','designation','employment_type','email','doj','pan','uan','bank_account','ctc','status'].forEach(k=>o[k]=$('f_'+k)?($('f_'+k).value||null):undefined);
+  // Keep the last working day in step with status: set it when archiving (default
+  // today), clear it when the employee is active — mirrors the Remove/Restore flow.
+  o.left_on = o.status==='Inactive' ? (($('f_left_on')&&$('f_left_on').value)||today()) : null;
   const q=id?sb.from('employees').update(o).eq('id',id):sb.from('employees').insert(o);
   const{error}=await q;if(error)return alert(error.message);
   document.querySelector('.modal').remove();emp();
@@ -713,16 +733,40 @@ async function mkLogin(eid,email,fromDetail){
     :`✔ Login credentials emailed to ${data.email}.`;
   if(msgEl){msgEl.textContent=msg;msgEl.style.color=mailErr?'#C0392B':'#1E8449'}else alert(msg);
 }
-async function delEmp(id){if(!confirm('Delete this employee? All their records will be removed.'))return;
-  const{error}=await sb.from('employees').delete().eq('id',id);if(error)return alert(error.message);emp()}
+// Remove = archive, never delete. Sets the last working day and marks Inactive,
+// so attendance/tasks stop after that day, final-month pay pro-rates to it, and
+// every record is preserved under Previous Employees.
+function removeEmp(id,name){
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Remove employee</h2>
+  <p style="font-size:13px;color:#445;margin:0 0 8px"><b>${esc(name||'')}</b> will be moved to <b>Previous Employees</b>. Their attendance, tasks and payslips are kept — attendance and tasks simply stop after their last working day, and this month's pay is pro-rated to it.</p>
+  <label>Last working day</label><input id="rm_date" type="date" value="${today()}" max="${today()}">
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn warn" onclick="doRemoveEmp('${id}')"><i class="fa-solid fa-user-slash"></i> Remove &amp; archive</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function doRemoveEmp(id){
+  const d=$('rm_date').value||today();
+  const{error}=await sb.from('employees').update({status:'Inactive',left_on:d}).eq('id',id);
+  if(error)return alert(error.message);
+  document.querySelector('.modal').remove();emp();
+}
+// Undo an archive (e.g. removed by mistake): back to Active, clear the last day.
+async function restoreEmp(id){if(!confirm('Restore this employee to the active team?'))return;
+  const{error}=await sb.from('employees').update({status:'Active',left_on:null}).eq('id',id);
+  if(error)return alert(error.message);prevEmp();}
 
 /* ---------- DAILY ATTENDANCE ---------- */
 async function att(d){
   d=d||today();
-  const [{data:emps},{data:rows},{data:hols}]=await Promise.all([
-    sb.from('employees').select('*').eq('status','Active').order('emp_code'),
+  const [{data:allEmps},{data:rows},{data:hols}]=await Promise.all([
+    sb.from('employees').select('*').order('emp_code'),
     sb.from('attendance').select('*').eq('att_date',d),
     sb.from('holidays').select('*').eq('holiday_date',d)]);
+  // Only people employed on this date: joined by then, and not already past their
+  // last working day. So former employees still show on their historical dates,
+  // but attendance stops the day after they left.
+  const emps=(allEmps||[]).filter(e=>(!e.doj||e.doj<=d)&&(e.status!=='Inactive'||(e.left_on&&e.left_on>=d)));
   const map={};(rows||[]).forEach(r=>map[r.employee_id]=r);
   const dt=new Date(d+'T00:00:00');const wk=dt.getDay()===0||dt.getDay()===6;
   M(pgh('Daily Attendance','Track and manage daily attendance for your team.',`<button class="btn" onclick="saveAtt('${d}')"><i class="fa-solid fa-floppy-disk"></i> Save All</button>`)+
@@ -1439,18 +1483,28 @@ async function pay(ym){
   const now=new Date();ym=ym||`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const [y,m]=ym.split('-').map(Number);
   const dim0=new Date(y,m,0).getDate();
-  const [{data:emps},{data:rows},{data:arec},{data:hist}]=await Promise.all([
-    sb.from('employees').select('*').eq('status','Active').order('emp_code'),
+  const mStart=`${ym}-01`,mEnd=`${ym}-${String(dim0).padStart(2,'0')}`;
+  const [{data:allEmps},{data:rows},{data:arec},{data:hist}]=await Promise.all([
+    sb.from('employees').select('*').order('emp_code'),
     sb.from('payroll').select('*').eq('pay_year',y).eq('pay_month',m),
-    sb.from('attendance').select('employee_id,status').gte('att_date',`${ym}-01`).lte('att_date',`${ym}-${dim0}`),
+    sb.from('attendance').select('employee_id,status').gte('att_date',mStart).lte('att_date',mEnd),
     sb.from('salary_history').select('employee_id,effective_month,previous_ctc,new_ctc')]);
+  // Include everyone employed during this month: current staff, plus former staff
+  // whose last working day falls in or after it. Anyone who left before the month
+  // (or joins after it) is excluded — so a leaver still gets their final month's
+  // pay and past months keep showing them, but months after leaving don't.
+  const emps=(allEmps||[]).filter(e=>(!e.doj||e.doj<=mEnd)&&(e.status!=='Inactive'||(e.left_on&&e.left_on>=mStart)));
   const map={};(rows||[]).forEach(r=>map[r.employee_id]=r);
   // Effective CTC per employee for THIS month, plus a flag if a hike took effect this month.
   const HIST={};(hist||[]).forEach(h=>{(HIST[h.employee_id]=HIST[h.employee_id]||[]).push(h);});
-  (emps||[]).forEach(e=>{e.eff_ctc=effectiveCtc(HIST[e.id],ym,e.ctc);
+  emps.forEach(e=>{e.eff_ctc=effectiveCtc(HIST[e.id],ym,e.ctc);
     e.hiked_this_month=(HIST[e.id]||[]).find(h=>h.effective_month>=`${ym}-01`&&h.effective_month<=`${ym}-31`);});
   const ATT={};(arec||[]).forEach(r=>{const a=ATT[r.employee_id]=ATT[r.employee_id]||{unpaid:0};
     if(r.status==='A'||r.status==='UL')a.unpaid++;else if(r.status==='H')a.unpaid+=0.5;});
+  // Pro-rate a leaver's final month: every day after their last working day is
+  // loss-of-pay, so pay lands at worked-days ÷ month. (No effect on other months.)
+  emps.forEach(e=>{if(e.left_on&&e.left_on>=mStart&&e.left_on<=mEnd){
+    const a=ATT[e.id]=ATT[e.id]||{unpaid:0};a.unpaid+=dim0-(+e.left_on.slice(8,10));}});
   const F=['total_days','paid_days','basic','hra','other_allowance','incentives','arrears','pt','lop'];
   M(pgh(`Payroll — ${MONTHS[m-1]} ${y}`,'Manage employee payroll and salary details for the selected month.',`<button class="btn sec" onclick="recomputePay()" title="Refill Basic/HRA/Other/PT/LOP from each employee's current (effective) CTC"><i class="fa-solid fa-rotate"></i> Recompute from CTC</button> <button class="btn sec" onclick="sendAll(${y},${m})"><i class="fa-solid fa-paper-plane"></i> Send Payslips</button> <button class="btn" onclick="savePay(${y},${m})"><i class="fa-solid fa-floppy-disk"></i> Save All</button>`)+
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="pay(this.value)"></div></div>`+
