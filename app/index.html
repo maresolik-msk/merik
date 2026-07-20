@@ -1096,6 +1096,11 @@ async function loadProjectIntel(){
   const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
   const projMeta={};(pjs||[]).forEach(p=>projMeta[p.name]={client:p.client_id?(clientName[p.client_id]||'Internal'):'Internal',status:p.status});
   const P={};
+  // Seed every project from the projects table so a newly-added project shows in
+  // the overview straight away (as Onboarding, 0 tasks) — not only once someone
+  // has logged work against it. Task activity below augments these.
+  (pjs||[]).forEach(p=>{const pn=(p.name||'').trim();if(!pn||P[pn])return;
+    P[pn]={name:pn,client:p.client_id?(clientName[p.client_id]||'Internal'):'Internal',status:p.status||'',tasks:0,mins:0,depts:{},cats:{},stages:{},people:{},items:[],blockers:0,last:'',openEffort:0};});
   (rows||[]).forEach(r=>{if(r.update_status==='No Update')return;
     const dayProj=(r.project||'').split(',')[0].trim();
     const e=emp[r.employee_id]||{};const dept=e.department||'Unassigned';
