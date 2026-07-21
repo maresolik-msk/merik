@@ -35,11 +35,11 @@ held in its `AI_ENCRYPTION_KEY` secret and stores just the ciphertext + last-4 i
 plaintext key is never stored and never returned. A DB dump alone can't recover a
 key without the edge secret.
 
-Set the master encryption key once:
+Set the master encryption key once. Any high-entropy string works (the function
+hashes it to a 32-byte AES key — no base64/length rules); a random one is best:
 
 ```bash
-AI_ENCRYPTION_KEY=$(openssl rand -base64 32)      # 32 random bytes, base64
-supabase secrets set AI_ENCRYPTION_KEY="$AI_ENCRYPTION_KEY"
+supabase secrets set AI_ENCRYPTION_KEY="$(openssl rand -base64 32)"
 supabase functions deploy ai
 ```
 

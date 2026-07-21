@@ -23,8 +23,9 @@
 //
 // Required env (Supabase -> Edge Functions -> ai -> Secrets):
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY   (provided automatically)
-//   AI_ENCRYPTION_KEY   base64 of 32 random bytes — the master key for encrypting
-//                       provider keys.  Generate: openssl rand -base64 32
+//   AI_ENCRYPTION_KEY   any high-entropy secret string — the master key for
+//                       encrypting provider keys (hashed to a 32-byte AES key).
+//                       Generate one with: openssl rand -base64 32
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const cors = {
@@ -48,11 +49,13 @@ const FEATURES: Record<string, { adminOnly: boolean }> = {
 // Encryption (AES-GCM, master key from AI_ENCRYPTION_KEY)
 // ---------------------------------------------------------------------------
 async function masterKey(): Promise<CryptoKey> {
-  const b64 = Deno.env.get("AI_ENCRYPTION_KEY");
-  if (!b64) throw new Error("AI is not configured — the AI_ENCRYPTION_KEY secret is not set");
-  const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  if (raw.length !== 32) throw new Error("AI_ENCRYPTION_KEY must be base64 of exactly 32 bytes");
-  return await crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  const secret = Deno.env.get("AI_ENCRYPTION_KEY");
+  if (!secret) throw new Error("AI is not configured — the AI_ENCRYPTION_KEY secret is not set");
+  // Derive a 32-byte AES key by hashing the secret, so ANY value works — no
+  // base64 or length rules to get wrong when pasting into the dashboard. Use a
+  // high-entropy value (e.g. `openssl rand -base64 32`).
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));
+  return await crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 async function encryptSecret(plaintext: string): Promise<string> {
   const key = await masterKey();
