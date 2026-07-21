@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
+import { buildClientCodes } from "@/lib/project-label";
 
 type Project = Tables<"projects">;
 type Client = Pick<Tables<"clients">, "id" | "name">;
@@ -28,7 +29,12 @@ export function ProjectsView() {
       if (e2) throw e2;
       const byId: Record<string, string> = {};
       (clients ?? []).forEach((c) => (byId[c.id] = c.name));
-      return { projects: (projects ?? []) as Project[], clients: (clients ?? []) as Client[], clientName: byId };
+      return {
+        projects: (projects ?? []) as Project[],
+        clients: (clients ?? []) as Client[],
+        clientName: byId,
+        clientCode: buildClientCodes((clients ?? []) as Client[]),
+      };
     },
   });
 
@@ -109,7 +115,12 @@ export function ProjectsView() {
               {!isLoading && projects.length === 0 && <tr><td colSpan={4} className="px-4 py-10 text-center text-muted">No projects yet.</td></tr>}
               {projects.map((p) => (
                 <tr key={p.id} className="border-b border-line/70 last:border-0 hover:bg-soft/60">
-                  <td className="px-4 py-3 font-semibold text-ink">{p.name}</td>
+                  <td className="px-4 py-3 font-semibold text-ink">
+                    <span className="mr-2 rounded bg-soft px-1.5 py-0.5 font-mono text-xs font-bold uppercase tracking-wide text-muted">
+                      {p.client_id ? data?.clientCode[p.client_id] ?? "—" : "INT"}
+                    </span>
+                    {p.name}
+                  </td>
                   <td className="px-4 py-3 text-muted">{p.client_id ? data?.clientName[p.client_id] ?? "—" : "Internal"}</td>
                   <td className="px-4 py-3">
                     <Select value={p.status} className="w-36 px-2 py-1"

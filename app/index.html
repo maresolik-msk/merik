@@ -900,6 +900,37 @@ const fmtMin=m=>{m=Math.round(+m||0);return m>=60?`${Math.floor(m/60)}h${m%60?('
 const _STOP=new Set('the a an and or of to for in on at with is are was were be been do did done doing task tasks work working update updates fix fixed fixing add added adding create created make made new page app data code test tested using use used from into this that then also more some all get set'.split(' '));
 function tok(s){return [...new Set(String(s||'').toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>2&&!_STOP.has(w)))];}
 function jac(a,b){if(!a.length||!b.length)return 0;const B=new Set(b);let inter=0;a.forEach(w=>{if(B.has(w))inter++;});return inter/(a.length+b.length-inter);}
+/* ---- project labels ----------------------------------------------------------
+   Project names repeat across clients ("Website", "Social Media Marketing"), so a
+   bare name is ambiguous — anything keyed by it silently kept just one client.
+   Every project is therefore shown and stored as "CODE · Name", where CODE is a
+   short unique code derived from the client name (Internal projects use INT). */
+const _PRJSTOP=new Set(['and','the','of','for','pvt','ltd','llp','inc','co']);
+const prjWords=n=>String(n||'').split(/[^A-Za-z0-9]+/).filter(w=>w&&!_PRJSTOP.has(w.toLowerCase()));
+// "Acme Retail" -> "AR", "Zoho" -> "ZOH"
+function baseClientCode(name){const w=prjWords(name);
+  if(!w.length)return String(name||'').slice(0,3).toUpperCase()||'INT';
+  return w.length===1?w[0].slice(0,3).toUpperCase():w.slice(0,3).map(x=>x[0]).join('').toUpperCase();}
+// Codes for the whole client list, made unique: a clash grows the code with more
+// letters from the name, then falls back to a numeric suffix.
+function buildClientCodes(names){
+  const taken=new Set(['INT']);const out={Internal:'INT'};
+  [...new Set((names||[]).filter(n=>n&&n!=='Internal'))].sort((a,b)=>a.localeCompare(b)).forEach(name=>{
+    const letters=prjWords(name).join('').toUpperCase();let code=baseClientCode(name);
+    for(let n=code.length+1;taken.has(code)&&n<=letters.length;n++)code=letters.slice(0,n);
+    for(let n=2;taken.has(code);n++)code=baseClientCode(name)+n;
+    taken.add(code);out[name]=code;});
+  return out;}
+let CLIENT_CODES={Internal:'INT'};
+// Codes must come from the FULL client list or they would differ between screens.
+async function loadClientCodes(){
+  const{data}=await sb.from('clients').select('name');
+  CLIENT_CODES=buildClientCodes((data||[]).map(c=>c.name));return CLIENT_CODES;}
+const codeFor=c=>CLIENT_CODES[c||'Internal']||baseClientCode(c||'Internal');
+const projLabel=(name,client)=>`${codeFor(client)} · ${name}`;
+// Index a project into a map under its label, and under its bare name too so task
+// rows saved before labels existed still resolve (first project with that name wins).
+function putProj(map,name,client,value){map[projLabel(name,client)]=value;if(!(name in map))map[name]=value;}
 let TASK_SAMPLES=[],PROJ_CLIENT={};
 // Build the training set from task_updates (RLS: employees get their own, admins their org).
 async function loadTaskSamples(){
@@ -908,7 +939,8 @@ async function loadTaskSamples(){
     sb.from('projects').select('name,client_id'),
     sb.from('clients').select('id,name')]);
   const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
-  PROJ_CLIENT={};(pjs||[]).forEach(p=>{PROJ_CLIENT[p.name]=p.client_id?(clientName[p.client_id]||''):'Internal';});
+  CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
+  PROJ_CLIENT={};(pjs||[]).forEach(p=>{const c=p.client_id?(clientName[p.client_id]||''):'Internal';putProj(PROJ_CLIENT,p.name,c,c);});
   const out=[];
   (rows||[]).forEach(r=>{const proj=(r.project||'').split(',')[0].trim();const client=PROJ_CLIENT[proj]||'';
     (Array.isArray(r.tasks)?r.tasks:[]).forEach(t=>{if(!t.task)return;
@@ -989,8 +1021,9 @@ async function task(d){
     sb.from('clients').select('id,name').order('name'),
     sb.from('projects').select('name,client_id')]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e);
-  const clientOfProject={};(pjs||[]).forEach(p=>{clientOfProject[p.name]=p.client_id||''});
   const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
+  CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
+  const clientOfProject={};(pjs||[]).forEach(p=>putProj(clientOfProject,p.name,p.client_id?(clientNameById[p.client_id]||'Internal'):'Internal',p.client_id||''));
   let list=(rows||[]).slice();
   if(st.employee)list=list.filter(r=>r.employee_id===st.employee);
   if(st.client){const target=st.client==='internal'?'':st.client;
@@ -1023,7 +1056,7 @@ async function task(d){
   const clientProjCell=(projStr)=>{
     const names=(projStr||'').split(',').map(s=>s.trim()).filter(Boolean);
     if(!names.length)return '<span class="tl-dash">—</span>';
-    return names.map(n=>{const cid=clientOfProject[n];const cname=cid?(clientNameById[cid]||'—'):'Internal';
+    return names.map(n=>{const cid=clientOfProject[n];const cname=cid?(clientNameById[cid]||'—'):(n in clientOfProject?'Internal':'—');
       return `<div>${esc(n)}<div class="tl-sub">${esc(cname)}</div></div>`;}).join('');
   };
   M(pgh('Task Log','Track all task updates and activities in one place.','<button class="btn" onclick="newTaskUpdate()"><i class="fa-solid fa-plus"></i> New Update</button>')+
@@ -1089,7 +1122,10 @@ async function insights(){
     sb.from('clients').select('id,name')]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e.full_name);
   const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
-  const pc={};(pjs||[]).forEach(p=>pc[p.name]=p.client_id?(clientName[p.client_id]||''):'Internal');
+  CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
+  const pc={};(pjs||[]).forEach(p=>putProj(pc,p.name,p.client_id?(clientName[p.client_id]||''):'Internal',p.client_id?(clientName[p.client_id]||''):'Internal'));
+  // Labelled, de-duplicated project list for the predictor's dropdown.
+  const projPicks=[...new Set((pjs||[]).map(p=>projLabel(p.name,p.client_id?(clientName[p.client_id]||'Internal'):'Internal')))].sort((a,b)=>a.localeCompare(b));
   // Include both the new numbered tasks and legacy single-field updates (via taskItems fallback).
   const items=[];(rows||[]).forEach(r=>{if(r.update_status==='No Update')return;const dayProj=(r.project||'').split(',')[0].trim();
     taskItems(r).forEach(t=>{if(!t.task)return;const proj=(t.project||dayProj||'').trim()||'—';const client=pc[proj]||'—';items.push({emp:r.employee_id,date:r.upd_date,proj,client,act:+t.act_min||0,est:+t.est_min||0,status:t.status,task:t.task});});});
@@ -1132,7 +1168,7 @@ async function insights(){
   ${tbl('Time by employee',group('emp'),'Employee')}
   <div class="card" style="margin-top:14px"><div style="font-weight:700;color:#14284B;margin-bottom:8px"><i class="fa-solid fa-wand-magic-sparkles" style="color:#7B3FE4"></i> Predict time for a task</div>
    <div class="row" style="align-items:flex-end"><div style="flex:2"><label>Describe the task</label><input id="ins_q" placeholder="e.g. build payment gateway integration"></div>
-   <div><label>Project</label><select id="ins_proj"><option value="">Any</option>${(pjs||[]).map(p=>`<option>${esc(p.name)}</option>`).join('')}</select></div>
+   <div><label>Project</label><select id="ins_proj"><option value="">Any</option>${projPicks.map(n=>`<option>${esc(n)}</option>`).join('')}</select></div>
    <div><button class="btn" onclick="insPredict()">Predict</button></div></div>
    <div id="ins_out" style="margin-top:12px"></div></div>`);
   await loadTaskSamples();
@@ -1156,7 +1192,9 @@ async function loadProjectIntel(){
     sb.from('clients').select('id,name')]);
   const emp={};(emps||[]).forEach(e=>emp[e.id]=e);
   const clientName={};(cls||[]).forEach(c=>clientName[c.id]=c.name);
-  const projMeta={};(pjs||[]).forEach(p=>projMeta[p.name]={client:p.client_id?(clientName[p.client_id]||'Internal'):'Internal',status:p.status});
+  CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
+  const projMeta={};(pjs||[]).forEach(p=>{const c=p.client_id?(clientName[p.client_id]||'Internal'):'Internal';
+    putProj(projMeta,p.name,c,{client:c,status:p.status});});
   const P={};
   // Seed every project from the projects table so a newly-added project shows in
   // the overview straight away (as Onboarding, 0 tasks) — not only once someone
@@ -1287,13 +1325,21 @@ let PROJECTS_BY_CLIENT={};
 let PENDING_SHEET=[];
 async function taskForm(eid,d,r){
   const{data:pjs}=await sb.from('projects').select('name,status,clients(name)').order('name');
-  const clientOf={};(pjs||[]).forEach(p=>clientOf[p.name]=p.clients?.name||'Internal');
+  await loadClientCodes();
   const sel=new Set((r.project||'').split(',').map(s=>s.trim()).filter(Boolean));
-  // Projects offered in each task's dropdown (active ones + any already used on this update), each with its client.
-  FORM_PROJECTS=[...new Set([...(pjs||[]).filter(x=>x.status==='Active').map(x=>x.name),...sel])].map(n=>({name:n,client:clientOf[n]||'Internal'}));
+  // Projects offered in each task's dropdown (active ones + any already used on this
+  // update), each carrying its client code so same-named projects stay distinct.
+  const seen=new Set();FORM_PROJECTS=[];
+  (pjs||[]).filter(x=>x.status==='Active').forEach(x=>{const c=x.clients?.name||'Internal';
+    const label=projLabel(x.name,c);if(seen.has(label))return;seen.add(label);
+    FORM_PROJECTS.push({name:x.name,client:c,label});});
+  // Values already saved on this update whose project is no longer active (or predates labels).
+  const clientOfLabel=new Map((pjs||[]).map(x=>[projLabel(x.name,x.clients?.name||'Internal'),x.clients?.name||'Internal']));
+  sel.forEach(v=>{if(seen.has(v))return;seen.add(v);
+    FORM_PROJECTS.push({name:v,client:clientOfLabel.get(v)||'Internal',label:v});});
   // Group projects by client, so picking a client narrows the project dropdown to just theirs.
   PROJECTS_BY_CLIENT={};
-  FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.name)});
+  FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.label)});
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:920px">
   <h2>Daily Update — ${fmtDate(d)}</h2>
   <label>Day Status</label><select id="t_update_status">${['Update Shared','No Update','WFH','Leave','Sick Leave','Holiday'].map(s=>`<option ${r.update_status===s?'selected':''}>${s}</option>`).join('')}</select>
@@ -1327,7 +1373,7 @@ function addTaskRow(t){t=t||{};
   const opt=TASK_ITEM_STATUS.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('');
   const dfltProj=t.project||'';
   // Default client comes from the project's own client if we know it, else the first client with projects.
-  const knownProj=FORM_PROJECTS.find(p=>p.name===dfltProj);
+  const knownProj=FORM_PROJECTS.find(p=>p.label===dfltProj);
   const clients=Object.keys(PROJECTS_BY_CLIENT).sort((a,b)=>a==='Internal'?1:b==='Internal'?-1:a.localeCompare(b));
   const dfltClient=knownProj?.client||clients[0]||'Internal';
   const clientOpts=clients.length?clients.map(c=>`<option ${c===dfltClient?'selected':''}>${esc(c)}</option>`).join(''):`<option>Internal</option>`;
@@ -1988,6 +2034,7 @@ async function prj(){
   const [{data:ps},{data:cls}]=await Promise.all([
     sb.from('projects').select('*,clients(name)').order('start_date',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('clients').select('id,name').order('name')]);
+  CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
   // Distinct names already in use, so the same project (e.g. "Website") is one pick, not retyped.
   const distinctNames=[...new Set((ps||[]).map(p=>p.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   M(pgh('Projects','Manage all projects and their status.')+`<div class="card"><div class="row">
@@ -2006,7 +2053,7 @@ async function prj(){
   <label>Description</label><textarea id="pj_desc" rows="2" placeholder="What is this project about?"></textarea>
   <div style="margin-top:10px"><button class="btn" onclick="addPrj()">+ Add Project</button></div></div>
   <div class="card"><table><tr><th>Project</th><th>Client</th><th>Description</th><th>Start Date</th><th>Status</th><th></th></tr>
-  ${(ps||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.clients?.name||'Internal')}</td>
+  ${(ps||[]).map(x=>`<tr><td><span class="badge stL" style="font-family:monospace;margin-right:6px">${esc(codeFor(x.clients?.name||'Internal'))}</span>${esc(x.name)}</td><td>${esc(x.clients?.name||'Internal')}</td>
   <td style="min-width:220px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Add description…" onblur="updDesc('${x.id}',this.value)">${esc(x.description||'')}</textarea></td>
   <td style="white-space:nowrap">${fmtDate(x.start_date)}</td>
   <td><select onchange="updPrj('${x.id}',this.value)" style="width:120px">${['Active','On Hold','Completed'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
@@ -2338,8 +2385,9 @@ async function myupd(dstr){
     // Today's row fetched independently of the viewed period, so the header CTA always
     // reflects today's true state (Edit + prefilled) even while browsing past days.
     sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).eq('upd_date',d).limit(1)]);
-  const clientOfProject={};(pjs||[]).forEach(p=>{clientOfProject[p.name]=p.client_id||''});
   const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
+  CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
+  const clientOfProject={};(pjs||[]).forEach(p=>putProj(clientOfProject,p.name,p.client_id?(clientNameById[p.client_id]||'Internal'):'Internal',p.client_id||''));
   const t=(data||[]).find(r=>r.upd_date===d)||(todayRows&&todayRows[0])||null;
   const list=(data||[]);
   const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
@@ -2364,7 +2412,7 @@ async function myupd(dstr){
   const clientProjCell=(projStr)=>{
     const names=(projStr||'').split(',').map(s=>s.trim()).filter(Boolean);
     if(!names.length)return '<span class="tl-dash">—</span>';
-    return names.map(n=>{const cid=clientOfProject[n];const cname=cid?(clientNameById[cid]||'—'):'Internal';
+    return names.map(n=>{const cid=clientOfProject[n];const cname=cid?(clientNameById[cid]||'—'):(n in clientOfProject?'Internal':'—');
       return `<div>${esc(n)}<div class="tl-sub">${esc(cname)}</div></div>`;}).join('');
   };
   M(pgh('My Daily Update','Post today’s update and review your history.',`<button class="btn" onclick='taskForm("${ME.employee.id}","${d}",${JSON.stringify(t||{}).replace(/'/g,"&#39;")})'>${t?'<i class="fa-solid fa-pen"></i> Edit today’s update':'<i class="fa-solid fa-plus"></i> Post today’s update'}</button>`)+
@@ -2441,9 +2489,12 @@ const sheetLocked=t=>!!t.first_logged_on&&String(t.first_logged_on).slice(0,10)<
 // Build the client -> projects maps the task pickers need (same shape taskForm uses).
 async function loadProjectMaps(){
   const{data:pjs}=await sb.from('projects').select('name,status,clients(name)').order('name');
-  const clientOf={};(pjs||[]).forEach(p=>clientOf[p.name]=p.clients?.name||'Internal');
-  FORM_PROJECTS=[...new Set((pjs||[]).filter(x=>x.status==='Active').map(x=>x.name))].map(n=>({name:n,client:clientOf[n]||'Internal'}));
-  PROJECTS_BY_CLIENT={};FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.name)});
+  await loadClientCodes();
+  const seen=new Set();FORM_PROJECTS=[];
+  (pjs||[]).filter(x=>x.status==='Active').forEach(x=>{const c=x.clients?.name||'Internal';
+    const label=projLabel(x.name,c);if(seen.has(label))return;seen.add(label);
+    FORM_PROJECTS.push({name:x.name,client:c,label});});
+  PROJECTS_BY_CLIENT={};FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.label)});
 }
 const sheetClients=()=>Object.keys(PROJECTS_BY_CLIENT).sort((a,b)=>a==='Internal'?1:b==='Internal'?-1:a.localeCompare(b));
 function tsProjOpts(client,cur){const list=PROJECTS_BY_CLIENT[client]||[];
