@@ -83,6 +83,28 @@ function stripFences(text: string): string {
   return (m ? m[1] : t).trim();
 }
 
+// Parse the first complete JSON object from a model response. Providers (even in
+// JSON mode) sometimes append prose, a second object, or trailing text after the
+// object — strict JSON.parse rejects that. Extract the first balanced {...}.
+function parseJsonLoose(text: string): any {
+  const t = stripFences(text);
+  try { return JSON.parse(t); } catch (_) { /* fall through to extraction */ }
+  const start = t.indexOf("{");
+  if (start < 0) throw new Error("The model did not return JSON");
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < t.length; i++) {
+    const c = t[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === "\\") esc = true;
+      else if (c === '"') inStr = false;
+    } else if (c === '"') inStr = true;
+    else if (c === "{") depth++;
+    else if (c === "}") { if (--depth === 0) return JSON.parse(t.slice(start, i + 1)); }
+  }
+  throw new Error("The model returned an incomplete JSON object");
+}
+
 async function callLLM(cfg: ProviderCfg, opts: { system: string; user: string; maxTokens: number }) {
   const { system, user, maxTokens } = opts;
   // A uniform instruction so every provider returns bare JSON we can parse.
@@ -97,7 +119,7 @@ async function callLLM(cfg: ProviderCfg, opts: { system: string; user: string; m
     const d = await r.json();
     if (!r.ok) throw new Error(`Claude: ${d?.error?.message || r.statusText}`);
     const text = (d.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
-    return { json: JSON.parse(stripFences(text)), usage: { input_tokens: d.usage?.input_tokens ?? 0, output_tokens: d.usage?.output_tokens ?? 0 } };
+    return { json: parseJsonLoose(text), usage: { input_tokens: d.usage?.input_tokens ?? 0, output_tokens: d.usage?.output_tokens ?? 0 } };
   }
 
   if (cfg.provider === "google") {
@@ -115,7 +137,7 @@ async function callLLM(cfg: ProviderCfg, opts: { system: string; user: string; m
     if (!r.ok) throw new Error(`Gemini: ${d?.error?.message || r.statusText}`);
     const text = (d.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("");
     return {
-      json: JSON.parse(stripFences(text)),
+      json: parseJsonLoose(text),
       usage: { input_tokens: d.usageMetadata?.promptTokenCount ?? 0, output_tokens: d.usageMetadata?.candidatesTokenCount ?? 0 },
     };
   }
@@ -139,7 +161,7 @@ async function callLLM(cfg: ProviderCfg, opts: { system: string; user: string; m
   const d = await r.json();
   if (!r.ok) throw new Error(`${cfg.provider}: ${d?.error?.message || r.statusText}`);
   const text = d.choices?.[0]?.message?.content || "";
-  return { json: JSON.parse(stripFences(text)), usage: { input_tokens: d.usage?.prompt_tokens ?? 0, output_tokens: d.usage?.completion_tokens ?? 0 } };
+  return { json: parseJsonLoose(text), usage: { input_tokens: d.usage?.prompt_tokens ?? 0, output_tokens: d.usage?.completion_tokens ?? 0 } };
 }
 
 /** Load the active provider key, decrypt it, and return a ready-to-use config. */
