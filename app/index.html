@@ -428,7 +428,7 @@ const ADMIN_GROUPS=[
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
  [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview'],['suanalytics','<i class="fa-solid fa-chart-line"></i>','Analytics']]],
- ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus" style="color:#1E8449"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback'],['suann','<i class="fa-solid fa-bullhorn" style="color:#D35400"></i>','Announcements']]]];
+ ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus" style="color:#1E8449"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback'],['suann','<i class="fa-solid fa-bullhorn" style="color:#D35400"></i>','Announcements'],['suai','<i class="fa-solid fa-robot" style="color:#7B3FE4"></i>','AI Control']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky" style="color:#E8A200"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave" style="color:#1E8449"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
@@ -470,7 +470,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,asset,soft,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,asset,soft,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -1446,15 +1446,48 @@ async function perf(ym){
   `<div class="row noprint" style="margin-bottom:14px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="perf(this.value)"></div>
   <div style="padding-top:20px"><span class="badge stL">Working days: ${wdays}</span></div></div>`+
   kpis([['<i class="fa-solid fa-users"></i>','#E8EEFB','Total Employees',(emps||[]).length],['<i class="fa-solid fa-share-from-square"></i>','#E6F7EC','Updates Shared',tots.sh],['<i class="fa-solid fa-house"></i>','#FFE9DC','WFH',tots.wf],['<i class="fa-solid fa-umbrella-beach"></i>','#F3ECFB','Leave',tots.lv],['<i class="fa-solid fa-clock" style="color:#D35400"></i>','#FDEBD0','Missed Updates',tots.ms],['<i class="fa-solid fa-arrow-trend-up"></i>','#E8F8F5','Average Update Rate',avgr+'%']])+`
-  <div class="card"><table><tr><th>ID</th><th>Name</th><th>Designation</th><th>Updates Shared</th><th>WFH</th><th>Leave</th><th>Missed</th><th>Update Rate</th><th>Rating</th></tr>
+  <div class="card"><table><tr><th>ID</th><th>Name</th><th>Designation</th><th>Updates Shared</th><th>WFH</th><th>Leave</th><th>Missed</th><th>Update Rate</th><th>Rating</th><th class="noprint"></th></tr>
   ${(emps||[]).map(e=>{const a=agg[e.id]||{shared:0,wfh:0,leave:0};
     const rate=wdays?Math.round((a.shared+a.wfh)/wdays*100):0;
     const rating=rate>=90?'<i class="fa-solid fa-star" style="color:#E8A200"></i> Excellent':rate>=75?'<i class="fa-solid fa-circle-check" style="color:#1E8449"></i> Good':rate>=50?'<i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i> Average':'<i class="fa-solid fa-circle-xmark" style="color:#C0392B"></i> Poor';
     return`<tr><td>${e.emp_code}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.designation)}</td>
     <td>${a.shared}</td><td>${a.wfh}</td><td>${a.leave}</td><td>${Math.max(0,wdays-a.shared-a.wfh-a.leave)}</td>
-    <td style="font-weight:700;color:${rate>=75?'var(--green)':rate>=50?'#D35400':'var(--red)'}">${rate}%</td><td>${rating}</td></tr>`}).join('')}</table></div>
+    <td style="font-weight:700;color:${rate>=75?'var(--green)':rate>=50?'#D35400':'var(--red)'}">${rate}%</td><td>${rating}</td>
+    <td class="noprint"><button class="btn sm sec" onclick="perfDraft('${e.id}','${ym}')" title="AI-draft this month's review"><i class="fa-solid fa-wand-magic-sparkles" style="color:#7B3FE4"></i> Draft</button></td></tr>`}).join('')}</table></div>
   <button class="btn noprint" onclick="print()"><i class="fa-solid fa-print"></i> Print / PDF</button>`);
 }
+// AI: draft one employee's monthly review. The gateway pulls the task log itself
+// (org-scoped), cites the dates behind every point, and returns a draft only —
+// the admin edits the box below and it's their words that count. Nothing is saved
+// automatically. If AI is off / not enabled for this org, the gateway says so.
+async function perfDraft(empId,ym){
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card" style="max-width:640px"><h2><i class="fa-solid fa-wand-magic-sparkles" style="color:#7B3FE4"></i> Draft performance review</h2>
+    <div id="pd_body"><div class="tl-sub"><i class="fa-solid fa-spinner fa-spin"></i> Drafting from the task log…</div></div>
+    <div style="margin-top:14px;display:flex;gap:8px"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
+  document.body.appendChild(div);
+  const body=div.querySelector('#pd_body');
+  const{data,error}=await sb.functions.invoke('ai',{body:{action:'performance_summary',employee_id:empId,month:ym}});
+  if(error||!data||data.ok===false){
+    body.innerHTML=`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#C0392B"></i> ${esc((data&&data.error)||(error&&error.message)||'Could not draft a review.')}</div>`;return;}
+  const d=data.draft||{};const q=d.evidence_quality||'';
+  const chip=q==='thin'?'<span class="badge stA">thin evidence — verify</span>':q==='adequate'?'<span class="badge stL">adequate evidence</span>':q==='strong'?'<span class="badge stP">strong evidence</span>':'';
+  const pts=arr=>(arr&&arr.length)?arr.map(p=>`<li>${esc(p.point||'')}${p.evidence_dates&&p.evidence_dates.length?` <span class="tl-sub">(${p.evidence_dates.map(esc).join(', ')})</span>`:''}</li>`).join(''):'<li class="tl-sub">None identified.</li>';
+  const hd=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#8896aa;margin-top:12px">${t}</div>`;
+  body.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><div class="tl-sub">${esc(data.employee||'')} · ${esc(ym)} · from ${data.source_rows||0} logged ${data.source_rows===1?'entry':'entries'}</div>${chip}</div>
+    <p style="font-weight:600;margin:0">${esc(d.summary||'')}</p>
+    ${hd('Strengths')}<ul style="margin:4px 0 0;padding-left:18px">${pts(d.strengths)}</ul>
+    ${hd('Areas to improve')}<ul style="margin:4px 0 0;padding-left:18px">${pts(d.gaps)}</ul>
+    ${(d.blockers_raised&&d.blockers_raised.length)?hd('Blockers raised')+`<ul style="margin:4px 0 0;padding-left:18px">${d.blockers_raised.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
+    <label style="margin-top:14px">Your review <span style="color:#889;font-weight:400">— edit before you use it; this is your assessment, not the model's</span></label>
+    <textarea id="pd_text" rows="8"></textarea>
+    <button class="btn sm sec" style="margin-top:8px" onclick="navigator.clipboard&&navigator.clipboard.writeText($('pd_text').value);this.innerHTML='<i class=\\'fa-solid fa-check\\'></i> Copied'"><i class="fa-solid fa-copy"></i> Copy</button>`;
+  $('pd_text').value=perfDraftText(d);
+}
+function perfDraftText(d){const L=[];if(d.summary)L.push(d.summary,'');
+  if(d.strengths&&d.strengths.length){L.push('Strengths:');d.strengths.forEach(s=>L.push('- '+(s.point||'')));L.push('');}
+  if(d.gaps&&d.gaps.length){L.push('Areas to improve:');d.gaps.forEach(g=>L.push('- '+(g.point||'')));}
+  return L.join('\n').trim();}
 
 /* ---------- WFH & LEAVE ---------- */
 async function wfh(){
@@ -2608,6 +2641,112 @@ const suStat=(ic,bg,col,label,val,sub)=>`<div class="card" style="margin:0;flex:
   <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
   <div><div style="font-size:12.5px;color:#6b7a90">${label}</div><div style="font-size:26px;font-weight:800;color:#14284B;line-height:1.15">${val}</div>
   ${sub?`<div style="font-size:11.5px;color:#9aa8bc;font-weight:600;margin-top:2px">${sub}</div>`:''}</div></div></div>`;
+// ---- Super admin: AI control (providers/keys, kill switch, per-feature, per-tenant, spend cap) ----
+// The superadmin adds a key for any provider here. Keys are sent to the `ai` edge
+// function, which encrypts them (AES-GCM, master key in its AI_ENCRYPTION_KEY
+// secret) and stores only ciphertext + last-4 in ai_provider_keys. This page
+// never sees or stores a plaintext key, and only ever reads the masked last-4.
+// Every AI request is gated server-side; nothing here is a security boundary.
+const AI_FEATURES=[
+  ['performance_summary','Performance summaries','Drafts a monthly review from an employee\'s task log. Admin edits &amp; approves before anything is saved.'],
+  ['quote_draft','Quote drafting','Turns a project brief into line items, priced against that client\'s past quotes.'],
+  ['task_time_suggest','Task time suggestions','Estimate from the employee\'s own history. Task Insights already has a free built-in estimator; leave this off unless it clearly beats it.']];
+// [id, label, example model, needs base_url]
+const AI_PROVIDERS=[
+  ['anthropic','Claude (Anthropic)','claude-opus-4-8',false],
+  ['openai','ChatGPT (OpenAI)','gpt-4o',false],
+  ['google','Gemini (Google)','gemini-2.0-flash',false],
+  ['xai','Grok (xAI)','grok-2-latest',false],
+  ['custom','Custom (OpenAI-compatible)','',true]];
+const AI_PROV_LABEL=Object.fromEntries(AI_PROVIDERS.map(([id,l])=>[id,l]));
+async function suai(){
+  const monthStart=new Date();monthStart.setUTCDate(1);monthStart.setUTCHours(0,0,0,0);
+  const [st,{data:orgs},{data:access},{data:usage},{data:keys},health]=await Promise.all([
+    sb.from('ai_settings').select('*').eq('id',true).maybeSingle(),
+    sb.from('orgs').select('id,name,status').order('name'),
+    sb.from('ai_org_access').select('org_id,enabled'),
+    sb.from('ai_usage').select('org_id').eq('ok',true).gte('created_at',monthStart.toISOString()),
+    sb.from('ai_provider_keys').select('id,provider,label,model,base_url,enabled,key_last4,created_at').order('created_at'),
+    sb.functions.invoke('ai',{body:{action:'health'}})]);
+  const s=st&&st.data?st.data:null;
+  if(!s){return M(pgh('AI Control','Merik-wide AI settings.')+`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#C0392B"></i> Couldn't load AI settings. Have the AI migrations (<code>20260716</code> + <code>20260717</code>) been applied to Supabase?</div>`);}
+  const encOn=!!(health&&health.data&&health.data.encryption_configured);
+  const K=keys||[];
+  const activeKey=K.find(k=>k.id===s.active_key_id)||null;
+  const enBy={};(access||[]).forEach(a=>enBy[a.org_id]=a.enabled);
+  const calls={};(usage||[]).forEach(u=>{if(u.org_id)calls[u.org_id]=(calls[u.org_id]||0)+1});
+  const totalCalls=Object.values(calls).reduce((a,n)=>a+n,0);
+  const featsOn=AI_FEATURES.filter(([k])=>s.features&&s.features[k]===true).length;
+  const orgsOn=(orgs||[]).filter(o=>enBy[o.id]).length;
+  AI_STATE={s,orgs:orgs||[],enBy,calls,keys:K};
+  M(pgh('AI Control','Manage AI providers &amp; keys and Merik-wide AI settings. Nothing here is visible to tenants.')+
+  `<div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-robot"></i>','#F3ECFB','#7B3FE4','AI status',s.enabled?'On':'Off',s.enabled?'live for enabled tenants':'all requests refused')}
+   ${suStat('<i class="fa-solid fa-plug"></i>','#E8EEFB','#2563A8','Active provider',activeKey?AI_PROV_LABEL[activeKey.provider].split(' ')[0]:'None',activeKey?(activeKey.model||'⚠ no model'):'add a key below')}
+   ${suStat('<i class="fa-solid fa-bolt"></i>','#E6F7EC','#1E8449','Calls this month',totalCalls,'across all tenants')}
+   ${suStat('<i class="fa-solid fa-building"></i>','#FFF6E5','#B45309','Tenants enabled',orgsOn+' / '+(orgs||[]).length,'')}
+  </div>
+  ${encOn?'':`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#C0392B"></i> Encryption isn't configured — you can't save keys until the <code>AI_ENCRYPTION_KEY</code> secret is set on the <code>ai</code> edge function. Generate one with <code>openssl rand -base64 32</code>.</div>`}
+  <div class="pghead"><div><h2 style="font-size:17px">Provider keys</h2><div class="sub">Add a key for any provider. The active one is used for every AI request. Keys are encrypted — only the last 4 digits are ever shown.</div></div><div class="noprint"><button class="btn" onclick="suaiKeyForm()"><i class="fa-solid fa-plus"></i> Add key</button></div></div>
+  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Provider</th><th>Label</th><th>Model</th><th>Key</th><th>Active</th><th></th></tr>
+  ${K.map(k=>{const on=k.id===s.active_key_id;return `<tr><td><b>${esc(AI_PROV_LABEL[k.provider]||k.provider)}</b>${k.enabled?'':' <span class="badge stA">disabled</span>'}</td>
+   <td>${esc(k.label||'—')}${k.provider==='custom'&&k.base_url?`<div class="tl-sub">${esc(k.base_url)}</div>`:''}</td>
+   <td>${k.model?esc(k.model):'<span style="color:#C0392B">⚠ none</span>'}</td>
+   <td style="white-space:nowrap;font-family:monospace">····${esc(k.key_last4||'')}</td>
+   <td>${on?'<span class="badge stP">Active</span>':`<button class="btn sm sec" onclick="suaiSetActive('${k.id}')">Use</button>`}</td>
+   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suaiKeyToggle('${k.id}',${k.enabled?'false':'true'})">${k.enabled?'Disable':'Enable'}</button>
+   <button class="btn sm warn" onclick="suaiDelKey('${k.id}')">Delete</button></td></tr>`}).join('')||'<tr><td colspan="6" style="color:#889">No provider keys yet — add one to switch AI on.</td></tr>'}</table></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+    <div><h2 style="font-size:16px;margin:0">Master switch</h2>
+    <div class="tl-sub" style="margin-top:4px">Off means every AI request in Merik is refused, for every tenant, whatever the settings below say. Takes effect immediately.</div></div>
+    <button class="btn ${s.enabled?'warn':''}" onclick="suaiToggle(${s.enabled?'false':'true'})">${s.enabled?'Turn AI off':'Turn AI on'}</button></div></div>
+  <div class="card"><h2 style="font-size:16px;margin:0 0 4px">Features</h2>
+    <div class="tl-sub" style="margin-bottom:10px">Each can be switched off independently without taking all of AI down.</div>
+    ${AI_FEATURES.map(([k,label,blurb])=>{const on=s.features&&s.features[k]===true;return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:8px">
+      <div><div style="font-weight:700;color:var(--ink)">${label}</div><div class="tl-sub" style="margin-top:2px">${blurb}</div></div>
+      <button class="btn sm ${on?'sec':''}" onclick="suaiFeature('${k}',${on?'false':'true'})">${on?'Disable':'Enable'}</button></div>`}).join('')}</div>
+  <div class="card"><h2 style="font-size:16px;margin:0 0 10px">Limits</h2>
+    <div style="max-width:320px"><label>Monthly calls per tenant</label><input id="ai_cap" type="number" min="0" value="${s.monthly_call_cap}" onchange="suaiCap(this.value)">
+    <div class="tl-sub" style="margin-top:4px">A tenant that hits this is refused until next month. Failed calls don't count.</div></div></div>
+  <div class="pghead"><div><h2 style="font-size:17px">Tenants</h2><div class="sub">AI is off for a tenant until you switch it on here. New tenants get nothing by default.</div></div></div>
+  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Workspace</th><th>Calls this month</th><th>Status</th><th></th></tr>
+  ${(orgs||[]).map(o=>{const on=!!enBy[o.id];const c=calls[o.id]||0;const capped=c>=s.monthly_call_cap;return `<tr><td><b>${esc(o.name)}</b></td>
+   <td>${c}${capped?' <span class="badge stA">capped</span>':''}</td>
+   <td><span class="badge ${on?'stP':'stL'}">${on?'Enabled':'Off'}</span></td>
+   <td class="noprint"><button class="btn sm ${on?'sec':''}" onclick="suaiOrg('${o.id}',${on?'false':'true'})">${on?'Disable':'Enable'}</button></td></tr>`}).join('')||'<tr><td colspan="4" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
+}
+let AI_STATE=null;
+async function suaiToggle(on){const{error}=await sb.from('ai_settings').update({enabled:on,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);suai();}
+async function suaiFeature(key,on){const f=Object.assign({},AI_STATE&&AI_STATE.s.features);f[key]=on;const{error}=await sb.from('ai_settings').update({features:f,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);suai();}
+async function suaiCap(v){const n=parseInt(v,10);if(!Number.isFinite(n)||n<0)return;const{error}=await sb.from('ai_settings').update({monthly_call_cap:n,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);}
+async function suaiOrg(orgId,on){const{error}=await sb.from('ai_org_access').upsert({org_id:orgId,enabled:on,granted_by:ME.user.id,granted_at:new Date().toISOString()});if(error)return alert(error.message);suai();}
+// --- Provider keys ---
+function suaiKeyForm(){
+  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Add provider key</h2>
+  <label>Provider</label><select id="ak_prov" onchange="suaiKeyProv()">${AI_PROVIDERS.map(([id,l])=>`<option value="${id}">${l}</option>`).join('')}</select>
+  <div id="ak_basewrap" style="display:none"><label>Base URL <span style="color:#889;font-weight:400">— OpenAI-compatible endpoint</span></label><input id="ak_base" placeholder="https://api.example.com/v1"></div>
+  <label>Label <span style="color:#889;font-weight:400">— optional, for you</span></label><input id="ak_label" placeholder="e.g. Production Claude">
+  <label>Model</label><input id="ak_model" placeholder="claude-opus-4-8">
+  <label>API key</label><input id="ak_key" type="password" autocomplete="off" placeholder="paste the provider's secret key">
+  <div class="warnbar" style="margin-top:12px"><i class="fa-solid fa-lock" style="color:#1E8449"></i> The key is encrypted before it's stored. Only its last 4 digits are ever shown again.</div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suaiSaveKey()">Save key</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);suaiKeyProv();
+}
+function suaiKeyProv(){const p=$('ak_prov').value;const meta=AI_PROVIDERS.find(x=>x[0]===p);
+  $('ak_basewrap').style.display=meta&&meta[3]?'block':'none';
+  if(meta&&meta[2])$('ak_model').placeholder=meta[2];}
+async function suaiSaveKey(){
+  const provider=$('ak_prov').value,key=$('ak_key').value.trim(),model=$('ak_model').value.trim(),label=$('ak_label').value.trim(),base_url=$('ak_base')?$('ak_base').value.trim():'';
+  if(!key)return alert('Paste the provider API key.');
+  if(!model)return alert('Enter the model to use (e.g. claude-opus-4-8 or gpt-4o).');
+  if(provider==='custom'&&!base_url)return alert('A custom provider needs a base URL.');
+  const{data,error}=await sb.functions.invoke('ai',{body:{action:'save_key',provider,key,model,label,base_url}});
+  if(error||data?.error)return alert('Failed to save key: '+(data?.error||error.message));
+  document.querySelector('.modal').remove();suai();
+}
+async function suaiSetActive(id){const{data,error}=await sb.functions.invoke('ai',{body:{action:'set_active',id}});if(error||data?.error)return alert(data?.error||error.message);suai();}
+async function suaiKeyToggle(id,on){const{error}=await sb.from('ai_provider_keys').update({enabled:on}).eq('id',id);if(error)return alert(error.message);suai();}
+async function suaiDelKey(id){if(!confirm('Delete this provider key? Any AI features using it will stop until you activate another.'))return;const{data,error}=await sb.functions.invoke('ai',{body:{action:'delete_key',id}});if(error||data?.error)return alert(data?.error||error.message);suai();}
 async function suoverview(){
   const [{data:orgs},{data:emps},{data:sr},{data:fbk},ures]=await Promise.all([
     sb.from('orgs').select('id,name,status,created_at').order('created_at',{ascending:false}),
