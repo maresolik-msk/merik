@@ -1467,10 +1467,9 @@ async function perfDraft(empId,ym){
     <div style="margin-top:14px;display:flex;gap:8px"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
   document.body.appendChild(div);
   const body=div.querySelector('#pd_body');
-  const{data,error}=await sb.functions.invoke('ai',{body:{action:'performance_summary',employee_id:empId,month:ym}});
-  if(error||!data||data.ok===false){
-    body.innerHTML=`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#C0392B"></i> ${esc((data&&data.error)||(error&&error.message)||'Could not draft a review.')}</div>`;return;}
-  const d=data.draft||{};const q=d.evidence_quality||'';
+  const r=await aiCall({action:'performance_summary',employee_id:empId,month:ym});
+  if(!r.ok){body.innerHTML=`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#C0392B"></i> ${esc(r.error||'Could not draft a review.')}</div>`;return;}
+  const data=r.data;const d=data.draft||{};const q=d.evidence_quality||'';
   const chip=q==='thin'?'<span class="badge stA">thin evidence — verify</span>':q==='adequate'?'<span class="badge stL">adequate evidence</span>':q==='strong'?'<span class="badge stP">strong evidence</span>':'';
   const pts=arr=>(arr&&arr.length)?arr.map(p=>`<li>${esc(p.point||'')}${p.evidence_dates&&p.evidence_dates.length?` <span class="tl-sub">(${p.evidence_dates.map(esc).join(', ')})</span>`:''}</li>`).join(''):'<li class="tl-sub">None identified.</li>';
   const hd=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#8896aa;margin-top:12px">${t}</div>`;
@@ -2716,6 +2715,17 @@ async function suai(){
    <td class="noprint"><button class="btn sm ${on?'sec':''}" onclick="suaiOrg('${o.id}',${on?'false':'true'})">${on?'Disable':'Enable'}</button></td></tr>`}).join('')||'<tr><td colspan="4" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
 }
 let AI_STATE=null;
+// Call the `ai` edge function and surface its REAL error. supabase-js hides a
+// non-2xx body inside error.context (a Response); without this you only get the
+// useless "Edge Function returned a non-2xx status code".
+async function aiCall(body){
+  const{data,error}=await sb.functions.invoke('ai',{body});
+  if(error){let msg=error.message;
+    try{if(error.context&&typeof error.context.json==='function'){const j=await error.context.json();if(j&&j.error)msg=j.error;}}catch(_){}
+    return{ok:false,error:msg};}
+  if(data&&data.ok===false)return{ok:false,error:data.error||'AI request failed'};
+  return{ok:true,data:data};
+}
 async function suaiToggle(on){const{error}=await sb.from('ai_settings').update({enabled:on,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);suai();}
 async function suaiFeature(key,on){const f=Object.assign({},AI_STATE&&AI_STATE.s.features);f[key]=on;const{error}=await sb.from('ai_settings').update({features:f,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);suai();}
 async function suaiCap(v){const n=parseInt(v,10);if(!Number.isFinite(n)||n<0)return;const{error}=await sb.from('ai_settings').update({monthly_call_cap:n,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);}
@@ -2740,13 +2750,13 @@ async function suaiSaveKey(){
   if(!key)return alert('Paste the provider API key.');
   if(!model)return alert('Enter the model to use (e.g. claude-opus-4-8 or gpt-4o).');
   if(provider==='custom'&&!base_url)return alert('A custom provider needs a base URL.');
-  const{data,error}=await sb.functions.invoke('ai',{body:{action:'save_key',provider,key,model,label,base_url}});
-  if(error||data?.error)return alert('Failed to save key: '+(data?.error||error.message));
+  const r=await aiCall({action:'save_key',provider,key,model,label,base_url});
+  if(!r.ok)return alert('Failed to save key: '+r.error);
   document.querySelector('.modal').remove();suai();
 }
-async function suaiSetActive(id){const{data,error}=await sb.functions.invoke('ai',{body:{action:'set_active',id}});if(error||data?.error)return alert(data?.error||error.message);suai();}
+async function suaiSetActive(id){const r=await aiCall({action:'set_active',id});if(!r.ok)return alert(r.error);suai();}
 async function suaiKeyToggle(id,on){const{error}=await sb.from('ai_provider_keys').update({enabled:on}).eq('id',id);if(error)return alert(error.message);suai();}
-async function suaiDelKey(id){if(!confirm('Delete this provider key? Any AI features using it will stop until you activate another.'))return;const{data,error}=await sb.functions.invoke('ai',{body:{action:'delete_key',id}});if(error||data?.error)return alert(data?.error||error.message);suai();}
+async function suaiDelKey(id){if(!confirm('Delete this provider key? Any AI features using it will stop until you activate another.'))return;const r=await aiCall({action:'delete_key',id});if(!r.ok)return alert(r.error);suai();}
 async function suoverview(){
   const [{data:orgs},{data:emps},{data:sr},{data:fbk},ures]=await Promise.all([
     sb.from('orgs').select('id,name,status,created_at').order('created_at',{ascending:false}),
