@@ -10,9 +10,15 @@
 -- share a name — matching the app, which treats "Internal" as one bucket.
 --
 -- Note: task_updates records a task's project by name only, so when two clients
--- share a project name the client shown next to such a task in the task log is
--- derived by name and may be ambiguous. Accepted for now (see the add-project
--- multi-client flow); revisit if per-task client attribution is needed.
+-- share a project name the client shown next to such a task in the task log was
+-- derived by name and could be ambiguous — every project-keyed lookup silently
+-- kept just one of the clients.
+--
+-- Resolved by 20260721_backfill_task_project_labels: tasks now store the project
+-- as "<CLIENT CODE> · <name>" (e.g. "ACM · Website"), which is unique per client,
+-- and that migration relabels the historical rows. Rows written before then whose
+-- name was shared by several clients cannot be attributed from the stored data
+-- and stay bare — that migration lists them for manual review.
 
 drop index if exists public.projects_org_name;
 
