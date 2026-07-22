@@ -1,19 +1,31 @@
--- Map free-typed legacy project names onto real projects.
+-- ONE-OFF DATA REPAIR — NOT A MIGRATION. Do not put this in supabase/migrations.
 --
--- APPLIED to doms-global on 2026-07-22: the first seven mappings below as
--- migration `map_legacy_project_names`, then 'Rajvi SEO & Marketing' as
--- `map_rajvi_seo_marketing` and 'Shrutham Social Media' as
--- `map_shrutham_social_media`, each once the user confirmed its target.
--- Afterwards 460 project references carried a client code and 35 were still bare
--- — all entries from the UNRESOLVED block further down, deliberately not applied.
+-- This script names one tenant's clients and projects (Klar, Shrutham, Rajvi
+-- Packaging …). It is a statement about what particular people typed into one
+-- particular database, not about the shape of the schema, so it must not run as
+-- part of the migration chain: on any other deployment those clients do not
+-- exist and the validation below would abort the run. Run it by hand, against
+-- the one database it describes:
+--
+--   psql "$DATABASE_URL" -f scripts/data-repair/2026-07-22-map-legacy-project-names.sql
+--
+-- ALREADY APPLIED to doms-global on 2026-07-22, in three parts, recorded there
+-- as migrations `map_legacy_project_names` (the first seven mappings),
+-- `map_rajvi_seo_marketing`, and `map_shrutham_social_media` — those two were
+-- split out because the user confirmed each target separately. Applying them via
+-- apply_migration was the same mistake this file's move corrects; the entries
+-- are left in place because they did genuinely run, but the authoritative record
+-- of WHAT ran is this file. Afterwards: 460 project references carried a client
+-- code, 35 were still bare — all from the UNRESOLVED block below.
+--
 -- Re-running is a no-op: a mapped value becomes a label containing " · ", which
 -- never matches a legacy string again.
 --
--- Back when the task log's project field was free text, people typed whatever
--- they liked ("Rajvi Packaging Website", "SCLY-Website", "theoak land website").
--- Those strings never matched a row in `projects`, so
--- 20260721_backfill_task_project_labels could not attribute them to a client and
--- left them alone. This migration maps them onto real projects by hand.
+-- Background: back when the task log's project field was free text, people typed
+-- whatever they liked ("Rajvi Packaging Website", "SCLY-Website", "theoak land
+-- website"). Those strings never matched a row in `projects`, so the
+-- 20260721_backfill_task_project_labels migration could not attribute them to a
+-- client and left them alone. This script maps them onto real projects by hand.
 --
 -- Every mapping below is a JUDGEMENT CALL made from the client/project list, not
 -- something derivable from the data — that is why they are spelled out here
@@ -21,8 +33,9 @@
 -- entry later, move it up into the list with a client and project and re-run;
 -- only the new line will have any effect.
 --
--- The migration refuses to run if any mapping names a client or project that
--- does not exist, so a typo fails loudly instead of silently doing nothing.
+-- The script refuses to run if any mapping names a client or project that does
+-- not exist, so a typo fails loudly instead of silently doing nothing. That
+-- strictness is safe precisely because this is run deliberately, by hand.
 -- Counts in comments are occurrences found on 2026-07-22 across the day-level
 -- project column, the per-task items, and the task sheet.
 
