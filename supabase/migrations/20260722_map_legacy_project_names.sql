@@ -2,9 +2,10 @@
 --
 -- APPLIED to doms-global on 2026-07-22: the first seven mappings below as
 -- migration `map_legacy_project_names`, then 'Rajvi SEO & Marketing' as
--- `map_rajvi_seo_marketing` once the user confirmed its target. Afterwards 457
--- project references carried a client code and 38 were still bare — all of them
--- entries from the UNRESOLVED block further down, deliberately not applied.
+-- `map_rajvi_seo_marketing` and 'Shrutham Social Media' as
+-- `map_shrutham_social_media`, each once the user confirmed its target.
+-- Afterwards 460 project references carried a client code and 35 were still bare
+-- — all entries from the UNRESOLVED block further down, deliberately not applied.
 -- Re-running is a no-op: a mapped value becomes a label containing " · ", which
 -- never matches a legacy string again.
 --
@@ -88,16 +89,16 @@ begin
     -- SEO work booked under Rajvi Packaging's marketing project. Confirmed by
     -- the user on 2026-07-22 — the name matches no project, so this is their
     -- call, not something the data implies. (19)
-    ('Rajvi SEO & Marketing',  'Rajvi Packaging', 'Social Media Marketing');
+    ('Rajvi SEO & Marketing',  'Rajvi Packaging', 'Social Media Marketing'),
+    -- Shrutham has only "Marketing" and "Website"; the user confirmed the social
+    -- work belongs to "Marketing" on 2026-07-22. (3)
+    ('Shrutham Social Media',  'Shrutham',        'Marketing');
 
   ---------------------------------------------------------------------------
   -- UNRESOLVED — fill in a client and project, then move these up into the list
   -- above. Left out deliberately: each names a client (or nothing) without
   -- saying WHICH project, and guessing would put hours against the wrong one.
   --
-  --   'Shrutham Social Media'   (3) — Shrutham has only "Marketing" and "Website",
-  --                                   so "Marketing" is the likely target — but it
-  --                                   is a guess, so it is not applied. Confirm.
   --   'Klar'                    (5) — Klar has 5 projects. Which?
   --   'New Website'             (4) — client unknown.
   --   'Website 01'              (3) — client unknown.
