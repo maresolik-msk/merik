@@ -1,9 +1,10 @@
 -- Map free-typed legacy project names onto real projects.
 --
--- APPLIED to doms-global on 2026-07-22 as migration `map_legacy_project_names`,
--- with exactly the seven mappings listed below. Afterwards 438 project
--- references carried a client code and 57 were still bare — all of them entries
--- from the UNRESOLVED block further down, which were deliberately not applied.
+-- APPLIED to doms-global on 2026-07-22: the first seven mappings below as
+-- migration `map_legacy_project_names`, then 'Rajvi SEO & Marketing' as
+-- `map_rajvi_seo_marketing` once the user confirmed its target. Afterwards 457
+-- project references carried a client code and 38 were still bare — all of them
+-- entries from the UNRESOLVED block further down, deliberately not applied.
 -- Re-running is a no-op: a mapped value becomes a label containing " · ", which
 -- never matches a legacy string again.
 --
@@ -83,7 +84,11 @@ begin
     -- Spacing/case variant of theoakland's only website project. (2)
     ('theoak land website',    'theoakland',      'Website'),
     -- Matches once the trailing space above is trimmed. (2)
-    ('Tryon integration',      'Sirimalle',       'Tryon integration');
+    ('Tryon integration',      'Sirimalle',       'Tryon integration'),
+    -- SEO work booked under Rajvi Packaging's marketing project. Confirmed by
+    -- the user on 2026-07-22 — the name matches no project, so this is their
+    -- call, not something the data implies. (19)
+    ('Rajvi SEO & Marketing',  'Rajvi Packaging', 'Social Media Marketing');
 
   ---------------------------------------------------------------------------
   -- UNRESOLVED — fill in a client and project, then move these up into the list
@@ -93,9 +98,6 @@ begin
   --   'Shrutham Social Media'   (3) — Shrutham has only "Marketing" and "Website",
   --                                   so "Marketing" is the likely target — but it
   --                                   is a guess, so it is not applied. Confirm.
-  --   'Rajvi SEO & Marketing'  (19) — Rajvi Packaging has "Social Media Marketing"
-  --                                   and "Website New"; SEO matches neither.
-  --                                   Retired project, or should it be created?
   --   'Klar'                    (5) — Klar has 5 projects. Which?
   --   'New Website'             (4) — client unknown.
   --   'Website 01'              (3) — client unknown.
