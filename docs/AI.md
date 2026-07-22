@@ -62,6 +62,8 @@ supabase db push   # applies 20260716_ai_control_plane.sql + 20260717_ai_provide
 - `ai_org_access` — per-tenant grant (no row = no AI)
 - `ai_usage` — audit + spend cap (service-role write only, so the cap can't be forged around)
 - `ai_provider_keys` — encrypted provider keys (superadmin-only RLS; ciphertext never exposed)
+- `ai_drafts` — draft cache, keyed by a hash of the condensed input
+- `ai_feedback` — what the model drafted vs what the human kept (the learning signal)
 
 AI ships **off**: master switch off, every feature off, no tenant granted, no keys.
 
@@ -73,6 +75,46 @@ AI ships **off**: master switch off, every feature off, no tenant granted, no ke
 | `quote_draft` | admin | Brief → line items, priced against that client's past quotes. Flags every assumption. |
 | `task_time_suggest` | any employee | Estimate from the caller's **own** history. Note: Task Insights already has a free built-in estimator (`predictTime()`); leave this off unless it clearly beats it. |
 | `save_key` / `delete_key` / `set_active` / `health` | superadmin | Key management. `save_key` encrypts; the others manage state. |
+
+## Cost control & the learning loop
+
+Two mechanisms, both live for `performance_summary`:
+
+**Condensing.** The prompt no longer carries raw `task_updates` rows. `condensePerf()`
+reduces each logged day to `{d, p, done, blocked}` plus rolled-up totals and
+project counts — keeping the dates the review must cite. Measured on real data:
+16 task rows went from **3,959 → 1,520 chars (-62%)**.
+
+**Caching.** The SHA-256 of that condensed payload is the cache key. Same
+employee + month + unchanged task log ⇒ the stored draft is re-served for **zero
+tokens**. Editing the task log changes the hash, which invalidates the cache
+automatically — there is no manual expiry to get wrong. Cache hits are logged to
+`ai_usage` with `model='cache'` and are excluded from the monthly cap.
+
+**Feedback.** Saving a review writes `ai_feedback` with the draft, the human's
+final text, and the edit distance between them. Nothing consumes it yet — it is
+deliberately being accumulated first, because you cannot learn from data you
+didn't keep. It is the input for (in order): feeding accepted examples back into
+the prompt, distilling per-tenant house-style rules, and eventually harvesting
+stable patterns into plain code so the AI call disappears.
+
+> ⚠️ `ai_feedback` holds review text about identifiable employees. It is
+> org-scoped by RLS and `org_id` is stamped server-side by the `set_org()`
+> trigger. Any future cross-tenant learning must use structural patterns only —
+> never this content.
+
+Useful queries:
+
+```sql
+-- cache hit rate + spend, this month
+select model = 'cache' as cached, count(*), sum(input_tokens), sum(output_tokens)
+from ai_usage where ok and created_at >= date_trunc('month', now()) group by 1;
+
+-- acceptance rate per feature (is the loop working?)
+select feature, count(*) n, avg(edit_distance)::int avg_edit,
+       round(100.0 * count(*) filter (where accepted) / count(*)) pct_accepted
+from ai_feedback group by 1;
+```
 
 ## Tenant isolation
 

@@ -1519,15 +1519,49 @@ async function perfDraft(empId,ym){
   const chip=q==='thin'?'<span class="badge stA">thin evidence — verify</span>':q==='adequate'?'<span class="badge stL">adequate evidence</span>':q==='strong'?'<span class="badge stP">strong evidence</span>':'';
   const pts=arr=>(arr&&arr.length)?arr.map(p=>`<li>${esc(p.point||'')}${p.evidence_dates&&p.evidence_dates.length?` <span class="tl-sub">(${p.evidence_dates.map(esc).join(', ')})</span>`:''}</li>`).join(''):'<li class="tl-sub">None identified.</li>';
   const hd=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#8896aa;margin-top:12px">${t}</div>`;
-  body.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><div class="tl-sub">${esc(data.employee||'')} · ${esc(ym)} · from ${data.source_rows||0} logged ${data.source_rows===1?'entry':'entries'}</div>${chip}</div>
+  // Cached drafts cost nothing — same employee, same month, unchanged task log.
+  const cachedChip=data.cached?' <span class="badge stL" title="Re-served from an earlier draft — no AI tokens used">cached</span>':'';
+  body.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><div class="tl-sub">${esc(data.employee||'')} · ${esc(ym)} · from ${data.source_rows||0} logged ${data.source_rows===1?'entry':'entries'}${cachedChip}</div>${chip}</div>
     <p style="font-weight:600;margin:0">${esc(d.summary||'')}</p>
     ${hd('Strengths')}<ul style="margin:4px 0 0;padding-left:18px">${pts(d.strengths)}</ul>
     ${hd('Areas to improve')}<ul style="margin:4px 0 0;padding-left:18px">${pts(d.gaps)}</ul>
     ${(d.blockers_raised&&d.blockers_raised.length)?hd('Blockers raised')+`<ul style="margin:4px 0 0;padding-left:18px">${d.blockers_raised.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
     <label style="margin-top:14px">Your review <span style="color:#889;font-weight:400">— edit before you use it; this is your assessment, not the model's</span></label>
     <textarea id="pd_text" rows="8"></textarea>
-    <button class="btn sm sec" style="margin-top:8px" onclick="navigator.clipboard&&navigator.clipboard.writeText($('pd_text').value);this.innerHTML='<i class=\\'fa-solid fa-check\\'></i> Copied'"><i class="fa-solid fa-copy"></i> Copy</button>`;
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+      <button class="btn sm" onclick="perfSaveReview(this)"><i class="fa-solid fa-floppy-disk"></i> Save review</button>
+      <button class="btn sm sec" onclick="navigator.clipboard&&navigator.clipboard.writeText($('pd_text').value);this.innerHTML='<i class=\\'fa-solid fa-check\\'></i> Copied'"><i class="fa-solid fa-copy"></i> Copy</button>
+      <span class="tl-sub">Saving records what you kept, so future drafts get better.</span></div>`;
   $('pd_text').value=perfDraftText(d);
+  // Context for the feedback record: what the model produced vs what you keep.
+  PD_CTX={draft_id:data.draft_id||null,input_hash:data.input_hash||null,subject_id:empId,draft_text:$('pd_text').value};
+}
+// The learning signal: the draft, the human's final text, and how far apart they
+// are. This is what later lets us feed accepted examples back into the prompt
+// (and eventually harvest stable patterns into plain code).
+let PD_CTX=null;
+async function perfSaveReview(btn){
+  const final=$('pd_text').value;const c=PD_CTX||{};
+  const base=c.draft_text||'';const dist=editDistance(base,final);
+  // org_id is stamped server-side by the set_org() trigger — don't send it.
+  const{error}=await sb.from('ai_feedback').insert({
+    feature:'performance_summary',draft_id:c.draft_id||null,
+    input_hash:c.input_hash||null,subject_id:c.subject_id||null,
+    draft_text:base,final_text:final,edit_distance:dist,
+    accepted:dist<=Math.max(20,Math.round(base.length*0.1)),created_by:ME.user.id});
+  if(error)return alert('Could not save: '+error.message);
+  btn.innerHTML='<i class="fa-solid fa-check"></i> Saved';btn.disabled=true;
+}
+// Levenshtein, capped so a long review can't lock the UI.
+function editDistance(a,b){
+  a=(a||'').slice(0,1500);b=(b||'').slice(0,1500);
+  if(a===b)return 0;const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
+  let prev=new Array(n+1),cur=new Array(n+1);
+  for(let j=0;j<=n;j++)prev[j]=j;
+  for(let i=1;i<=m;i++){cur[0]=i;
+    for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    const t=prev;prev=cur;cur=t;}
+  return prev[n];
 }
 function perfDraftText(d){const L=[];if(d.summary)L.push(d.summary,'');
   if(d.strengths&&d.strengths.length){L.push('Strengths:');d.strengths.forEach(s=>L.push('- '+(s.point||'')));L.push('');}

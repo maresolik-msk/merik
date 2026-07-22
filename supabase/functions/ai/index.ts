@@ -164,6 +164,59 @@ async function callLLM(cfg: ProviderCfg, opts: { system: string; user: string; m
   return { json: parseJsonLoose(text), usage: { input_tokens: d.usage?.prompt_tokens ?? 0, output_tokens: d.usage?.completion_tokens ?? 0 } };
 }
 
+// ---------------------------------------------------------------------------
+// Input condensing + cache keying.
+//
+// We used to ship raw task_updates rows into the prompt, which made input
+// tokens 4-7x the output. Condensing to one compact line per logged day (date,
+// project, what was done, blocker) keeps every fact the feature actually needs
+// — crucially the dates, which the review has to cite — while cutting the input
+// dramatically. The hash of this condensed payload is the cache key, so an
+// unchanged month is generated once and re-served free; edit the task log and
+// the hash changes, which invalidates the cache automatically.
+// ---------------------------------------------------------------------------
+async function sha256Hex(s: string): Promise<string> {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function tidy(s: unknown, n = 240): string | undefined {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t ? t.slice(0, n) : undefined;
+}
+function condenseTaskList(tasks: unknown): string | undefined {
+  if (!Array.isArray(tasks)) return undefined;
+  const items = tasks
+    .map((x: any) => tidy(typeof x === "string" ? x : (x?.task ?? x?.title ?? x?.name ?? ""), 120))
+    .filter(Boolean);
+  return items.length ? items.slice(0, 6).join("; ").slice(0, 300) : undefined;
+}
+function condensePerf(employee: any, month: string, attendance: any[], tasks: any[]) {
+  const totals: Record<string, number> = {};
+  const projects: Record<string, number> = {};
+  const entries: any[] = [];
+  for (const t of tasks) {
+    const st = t.update_status || "Unknown";
+    totals[st] = (totals[st] || 0) + 1;
+    if (t.project) projects[t.project] = (projects[t.project] || 0) + 1;
+    const e: any = { d: t.upd_date };
+    if (t.project) e.p = t.project;
+    const done = tidy(t.completed) || tidy(t.task_assigned) || condenseTaskList(t.tasks);
+    if (done) e.done = done;
+    const blk = tidy(t.blocker, 160);
+    if (blk) e.blocked = blk;
+    entries.push(e);
+  }
+  const present = (attendance || []).filter((a: any) => a.status === "Present").length;
+  return {
+    employee: { name: employee.full_name, designation: employee.designation, department: employee.department },
+    month,
+    attendance: { days_present: present, days_recorded: (attendance || []).length },
+    totals,
+    projects,
+    entries,
+  };
+}
+
 /** Load the active provider key, decrypt it, and return a ready-to-use config. */
 async function activeProvider(admin: ReturnType<typeof createClient>, settings: any): Promise<ProviderCfg> {
   if (!settings.active_key_id) throw new Error("No AI provider is configured — add a key in AI Control and set it active");
@@ -257,8 +310,9 @@ Deno.serve(async (req) => {
 
     const monthStart = new Date();
     monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
+    // Cache hits cost nothing, so they don't count against the cap (model='cache').
     const { count } = await admin.from("ai_usage").select("id", { count: "exact", head: true })
-      .eq("org_id", orgId).eq("ok", true).gte("created_at", monthStart.toISOString());
+      .eq("org_id", orgId).eq("ok", true).neq("model", "cache").gte("created_at", monthStart.toISOString());
     if ((count ?? 0) >= settings.monthly_call_cap) throw new Error("This workspace has reached its monthly AI limit");
 
     const cfg = await activeProvider(admin, settings);
@@ -269,8 +323,12 @@ Deno.serve(async (req) => {
     else if (action === "quote_draft") ({ result, usage } = await quoteDraft(admin, cfg, orgId, body));
     else ({ result, usage } = await taskTimeSuggest(admin, cfg, orgId, profile, body));
 
+    // Log cache hits too (as model='cache') so hit-rate is measurable, but they
+    // carry zero tokens and are excluded from the cap above.
+    const servedFromCache = (result as any)?.cached === true;
     await admin.from("ai_usage").insert({
-      org_id: orgId, user_id: userId, feature, model: `${cfg.provider}:${cfg.model}`,
+      org_id: orgId, user_id: userId, feature,
+      model: servedFromCache ? "cache" : `${cfg.provider}:${cfg.model}`,
       input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, ok: true,
     });
     return json({ ok: true, ...(result as object) });
@@ -304,7 +362,6 @@ async function performanceSummary(admin: ReturnType<typeof createClient>, cfg: P
     .select("att_date, status").eq("employee_id", employeeId).eq("org_id", orgId).gte("att_date", from).lte("att_date", to);
   if (!tasks?.length) throw new Error("No task log for this employee in that month — nothing to summarise");
 
-  const present = (attendance || []).filter((a: any) => a.status === "Present").length;
   const system = `You are drafting a monthly performance review for a manager to edit and approve. You are not the decision-maker.
 Rules:
 - Ground every statement in the task log you are given. Cite the specific dates (YYYY-MM-DD) that support each point.
@@ -312,13 +369,35 @@ Rules:
 - Do not infer attitude, motivation, or personality. You can see what work was logged and when — nothing about the person.
 - Never recommend firing, promotion, or pay changes. Describe the work; the manager decides.
 Return JSON with exactly these keys: summary (string), strengths (array of {point, evidence_dates:[string]}), gaps (array of {point, evidence_dates:[string]}), blockers_raised (array of string), evidence_quality ("strong"|"adequate"|"thin").`;
-  const user = JSON.stringify({
-    employee: { name: employee.full_name, designation: employee.designation, department: employee.department },
-    month, attendance: { days_present: present, days_recorded: (attendance || []).length }, task_log: tasks,
-  });
+
+  // Condense first, then key the cache on that condensed payload.
+  const payload = condensePerf(employee, month, attendance || [], tasks);
+  const user = JSON.stringify(payload);
+  const inputHash = await sha256Hex(user);
+
+  // Cache hit: same employee, same month, unchanged task log -> free.
+  const { data: hit } = await admin.from("ai_drafts").select("id, draft")
+    .eq("org_id", orgId).eq("feature", "performance_summary").eq("input_hash", inputHash).maybeSingle();
+  if (hit) {
+    return {
+      result: { draft: hit.draft, employee: employee.full_name, month, source_rows: tasks.length,
+                cached: true, draft_id: hit.id, input_hash: inputHash },
+      usage: { input_tokens: 0, output_tokens: 0 },
+    };
+  }
 
   const { json: draft, usage } = await callLLM(cfg, { system, user, maxTokens: 4000 });
-  return { result: { draft, employee: employee.full_name, month, source_rows: tasks.length }, usage };
+  const { data: saved } = await admin.from("ai_drafts").insert({
+    feature: "performance_summary", org_id: orgId, subject_id: employeeId, period: month,
+    input_hash: inputHash, draft, model: `${cfg.provider}:${cfg.model}`,
+    input_tokens: usage.input_tokens, output_tokens: usage.output_tokens,
+  }).select("id").maybeSingle();
+
+  return {
+    result: { draft, employee: employee.full_name, month, source_rows: tasks.length,
+              cached: false, draft_id: saved?.id ?? null, input_hash: inputHash },
+    usage,
+  };
 }
 
 // ---------------------------------------------------------------------------
