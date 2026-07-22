@@ -945,20 +945,93 @@ async function loadTaskSamples(){
   (rows||[]).forEach(r=>{const proj=(r.project||'').split(',')[0].trim();const client=PROJ_CLIENT[proj]||'';
     (Array.isArray(r.tasks)?r.tasks:[]).forEach(t=>{if(!t.task)return;
       out.push({tokens:tok(t.task),text:t.task,project:proj,client,act:+t.act_min||0,est:+t.est_min||0,emp:r.employee_id,date:r.upd_date,status:t.status});});});
-  TASK_SAMPLES=out;return out;
+  TASK_SAMPLES=out;tuneTimeModel();return out;
+}
+/* ---- Self-tuning time model -------------------------------------------------
+   predictTime used to hard-code its weights (project +0.30, client +0.15,
+   similarity floor 0.06, top-6). Those are now LEARNED from your own data: we
+   backtest candidate settings against tasks whose actual time is known — each
+   sample predicted from the others, leave-one-out — and keep whichever setting
+   minimises the median error. On top of that it learns two corrections:
+
+     calib     systematic over/under-shoot of the model's own predictions
+     estRatio  how each person's ESTIMATES compare to their ACTUALS
+
+   All of it runs locally on data already loaded: no API, no tokens, no cost.
+   Every task logged with an actual time makes it a little better, and the
+   measured accuracy is surfaced in the UI so the number is honest. */
+const TT_DEFAULTS={projW:0.30,cliW:0.15,minSim:0.06,k:6};
+let TT={...TT_DEFAULTS,calib:1,acc:null,n:0,tuned:false,estRatio:1,estByEmp:{}};
+const MIN_TUNE=25;            // below this, the defaults are as good as anything
+function medianOf(a){if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);const m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function jacSet(a,B){if(!a.length||!B.size)return 0;let inter=0;for(const w of a)if(B.has(w))inter++;return inter/(a.length+B.size-inter);}
+// Score one query against the candidate pool for a given parameter set.
+function ttScore(q,pool,simRow,g){
+  const scored=[];
+  for(let j=0;j<pool.length;j++){let sc=simRow[j];if(sc<0)continue;const c=pool[j];
+    if(q.project&&c.project===q.project)sc+=g.projW;
+    if(q.client&&c.client===q.client)sc+=g.cliW;
+    if(sc>g.minSim)scored.push([sc,c.act]);}
+  if(scored.length<2)return null;
+  scored.sort((a,b)=>b[0]-a[0]);
+  const top=scored.slice(0,g.k);const w=top.reduce((a,x)=>a+x[0],0);
+  return w?top.reduce((a,x)=>a+x[0]*x[1],0)/w:null;
+}
+function tuneTimeModel(){
+  const trained=TASK_SAMPLES.filter(s=>s.act>0&&s.tokens.length);
+  TT={...TT_DEFAULTS,calib:1,acc:null,n:trained.length,tuned:false,estRatio:1,estByEmp:{}};
+  // How people's own estimates compare to reality (median is robust to outliers).
+  const ratios=[],byEmp={};
+  TASK_SAMPLES.forEach(s=>{if(s.act>0&&s.est>0){const r=s.act/s.est;ratios.push(r);(byEmp[s.emp]=byEmp[s.emp]||[]).push(r);}});
+  TT.estRatio=medianOf(ratios)||1;TT.estN=ratios.length;
+  Object.keys(byEmp).forEach(e=>{if(byEmp[e].length>=5)TT.estByEmp[e]=medianOf(byEmp[e]);});
+  if(trained.length<MIN_TUNE)return TT;
+
+  const pool=trained.slice(0,800);                       // recent-weighted pool
+  pool.forEach(s=>{if(!s._set)s._set=new Set(s.tokens);});
+  const step=Math.max(1,Math.ceil(pool.length/120));
+  const evalSet=pool.filter((_,i)=>i%step===0).slice(0,120);
+  // Similarity is independent of the tuned weights, so compute it once and reuse
+  // it across the whole grid (-1 marks the sample itself: leave-one-out).
+  const sims=evalSet.map(q=>pool.map(c=>c===q?-1:jacSet(q.tokens,c._set)));
+
+  const grid=[];
+  [0,0.3,0.6].forEach(projW=>[0,0.15,0.3].forEach(cliW=>[0.03,0.06,0.12].forEach(minSim=>[3,6,10].forEach(k=>grid.push({projW,cliW,minSim,k})))));
+  let best=null;
+  grid.forEach(g=>{
+    const errs=[];
+    evalSet.forEach((q,qi)=>{const p=ttScore(q,pool,sims[qi],g);
+      if(p>0)errs.push(Math.abs(p-q.act)/q.act);});
+    if(errs.length>=10){const m=medianOf(errs);if(best===null||m<best.err)best={g,err:m,cover:errs.length};}
+  });
+  if(!best)return TT;
+  // Correct any systematic over/under-shoot at the winning settings.
+  const rr=[];evalSet.forEach((q,qi)=>{const p=ttScore(q,pool,sims[qi],best.g);if(p>0)rr.push(q.act/p);});
+  const calib=medianOf(rr)||1;
+  TT={...TT,...best.g,calib,acc:best.err,tuned:true,evalN:best.cover};
+  return TT;
+}
+// Correct a person's own estimate using how their estimates have actually landed.
+function calibrateEstimate(est,emp){
+  if(!(est>0))return null;
+  const personal=emp&&TT.estByEmp[emp];
+  const r=personal||TT.estRatio||1;
+  return {mins:Math.max(1,Math.round(est*r)),ratio:r,personal:!!personal};
 }
 // Predict minutes for a task, using only samples that have a recorded actual time.
 function predictTime(text,project,client){
   const q=tok(text);if(!q.length)return null;
   const trained=TASK_SAMPLES.filter(s=>s.act>0);
   if(!trained.length)return null;
-  const scored=trained.map(s=>{let sc=jac(q,s.tokens);if(project&&s.project&&s.project===project)sc+=0.30;if(client&&s.client&&s.client===client)sc+=0.15;return {s,sc};})
-    .filter(x=>x.sc>0.06).sort((a,b)=>b.sc-a.sc).slice(0,6);
+  const cal=m=>Math.max(1,Math.round(m*(TT.calib||1)));
+  const meta={acc:TT.acc,tuned:TT.tuned,learnedFrom:TT.n};
+  const scored=trained.map(s=>{let sc=jac(q,s.tokens);if(project&&s.project&&s.project===project)sc+=TT.projW;if(client&&s.client&&s.client===client)sc+=TT.cliW;return {s,sc};})
+    .filter(x=>x.sc>TT.minSim).sort((a,b)=>b.sc-a.sc).slice(0,TT.k);
   if(scored.length>=2){const w=scored.reduce((a,x)=>a+x.sc,0);
-    return {mins:Math.round(scored.reduce((a,x)=>a+x.sc*x.s.act,0)/w),n:scored.length,how:'similar tasks',samples:scored.map(x=>x.s)};}
+    return {mins:cal(scored.reduce((a,x)=>a+x.sc*x.s.act,0)/w),n:scored.length,how:'similar tasks',samples:scored.map(x=>x.s),...meta};}
   const proj=trained.filter(s=>s.project===project);
-  if(proj.length){return {mins:Math.round(proj.reduce((a,s)=>a+s.act,0)/proj.length),n:proj.length,how:'this project'};}
-  return {mins:Math.round(trained.reduce((a,s)=>a+s.act,0)/trained.length),n:trained.length,how:'overall average'};
+  if(proj.length){return {mins:cal(proj.reduce((a,s)=>a+s.act,0)/proj.length),n:proj.length,how:'this project',...meta};}
+  return {mins:cal(trained.reduce((a,s)=>a+s.act,0)/trained.length),n:trained.length,how:'overall average',...meta};
 }
 /* ============ PROJECT INTELLIGENCE (lexicon text-classification + rule scoring) ============
    Classifies each task by work-type category and lifecycle stage, scores its importance,
@@ -1180,7 +1253,15 @@ async function insPredict(){
   const p=predictTime(q,proj,client);const out=$('ins_out');
   if(!p){out.innerHTML='<div class="warnbar">Not enough timed history yet — log a few tasks with their actual time first.</div>';return;}
   out.innerHTML=`<div class="card" style="margin:0;background:var(--bg)"><div style="font-size:15px"><i class="fa-regular fa-clock" style="color:#2563A8"></i> Estimated <b style="font-size:20px;color:#14284B">${fmtMin(p.mins)}</b> <span class="tl-sub">based on ${p.n} ${p.how}</span></div>
+   <div class="tl-sub" style="margin-top:4px">${ttAccuracyLine()}</div>
    ${p.samples?`<div style="margin-top:8px"><div class="tl-sub" style="margin-bottom:4px">Most similar past tasks:</div>${p.samples.slice(0,4).map(s=>`<div class="tl-sub">• ${esc(s.text)} — <b>${fmtMin(s.act)}</b>${s.project?` · ${esc(s.project)}`:''}</div>`).join('')}</div>`:''}</div>`;
+}
+// Honest one-liner about how well the model is currently doing, and on what.
+function ttAccuracyLine(){
+  if(!TT.tuned)return `<i class="fa-solid fa-seedling" style="color:#1E8449"></i> Learning — using default settings until ${MIN_TUNE} tasks have an actual time (${TT.n} so far).`;
+  const pct=Math.round((TT.acc||0)*100);
+  const est=TT.estN>=10?` · people finish in ~<b>${TT.estRatio.toFixed(2)}×</b> their own estimate`:'';
+  return `<i class="fa-solid fa-wand-magic-sparkles" style="color:#7B3FE4"></i> Self-tuned on <b>${TT.n}</b> timed tasks · typical error <b>±${pct}%</b>${est}`;
 }
 /* ---- Project Intelligence: build per-project behaviour from classified tasks ---- */
 let PROJ_INTEL=null;
@@ -1412,8 +1493,14 @@ function suggestTime(inp){
   const proj=row.querySelector('.tk-project')?.value||'';const client=PROJ_CLIENT[proj]||'';
   const p=predictTime(text,proj,client);
   if(!p||!el){if(el)el.textContent='';return;}
-  el.innerHTML=`<i class="fa-solid fa-wand-magic-sparkles"></i> Model suggests ~<b>${fmtMin(p.mins)}</b> (from ${p.n} ${p.how}).`;
   const eh=row.querySelector('.tk-est-h'),em=row.querySelector('.tk-est-m');
+  // If they've already put their own estimate in, show how their estimates have
+  // historically landed rather than overwriting what they typed.
+  const own=(+(eh?.value)||0)*60+(+(em?.value)||0);
+  const c=own>0?calibrateEstimate(own,ME.employee?.id):null;
+  const hint=(c&&Math.abs(c.ratio-1)>=0.1)
+    ? ` <span class="tl-sub">· your estimates usually run <b>${c.ratio.toFixed(2)}×</b>${c.personal?'':' (team average)'} → likely <b>${fmtMin(c.mins)}</b></span>` : '';
+  el.innerHTML=`<i class="fa-solid fa-wand-magic-sparkles"></i> Model suggests ~<b>${fmtMin(p.mins)}</b> (from ${p.n} ${p.how}${p.tuned?`, ±${Math.round((p.acc||0)*100)}%`:''}).${hint}`;
   if(eh&&em&&!eh.value&&!em.value){const hm=minToHM(p.mins);eh.value=hm.h||'';em.value=hm.m||'';}
 }
 // Re-populate a task row's Project dropdown to only the projects for the newly picked client.

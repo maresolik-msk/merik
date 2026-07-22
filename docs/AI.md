@@ -131,6 +131,32 @@ share the OpenAI chat-completions shape. To add a provider: add it to the
 `PROVIDERS` set, add a `callLLM` branch (or reuse the OpenAI-compatible path with
 a base URL), and add it to `AI_PROVIDERS` in `app/index.html`'s `suai()`.
 
+## Self-tuning time model (no tokens, no API)
+
+`predictTime()` in `app/index.html` is **not** AI — it's a local similarity model,
+and it now tunes itself. Its weights used to be hard-coded (project +0.30,
+client +0.15, floor 0.06, top-6). `tuneTimeModel()` now backtests candidate
+settings against tasks whose **actual** time is known — each sample predicted
+from the others, leave-one-out — and keeps whichever minimises median error.
+
+It also learns two corrections:
+
+- **`calib`** — systematic over/under-shoot of its own predictions
+- **`estRatio`** — how each person's *estimates* compare to their *actuals*
+  (global, plus per-employee once someone has ≥5 timed tasks)
+
+The old defaults are inside the search grid, so tuning can never score worse
+than before on the data it measured. Below `MIN_TUNE` (25 timed tasks) it keeps
+the defaults rather than overfit. Cost: zero — it runs on data already loaded.
+
+The measured accuracy is shown in the UI (`ttAccuracyLine()`), so the number
+users see is the real backtested error, not a claim. Task-log rows show the
+suggestion with its ±error, and if you've typed your own estimate it tells you
+how your estimates have historically landed instead of overwriting them.
+
+This is the template for the flywheel: **let the data tune the rules, and keep
+the token cost at zero.**
+
 ## What is not AI, on purpose
 
 Attendance anomalies, leave balances, and payroll are rules and SQL —
