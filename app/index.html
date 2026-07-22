@@ -422,7 +422,7 @@ const ADMIN_GROUPS=[
  ['Employee Management',[['emp','<i class="fa-solid fa-users"></i>','Employees'],['pay','<i class="fa-solid fa-money-bill-wave"></i>','Payroll'],['perf','<i class="fa-solid fa-star" style="color:#E8A200"></i>','Performance']]],
  ['Team Management',[['att','<i class="fa-solid fa-calendar-check"></i>','Attendance'],['wfh','<i class="fa-solid fa-house"></i>','WFH & Leave'],['hol','<i class="fa-solid fa-calendar-days"></i>','Holidays']]],
  ['Task Management',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check" style="color:#1E8449"></i>','Task Log'],['insights','<i class="fa-solid fa-brain" style="color:#7B3FE4"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project" style="color:#2563A8"></i>','Project Intelligence']]],
- ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
+ ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['prjfix','<i class="fa-solid fa-wrench" style="color:#D35400"></i>','Fix Project Names'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Asset Management',[['asset','<i class="fa-solid fa-laptop"></i>','Assets'],['soft','<i class="fa-solid fa-cubes" style="color:#7B3FE4"></i>','Software']]],
  ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings'],['adminfb','<i class="fa-solid fa-comment-dots" style="color:#2563A8"></i>','Feedback']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
@@ -470,7 +470,7 @@ function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();document.querySelectorAll('#side a').forEach(a=>a.classList.remove('act'));
   const el=$('nav-'+v);if(el)el.classList.add('act');
-  ({dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,quo,inv,asset,soft,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
+  ({dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip})[v]();}
 const M=h=>{$('main').innerHTML=h;paginateTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
@@ -2182,6 +2182,224 @@ async function prj(){
   <button class="btn sm warn" onclick="delPrj('${x.id}')">Del</button></td></tr>`).join('')}</table></div>
   <p style="font-size:12px;color:#667">Newest projects appear on top. Use <b>Edit</b> for full changes (name, client, start date), or edit status/description inline. Active projects appear as selectable chips in the Daily Task Log.</p>`);
 }
+/* ---------- FIX PROJECT NAMES ------------------------------------------------
+   The task log's project field used to be free text, so old updates carry values
+   that do not identify a project: names typed by hand ("SCLY-Website"), and bare
+   names like "Website" that several clients each have. Both show up without a
+   client code. This screen finds every one of them and lets an admin attach it
+   to a real project — in bulk when one value always meant the same project, or
+   occurrence by occurrence when it did not.
+
+   Admins can rewrite their org's task_updates (policy p_task_adm), which is what
+   makes this possible in-app rather than by hand in SQL. The task sheet
+   (emp_tasks) is deliberately NOT touched: it is each employee's private
+   drafting pad and only its owner may edit it. */
+let PRJFIX=null;
+
+// Occurrences of every project value that has no client code, grouped by value.
+async function prjfixLoad(){
+  const [{data:rows},{data:pjs},{data:cls},{data:emps}]=await Promise.all([
+    sb.from('task_updates').select('id,employee_id,upd_date,project,tasks').order('upd_date',{ascending:false}),
+    sb.from('projects').select('name,status,clients(name)').order('name'),
+    sb.from('clients').select('name').order('name'),
+    sb.from('employees').select('id,full_name')]);
+  CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
+  const empName={};(emps||[]).forEach(e=>empName[e.id]=e.full_name);
+  // client -> its projects, for the pickers.
+  const byClient={};
+  (pjs||[]).forEach(p=>{const c=p.clients?.name||'Internal';(byClient[c]=byClient[c]||[]).push(p.name)});
+  // How many clients use each project name — a name used by more than one is
+  // exactly the case a single bulk mapping would get wrong.
+  const clientsOfName={};
+  (pjs||[]).forEach(p=>{const n=p.name;(clientsOfName[n]=clientsOfName[n]||new Set()).add(p.clients?.name||'Internal')});
+
+  const map=new Map();
+  const add=(val,occ)=>{if(!val||val.includes(' · '))return;
+    const e=map.get(val)||{value:val,occ:[]};e.occ.push(occ);map.set(val,e)};
+  (rows||[]).forEach(r=>{
+    (r.project||'').split(',').map(s=>s.trim()).filter(Boolean)
+      .forEach((part,i)=>add(part,{id:r.id,kind:'day',i,emp:empName[r.employee_id]||'—',date:r.upd_date}));
+    (Array.isArray(r.tasks)?r.tasks:[]).forEach((t,i)=>
+      add((t.project||'').trim(),{id:r.id,kind:'item',i,emp:empName[r.employee_id]||'—',date:r.upd_date,task:t.task}));
+  });
+  const values=[...map.values()].sort((a,b)=>b.occ.length-a.occ.length);
+  values.forEach(v=>{
+    v.shared=(clientsOfName[v.value]?.size||0)>1;   // a real project name, but several clients have it
+    v.guess=prjfixGuess(v.value,byClient);
+  });
+  PRJFIX={values,byClient,rows:rows||[]};
+  return PRJFIX;
+}
+
+// What the value itself tells us — never more than that.
+//
+// Deliberately conservative: a prefilled answer that merely looks plausible is
+// worse than none, because it invites the admin to click Apply without reading.
+// So the project is only ever suggested when the VALUE names it. "Klar" names a
+// client with five projects and says nothing about which — that returns the
+// client and leaves the project empty, forcing a choice. A value several clients
+// match equally ("Website") suggests nothing at all.
+function prjfixGuess(val,byClient){
+  const norm=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'');
+  const v=norm(val);
+  const clients=Object.keys(byClient);
+  // Clients whose name appears in the value.
+  const cHits=clients.filter(c=>{const n=norm(c);return n&&(v.includes(n)||n===v)});
+  // Project matches, scored on how much of the value the project name explains.
+  const pHits=[];
+  clients.forEach(c=>byClient[c].forEach(p=>{
+    const np=norm(p);if(!np)return;
+    let s=0;
+    if(v===np)s=4;
+    else if(v.includes(np))s=3;
+    else if(np.includes(v))s=2;
+    if(!s)return;
+    if(cHits.includes(c))s+=2;          // value named this client too
+    pHits.push({client:c,project:p,score:s});
+  }));
+  pHits.sort((a,b)=>b.score-a.score);
+  // A project suggestion needs a clear winner, otherwise it is a coin toss.
+  if(pHits.length&&(pHits.length===1||pHits[0].score>pHits[1].score))
+    return {client:pHits[0].client,project:pHits[0].project,why:'name'};
+  // No project identified. If exactly one client is named, offer that much.
+  if(cHits.length===1)return {client:cHits[0],project:null,why:'client'};
+  return null;
+}
+
+async function prjfix(){
+  M(pgh('Fix Project Names','Attach old task entries to a real project, so every task is counted under the right client.')+
+    `<div class="card"><div class="tl-sub">Scanning task updates…</div></div>`);
+  const {values,byClient}=await prjfixLoad();
+  const total=values.reduce((a,v)=>a+v.occ.length,0);
+  const clients=Object.keys(byClient).sort((a,b)=>a==='Internal'?1:b==='Internal'?-1:a.localeCompare(b));
+  // A blank first option everywhere a pick was not established, so nothing is
+  // ever applied just because it happened to sort first.
+  const clientOpts=(sel)=>`<option value="">— pick client —</option>`+
+    clients.map(c=>`<option ${c===sel?'selected':''}>${esc(c)}</option>`).join('');
+  const projOpts=(c,sel)=>`<option value="">— pick project —</option>`+
+    (byClient[c]||[]).map(p=>`<option ${p===sel?'selected':''}>${esc(p)}</option>`).join('');
+
+  if(!values.length){
+    M(pgh('Fix Project Names','Attach old task entries to a real project, so every task is counted under the right client.')+
+      `<div class="card"><div style="text-align:center;padding:26px 10px">
+       <div style="font-size:34px;color:#1E8449"><i class="fa-solid fa-circle-check"></i></div>
+       <div style="font-weight:700;color:var(--navy);margin-top:8px">Everything is mapped</div>
+       <div class="tl-sub">Every project on every task update points at a real project.</div></div></div>`);
+    return;
+  }
+
+  M(pgh('Fix Project Names','Attach old task entries to a real project, so every task is counted under the right client.')+
+  `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:#E8682A"></i>
+   <b>${total} task ${total===1?'entry':'entries'}</b> across <b>${values.length}</b> ${values.length===1?'name':'names'} are not attached to a project.
+   Until they are, their hours are missing from that client's totals.</div>
+  <div class="card"><table><tr><th>Name used in tasks</th><th>Uses</th><th>Attach to</th><th></th></tr>
+  ${values.map((v,i)=>{
+    const g=v.guess;const c=g?.client||'';
+    const hint=g?.why==='name'?'<div class="tl-sub" style="color:#1E8449">suggested by the name — confirm it is right</div>'
+      :g?.why==='client'?'<div class="tl-sub" style="color:#B45309">names this client, but not which project — pick one</div>'
+      :'<div class="tl-sub">nothing in the name identifies a project — pick one</div>';
+    return `<tr id="pfx-r${i}">
+    <td><b>${esc(v.value)}</b>
+      ${v.shared?`<div class="tl-sub" style="color:#B45309"><i class="fa-solid fa-triangle-exclamation"></i> several clients have a project called this — if these entries were not all the same client, use Review</div>`
+                :`<div class="tl-sub">no project by this name</div>`}</td>
+    <td style="white-space:nowrap">${v.occ.length}
+      <button class="btn sm sec" style="margin-left:6px" onclick="prjfixRows(${i})" title="Show the individual task entries">Review</button></td>
+    <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+      <select class="pfx-cl" data-i="${i}" style="width:auto;min-width:150px" onchange="prjfixClient(${i})">${clientOpts(c)}</select>
+      <select class="pfx-pj" data-i="${i}" style="width:auto;min-width:190px">${projOpts(c,g?.project)}</select></div>
+      ${hint}</td>
+    <td style="white-space:nowrap"><button class="btn sm" onclick="prjfixApply(${i})">Apply to all ${v.occ.length}</button></td></tr>
+    <tr id="pfx-d${i}" style="display:none"><td colspan="4" style="background:var(--bg)"></td></tr>`;
+  }).join('')}</table></div>
+  <p style="font-size:12px;color:#667">Applying rewrites those task entries to <b>CODE · Project</b>, the same form new tasks use, so the client is unambiguous.
+  Your team's private task-sheet drafts are left untouched. Nothing here deletes anything — a wrong pick can be applied again with the right project.</p>`);
+}
+
+// Re-fill the project picker when the client changes.
+function prjfixClient(i){
+  const row=document.querySelector(`.pfx-cl[data-i="${i}"]`);const pj=document.querySelector(`.pfx-pj[data-i="${i}"]`);
+  pj.innerHTML=`<option value="">— pick project —</option>`+(PRJFIX.byClient[row.value]||[]).map(p=>`<option>${esc(p)}</option>`).join('');
+}
+
+// The individual entries behind one name, each mappable on its own — for when
+// the same word meant different clients on different days.
+function prjfixRows(i){
+  const v=PRJFIX.values[i];const cell=$('pfx-d'+i);const tr=cell?.parentElement;
+  if(!tr)return;
+  if(tr.style.display!=='none'){tr.style.display='none';return;}
+  tr.style.display='';
+  const clients=Object.keys(PRJFIX.byClient).sort((a,b)=>a==='Internal'?1:b==='Internal'?-1:a.localeCompare(b));
+  cell.innerHTML=`<div style="padding:8px 4px"><div class="tl-sub" style="margin-bottom:6px">Each entry using “${esc(v.value)}”:</div>
+  <table class="nopg" style="margin:0"><tr><th>Date</th><th>Who</th><th>Task</th><th>Attach this one to</th><th></th></tr>
+  ${v.occ.map((o,j)=>`<tr id="pfx-o${i}-${j}"><td style="white-space:nowrap">${fmtDate(o.date)}</td><td>${esc(o.emp)}</td>
+   <td style="max-width:280px">${o.kind==='item'?esc((o.task||'').slice(0,90)):'<span class="tl-sub">day-level entry</span>'}</td>
+   <td><div style="display:flex;gap:6px">
+    <select class="pfx-ocl" data-i="${i}" data-j="${j}" style="width:auto;min-width:140px" onchange="prjfixOccClient(${i},${j})"><option value="">— client —</option>${clients.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+    <select class="pfx-opj" data-i="${i}" data-j="${j}" style="width:auto;min-width:170px"><option value="">— project —</option></select></div></td>
+   <td><button class="btn sm" onclick="prjfixApplyOne(${i},${j})">Apply</button></td></tr>`).join('')}</table></div>`;
+}
+function prjfixOccClient(i,j){
+  const c=document.querySelector(`.pfx-ocl[data-i="${i}"][data-j="${j}"]`).value;
+  document.querySelector(`.pfx-opj[data-i="${i}"][data-j="${j}"]`).innerHTML=
+    `<option value="">— project —</option>`+(PRJFIX.byClient[c]||[]).map(p=>`<option>${esc(p)}</option>`).join('');
+}
+
+// Rewrite one task_updates row, swapping `from` for `to` in the day-level list
+// and/or the numbered tasks. `only` limits it to a single occurrence.
+async function prjfixWrite(rowId,from,to,only){
+  const {data:r,error:e0}=await sb.from('task_updates').select('project,tasks').eq('id',rowId).single();
+  if(e0)throw e0;
+  const patch={};
+  if(!only||only.kind==='day'){
+    const parts=(r.project||'').split(',').map(s=>s.trim()).filter(Boolean);
+    let hit=false;
+    const next=parts.map((p,i)=>{
+      if(p!==from)return p;
+      if(only&&only.i!==i)return p;
+      hit=true;return to;});
+    if(hit)patch.project=[...new Set(next)].join(', ');
+  }
+  if(!only||only.kind==='item'){
+    const ts=Array.isArray(r.tasks)?r.tasks:[];let hit=false;
+    const next=ts.map((t,i)=>{
+      if((t.project||'').trim()!==from)return t;
+      if(only&&only.i!==i)return t;
+      hit=true;return {...t,project:to};});
+    if(hit)patch.tasks=next;
+  }
+  if(!Object.keys(patch).length)return 0;
+  const {error}=await sb.from('task_updates').update(patch).eq('id',rowId);
+  if(error)throw error;
+  return 1;
+}
+
+async function prjfixApply(i){
+  const v=PRJFIX.values[i];
+  const client=document.querySelector(`.pfx-cl[data-i="${i}"]`).value;
+  const project=document.querySelector(`.pfx-pj[data-i="${i}"]`).value;
+  if(!client||!project)return alert('Pick a client and a project first.');
+  const label=projLabel(project,client);
+  if(!confirm(`Attach all ${v.occ.length} entries using “${v.value}” to:\n\n${label}\n\nThis rewrites those task updates.`))return;
+  const ids=[...new Set(v.occ.map(o=>o.id))];
+  try{
+    let n=0;
+    for(const id of ids)n+=await prjfixWrite(id,v.value,label);
+    alert(`Done — ${n} task update${n===1?'':'s'} now point at ${label}.`);
+  }catch(e){return alert(e.message||String(e));}
+  prjfix();
+}
+
+async function prjfixApplyOne(i,j){
+  const v=PRJFIX.values[i];const o=v.occ[j];
+  const client=document.querySelector(`.pfx-ocl[data-i="${i}"][data-j="${j}"]`).value;
+  const project=document.querySelector(`.pfx-opj[data-i="${i}"][data-j="${j}"]`).value;
+  if(!client||!project)return alert('Pick a client and a project first.');
+  const label=projLabel(project,client);
+  try{await prjfixWrite(o.id,v.value,label,{kind:o.kind,i:o.i});}
+  catch(e){return alert(e.message||String(e));}
+  prjfix();
+}
+
 async function prjForm(p){
   const{data:cls}=await sb.from('clients').select('id,name').order('name');
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Edit Project</h2>
