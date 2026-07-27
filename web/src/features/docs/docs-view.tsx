@@ -314,7 +314,7 @@ function printDoc(kind: Kind, d: Doc, clientName: string) {
     @media print{body{padding:20px}}
   </style></head><body>
     <div class="head">
-      <div><div class="brand">Merik</div><div class="muted">Workforce Suite</div></div>
+      <div><div class="brand">Merik</div></div>
       <div style="text-align:right"><h1>${cfg.noun}</h1><div class="muted">${escapeHtml(no)}</div></div>
     </div>
     <div class="meta">

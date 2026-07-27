@@ -37,8 +37,7 @@ export default function LoginPage() {
         <div className="mb-2 flex justify-center">
           <Logo size={46} />
         </div>
-        <h1 className="text-center text-2xl font-extrabold tracking-tight text-ink">MERIK</h1>
-        <p className="mb-6 text-center text-sm text-muted">Workforce Suite</p>
+        <h1 className="mb-6 text-center text-2xl font-extrabold tracking-tight text-ink">MERIK</h1>
 
         <div className="space-y-3">
           <Field label="Email">
