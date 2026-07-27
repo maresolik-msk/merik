@@ -678,7 +678,7 @@ async function saveEmp(id){
   // today), clear it when the employee is active — mirrors the Remove/Restore flow.
   o.left_on = o.status==='Inactive' ? (($('f_left_on')&&$('f_left_on').value)||today()) : null;
   const q=id?sb.from('employees').update(o).eq('id',id):sb.from('employees').insert(o);
-  const{error}=await q;if(error)return alert(error.message);
+  const{error}=await q;if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();emp();
 }
 // Effective monthly CTC for a given month: latest revision effective on/before month-end,
@@ -722,7 +722,7 @@ async function saveHike(eid,prevCtc){
   const nv=+$('hk_new').value;if(!nv||nv<=0)return alert('Enter the new monthly CTC.');
   const eff=$('hk_month').value;if(!eff)return alert('Choose the effective month.');
   const{error}=await sb.from('salary_history').insert({employee_id:eid,org_id:ME.org?.id||null,effective_month:eff+'-01',previous_ctc:prevCtc||null,new_ctc:nv,note:$('hk_note').value.trim()||null});
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   // Current CTC on the employee reflects the latest revision.
   await sb.from('employees').update({ctc:nv}).eq('id',eid);
   document.querySelectorAll('.modal').forEach(m=>m.remove());salaryHistory(eid);
@@ -764,13 +764,13 @@ function removeEmp(id,name){
 async function doRemoveEmp(id){
   const d=$('rm_date').value||today();
   const{error}=await sb.from('employees').update({status:'Inactive',left_on:d}).eq('id',id);
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();emp();
 }
 // Undo an archive (e.g. removed by mistake): back to Active, clear the last day.
 async function restoreEmp(id){if(!confirm('Restore this employee to the active team?'))return;
   const{error}=await sb.from('employees').update({status:'Active',left_on:null}).eq('id',id);
-  if(error)return alert(error.message);prevEmp();}
+  if(error)return alert(saveErr(error));prevEmp();}
 // Correct the last working day of an already-archived employee — re-pro-rates
 // their final-month pay and shifts where attendance stops.
 function editLeftDate(id,name,cur){
@@ -785,7 +785,7 @@ function editLeftDate(id,name,cur){
 async function saveLeftDate(id){
   const d=$('ld_date').value;if(!d)return alert('Pick the last working day.');
   const{error}=await sb.from('employees').update({left_on:d}).eq('id',id);
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();prevEmp();
 }
 
@@ -831,7 +831,7 @@ async function saveAtt(d){
     if(any)ups.push(o)});
   if(!ups.length)return alert('Nothing to save');
   const{error}=await sb.from('attendance').upsert(ups,{onConflict:'employee_id,att_date'});
-  alert(error?error.message:'Saved ✔');
+  alert(error?saveErr(error):'Saved ✔');
 }
 
 /* ---------- MONTHLY TRACKER ---------- */
@@ -878,7 +878,7 @@ async function hol(){
   <td><button class="btn sm warn" onclick="delHol('${h.id}')">Del</button></td></tr>`).join('')}</table></div>`);
 }
 async function addHol(){const{error}=await sb.from('holidays').insert({holiday_date:$('hd').value,name:$('hn').value,type:$('ht').value});
-  error?alert(error.message):hol()}
+  error?alert(saveErr(error)):hol()}
 async function delHol(id){await sb.from('holidays').delete().eq('id',id);hol()}
 
 /* ---------- TASK LOG (admin) ---------- */
@@ -1563,7 +1563,7 @@ async function saveTask(eid,d){
     next_task:tasks.filter(t=>t.next).map(t=>t.next).join('; ')||null,
     not_working:null};
   const{error}=await sb.from('task_updates').upsert(o,{onConflict:'employee_id,upd_date'});
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   // Stamp any Task Sheet rows that reached a log through this save. Done only on a
   // successful save, so cancelling the form never marks a task as logged.
   const ids=[...new Set(tasks.map(t=>t.sheet_id).filter(Boolean))];
@@ -1690,7 +1690,7 @@ function leaveDates(a,b){const out=[];const d=new Date(a+'T00:00:00'),end=new Da
   while(d<=end){out.push(isoD(d));d.setDate(d.getDate()+1);}return out;}
 async function apprWfh(id,v){
   const{error}=await sb.from('wfh_leave').update({approved:v}).eq('id',id);
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   // On approval, auto-stamp the attendance log for every day in the request so the
   // employee's status reflects the grant. Employees can't self-mark Present on these
   // days; only an admin can override to P from Daily Attendance.
@@ -1796,7 +1796,7 @@ async function savePay(y,m){
       pay_status:tr.querySelector('[data-k=pay_status]').value})});
   if(!ups.length)return alert('Nothing to save');
   const{error}=await sb.from('payroll').upsert(ups,{onConflict:'employee_id,pay_year,pay_month'});
-  alert(error?error.message:'Saved ✔');
+  alert(error?saveErr(error):'Saved ✔');
 }
 // Release (or recall) a single full-time employee's payslip. Only PAID salaries can be released.
 async function sendSlip(eid,y,m,send){
@@ -1807,7 +1807,7 @@ async function sendSlip(eid,y,m,send){
   }
   const{data,error}=await sb.from('payroll').update({sent:send,sent_at:send?new Date().toISOString():null})
     .eq('employee_id',eid).eq('pay_year',y).eq('pay_month',m).select('id');
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   if(!data||!data.length)return alert('Save this employee’s payroll first (Save All), then Send.');
   pay(`${y}-${String(m).padStart(2,'0')}`);
 }
@@ -1819,7 +1819,7 @@ async function sendAll(y,m){
   if(!ids.length)return alert('No full-time employees found.');
   const{data,error}=await sb.from('payroll').update({sent:true,sent_at:new Date().toISOString()})
     .eq('pay_year',y).eq('pay_month',m).eq('pay_status','Paid').in('employee_id',ids).select('id');
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   alert(`Released ${data?.length||0} paid payslip(s). Unpaid salaries were skipped.`);
   pay(`${y}-${String(m).padStart(2,'0')}`);
 }
@@ -1887,7 +1887,7 @@ function cliForm(c={}){
 }
 async function saveCli(id){const o={};['name','contact_person','phone','email','gstin','address','notes'].forEach(k=>o[k]=$('c_'+k).value||null);
   const q=id?sb.from('clients').update(o).eq('id',id):sb.from('clients').insert(o);
-  const{error}=await q;if(error)return alert(error.message);document.querySelector('.modal').remove();cli()}
+  const{error}=await q;if(error)return alert(saveErr(error));document.querySelector('.modal').remove();cli()}
 async function delCli(id){if(confirm('Delete client?')){await sb.from('clients').delete().eq('id',id);cli()}}
 
 /* ---------- ASSET MANAGEMENT (hardware + software) ---------- */
@@ -1956,11 +1956,11 @@ async function saveAsset(id){
   const o={};['name','category','serial_no','status','notes'].forEach(k=>o[k]=$('a_'+k).value||null);
   if(!o.name)return alert('Asset name is required.');
   const q=id?sb.from('assets').update(o).eq('id',id):sb.from('assets').insert(o);
-  const{error}=await q;if(error)return alert(error.message);
+  const{error}=await q;if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();asset();
 }
 async function delAsset(id){if(confirm('Delete this asset? Its assignment history goes with it.')){
-  const{error}=await sb.from('assets').delete().eq('id',id);if(error)return alert(error.message);asset();}}
+  const{error}=await sb.from('assets').delete().eq('id',id);if(error)return alert(saveErr(error));asset();}}
 // Assign: close any open holding, open a new one, and mirror the holder onto the asset row.
 function assignForm(id){
   const div=document.createElement('div');div.className='modal';
@@ -1977,7 +1977,7 @@ async function doAssign(id){
   if(!eid)return alert('Add an active employee first.');
   await sb.from('asset_assignments').update({returned_on:on}).eq('asset_id',id).is('returned_on',null);
   const{error}=await sb.from('asset_assignments').insert({asset_id:id,employee_id:eid,assigned_on:on,notes:$('as_notes').value||null});
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   const{error:e2}=await sb.from('assets').update({assigned_to:eid,status:'In Use'}).eq('id',id);
   if(e2)return alert(e2.message);
   document.querySelector('.modal').remove();asset();
@@ -1987,7 +1987,7 @@ async function returnAsset(id){
   const d=today();
   await sb.from('asset_assignments').update({returned_on:d}).eq('asset_id',id).is('returned_on',null);
   const{error}=await sb.from('assets').update({assigned_to:null,status:'Available'}).eq('id',id);
-  if(error)return alert(error.message);asset();
+  if(error)return alert(saveErr(error));asset();
 }
 async function assetHist(id){
   const [{data:h},{data:emps}]=await Promise.all([
@@ -2088,11 +2088,11 @@ async function saveSoft(id){
   o.cost =(pg||$('s_cost').value==='')?null:+$('s_cost').value;
   if(!o.name)return alert('Software name is required.');
   const q=id?sb.from('software').update(o).eq('id',id):sb.from('software').insert(o);
-  const{error}=await q;if(error)return alert(error.message);
+  const{error}=await q;if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();soft();
 }
 async function delSoft(id){if(confirm('Delete this software? Its seat assignments go with it.')){
-  const{error}=await sb.from('software').delete().eq('id',id);if(error)return alert(error.message);soft();}}
+  const{error}=await sb.from('software').delete().eq('id',id);if(error)return alert(saveErr(error));soft();}}
 // Seat manager: who on the team actually holds a licence.
 async function seatForm(id){
   const old=document.querySelector('.modal');if(old)old.remove();
@@ -2151,18 +2151,18 @@ async function saveSpend(id){
   if(!m)return alert('Pick the month this bill covers.');
   if(a==='')return alert('Enter the amount you were billed.');
   const{error}=await sb.from('software_spend').upsert({software_id:id,spend_month:m+'-01',amount:+a,notes:$('sp_notes').value||null},{onConflict:'software_id,spend_month'});
-  if(error)return alert(error.message);spendForm(id);
+  if(error)return alert(saveErr(error));spendForm(id);
 }
 async function delSpend(rid,id){const{error}=await sb.from('software_spend').delete().eq('id',rid);
-  if(error)return alert(error.message);spendForm(id);}
+  if(error)return alert(saveErr(error));spendForm(id);}
 async function addSeat(id){
   const eid=$('se_emp').value;if(!eid)return;
   const{error}=await sb.from('software_seats').insert({software_id:id,employee_id:eid});
-  if(error)return alert(error.message);seatForm(id);
+  if(error)return alert(saveErr(error));seatForm(id);
 }
 async function delSeat(seatId,id){
   const{error}=await sb.from('software_seats').delete().eq('id',seatId);
-  if(error)return alert(error.message);seatForm(id);
+  if(error)return alert(saveErr(error));seatForm(id);
 }
 
 /* ---------- QUOTES & INVOICES (shared doc engine) ---------- */
@@ -2430,7 +2430,7 @@ async function prjForm(p){
 async function saveProjEdit(id){
   const name=$('pe_name').value.trim();if(!name)return alert('Project name is required.');
   const o={name,client_id:$('pe_client').value||null,status:$('pe_status').value,start_date:$('pe_start').value||null,description:$('pe_desc').value.trim()||null};
-  const{error}=await sb.from('projects').update(o).eq('id',id);if(error)return alert(error.message);
+  const{error}=await sb.from('projects').update(o).eq('id',id);if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();prj();
 }
 function pjSelCount(){const n=document.querySelectorAll('.pj-cl:checked').length;const el=$('pj_seln');if(el)el.textContent=n?`${n} selected`:'';
@@ -2450,12 +2450,12 @@ async function addPrj(){
   picked.forEach(v=>{if(have.has(v)){skipped++;return;}rows.push({name,client_id:v==='__internal__'?null:v,status,description:desc});});
   if(!rows.length)return alert(`“${name}” already exists for all ${skipped} selected client${skipped===1?'':'s'}. Nothing to add.`);
   const{error}=await sb.from('projects').insert(rows);
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   alert(`Added “${name}” for ${rows.length} client${rows.length===1?'':'s'}${skipped?` — skipped ${skipped} that already had it`:''}.`);
   prj();
 }
 async function updPrj(id,v){await sb.from('projects').update({status:v}).eq('id',id)}
-async function updDesc(id,v){const{error}=await sb.from('projects').update({description:v||null}).eq('id',id);if(error)alert(error.message)}
+async function updDesc(id,v){const{error}=await sb.from('projects').update({description:v||null}).eq('id',id);if(error)alert(saveErr(error))}
 async function delPrj(id){if(confirm('Delete project?')){await sb.from('projects').delete().eq('id',id);prj()}}
 
 async function orgset(){
@@ -2480,7 +2480,7 @@ async function saveOrg(){
   const lg=await fileToData($('o_logo_f'));if(lg)o.logo=lg;
   const sg=await fileToData($('o_sig_f'));if(sg)o.signature=sg;
   const{error}=await sb.from('orgs').update(o).eq('id',ME.org.id);
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   Object.assign(ME.org,o);renderShell();go('orgset');alert('Saved ✔');
 }
 
@@ -2606,7 +2606,7 @@ async function docPrint(t,id){
 }
 async function saveDocHtml(t,id){
   const{error}=await sb.from(t).update({custom_html:$('docsheet').innerHTML}).eq('id',id);
-  alert(error?error.message:'Saved ✔ — this edited layout will be used every time you open this document.');
+  alert(error?saveErr(error):'Saved ✔ — this edited layout will be used every time you open this document.');
 }
 async function resetDocHtml(t,id){
   if(!confirm('Discard manual edits and go back to the auto-generated layout?'))return;
@@ -2834,7 +2834,7 @@ async function reqWfh(){
   if(!from)return alert('Please choose a start date.');
   if(to<from)return alert('The "To" date cannot be before the "From" date.');
   const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:from,end_date:to,status:$('w_status').value,reason:$('w_reason').value||null});
-  error?alert(error.message):mywfh()}
+  error?alert(saveErr(error)):mywfh()}
 /* ----- task sheet: draft tasks once, push them to the daily Task Log ----- */
 let SHEET=[];
 // Frozen once it was reported on an EARLIER day — a task re-logged today must stay
@@ -2952,7 +2952,7 @@ async function addSheetTask(){
   const o={employee_id:ME.employee.id,task,client:$('ts_client').value||null,project:$('ts_project').value||null,
     est_min:hmToMin(document,'ts-est')};
   const{error}=await sb.from('emp_tasks').insert(o);
-  error?alert(error.message):mynotes();
+  error?alert(saveErr(error)):mynotes();
 }
 function editSheetTask(id){
   const t=SHEET.find(x=>x.id===id);if(!t)return;
@@ -2972,13 +2972,13 @@ async function saveSheetTask(id){
   const{error}=await sb.from('emp_tasks').update({task,client:$('te_client').value||null,project:$('te_project').value||null,
     est_min:hmToMin(document,'te-est')}).eq('id',id);
   // The DB trigger rejects edits to a task already reported on an earlier day.
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();mynotes();
 }
 async function toggleSheetDone(id,done){const{error}=await sb.from('emp_tasks').update({done}).eq('id',id);
-  error?alert(error.message):mynotes()}
+  error?alert(saveErr(error)):mynotes()}
 async function delSheetTask(id){if(!confirm('Remove this task from your sheet? Anything already reported in a task log stays there.'))return;
-  const{error}=await sb.from('emp_tasks').delete().eq('id',id);error?alert(error.message):mynotes()}
+  const{error}=await sb.from('emp_tasks').delete().eq('id',id);error?alert(saveErr(error)):mynotes()}
 // Open today's task log with this sheet task appended as a new row. The sheet is
 // only stamped as logged once the update is actually saved (see saveTask).
 async function sheetToLog(id){
@@ -2989,13 +2989,13 @@ async function sheetToLog(id){
 }
 async function addNote(){const v=$('nt_new').value.trim();if(!v)return;
   const{error}=await sb.from('emp_notes').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,kind:'note',content:v});
-  error?alert(error.message):mynotes()}
-async function saveNote(id,v){const{error}=await sb.from('emp_notes').update({content:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message)}
+  error?alert(saveErr(error)):mynotes()}
+async function saveNote(id,v){const{error}=await sb.from('emp_notes').update({content:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(saveErr(error))}
 async function addTodo(){const v=$('td_new').value.trim();if(!v)return;
   const{error}=await sb.from('emp_notes').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,kind:'todo',content:v});
-  error?alert(error.message):mynotes()}
-async function toggleTodo(id,done){const{error}=await sb.from('emp_notes').update({done,updated_at:new Date().toISOString()}).eq('id',id);error?alert(error.message):mynotes()}
-async function delNote(id){const{error}=await sb.from('emp_notes').delete().eq('id',id);error?alert(error.message):mynotes()}
+  error?alert(saveErr(error)):mynotes()}
+async function toggleTodo(id,done){const{error}=await sb.from('emp_notes').update({done,updated_at:new Date().toISOString()}).eq('id',id);error?alert(saveErr(error)):mynotes()}
+async function delNote(id){const{error}=await sb.from('emp_notes').delete().eq('id',id);error?alert(saveErr(error)):mynotes()}
 const FB_CATS=['Product','Requirement','Bug','Improvement','Other'];
 const FB_STATUS=['New','Reviewed','Planned','Done'];
 const fbBadge=s=>({New:'stL',Reviewed:'stW',Planned:'stOL',Done:'stP'}[s]||'stL');
@@ -3134,10 +3134,10 @@ async function aiCall(body){
   if(data&&data.ok===false)return{ok:false,error:data.error||'AI request failed'};
   return{ok:true,data:data};
 }
-async function suaiToggle(on){const{error}=await sb.from('ai_settings').update({enabled:on,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);suai();}
-async function suaiFeature(key,on){const f=Object.assign({},AI_STATE&&AI_STATE.s.features);f[key]=on;const{error}=await sb.from('ai_settings').update({features:f,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);suai();}
-async function suaiCap(v){const n=parseInt(v,10);if(!Number.isFinite(n)||n<0)return;const{error}=await sb.from('ai_settings').update({monthly_call_cap:n,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(error.message);}
-async function suaiOrg(orgId,on){const{error}=await sb.from('ai_org_access').upsert({org_id:orgId,enabled:on,granted_by:ME.user.id,granted_at:new Date().toISOString()});if(error)return alert(error.message);suai();}
+async function suaiToggle(on){const{error}=await sb.from('ai_settings').update({enabled:on,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(saveErr(error));suai();}
+async function suaiFeature(key,on){const f=Object.assign({},AI_STATE&&AI_STATE.s.features);f[key]=on;const{error}=await sb.from('ai_settings').update({features:f,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(saveErr(error));suai();}
+async function suaiCap(v){const n=parseInt(v,10);if(!Number.isFinite(n)||n<0)return;const{error}=await sb.from('ai_settings').update({monthly_call_cap:n,updated_at:new Date().toISOString(),updated_by:ME.user.id}).eq('id',true);if(error)return alert(saveErr(error));}
+async function suaiOrg(orgId,on){const{error}=await sb.from('ai_org_access').upsert({org_id:orgId,enabled:on,granted_by:ME.user.id,granted_at:new Date().toISOString()});if(error)return alert(saveErr(error));suai();}
 // --- Provider keys ---
 function suaiKeyForm(){
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Add provider key</h2>
@@ -3163,7 +3163,7 @@ async function suaiSaveKey(){
   document.querySelector('.modal').remove();suai();
 }
 async function suaiSetActive(id){const r=await aiCall({action:'set_active',id});if(!r.ok)return alert(r.error);suai();}
-async function suaiKeyToggle(id,on){const{error}=await sb.from('ai_provider_keys').update({enabled:on}).eq('id',id);if(error)return alert(error.message);suai();}
+async function suaiKeyToggle(id,on){const{error}=await sb.from('ai_provider_keys').update({enabled:on}).eq('id',id);if(error)return alert(saveErr(error));suai();}
 async function suaiDelKey(id){if(!confirm('Delete this provider key? Any AI features using it will stop until you activate another.'))return;const r=await aiCall({action:'delete_key',id});if(!r.ok)return alert(r.error);suai();}
 async function suoverview(){
   const [{data:orgs},{data:emps},{data:sr},{data:fbk},ures]=await Promise.all([
@@ -3220,7 +3220,7 @@ function suAddTenant(){
 async function suSaveNewTenant(){
   const name=$('ten_name').value.trim();if(!name)return alert('Company name is required.');
   const{data:org,error}=await sb.from('orgs').insert({name,plan:$('ten_plan').value.trim()||null}).select('id').single();
-  if(error)return alert(error.message);
+  if(error)return alert(saveErr(error));
   const email=$('ten_email').value.trim(),pw=$('ten_pw').value;
   if(email&&pw){if(pw.length<6)return alert('Admin password must be at least 6 characters.');
     const{data,error:e2}=await sb.functions.invoke('su-manage',{body:{action:'create_user',email,password:pw,role:'admin',org_id:org.id}});
@@ -3246,13 +3246,13 @@ function suEditTenant(o){
 async function suSaveTenant(id){
   const modules=[...document.querySelectorAll('#ten_modules input:checked')].map(c=>c.dataset.mk);
   const o={name:$('ten_name').value.trim(),plan:$('ten_plan').value.trim()||null,status:$('ten_status').value,gstin:$('ten_gstin').value.trim()||null,address:$('ten_address').value.trim()||null,modules};
-  const{error}=await sb.from('orgs').update(o).eq('id',id);if(error)return alert(error.message);
+  const{error}=await sb.from('orgs').update(o).eq('id',id);if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();sutenants();
 }
-async function suSetTenantStatus(id,status){const{error}=await sb.from('orgs').update({status}).eq('id',id);if(error)return alert(error.message);sutenants();}
+async function suSetTenantStatus(id,status){const{error}=await sb.from('orgs').update({status}).eq('id',id);if(error)return alert(saveErr(error));sutenants();}
 async function suDelTenant(id,name){
   if(!confirm(`Delete tenant "${name}"?\n\nThis removes the org and all its data (employees, attendance, payroll, etc.). This cannot be undone.`))return;
-  const{error}=await sb.from('orgs').delete().eq('id',id);if(error)return alert(error.message);
+  const{error}=await sb.from('orgs').delete().eq('id',id);if(error)return alert(saveErr(error));
   document.querySelector('.modal')?.remove();sutenants();
 }
 // Tenant drill-down: show all of one tenant's data.
@@ -3395,10 +3395,10 @@ function suAnnForm(){
 async function suAnnSave(){
   const title=$('an_title').value.trim();if(!title)return alert('Title is required.');
   const{error}=await sb.from('announcements').insert({title,body:$('an_body').value.trim()||null,audience:$('an_audience').value,kind:$('an_kind').value});
-  if(error)return alert(error.message);document.querySelector('.modal').remove();suann();
+  if(error)return alert(saveErr(error));document.querySelector('.modal').remove();suann();
 }
-async function suAnnToggle(id,active){const{error}=await sb.from('announcements').update({active}).eq('id',id);if(error)return alert(error.message);suann();}
-async function suAnnDel(id){if(!confirm('Delete this announcement?'))return;const{error}=await sb.from('announcements').delete().eq('id',id);if(error)return alert(error.message);suann();}
+async function suAnnToggle(id,active){const{error}=await sb.from('announcements').update({active}).eq('id',id);if(error)return alert(saveErr(error));suann();}
+async function suAnnDel(id){if(!confirm('Delete this announcement?'))return;const{error}=await sb.from('announcements').delete().eq('id',id);if(error)return alert(saveErr(error));suann();}
 // Active announcements banner shown inside tenant portals.
 async function annBanner(){
   if(!ME.employee&&ME.profile?.role!=='admin')return '';
@@ -3453,8 +3453,8 @@ async function fb(){
   <td><select onchange="setFbStatus('${r.id}',this.value)" style="width:120px">${FB_STATUS.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
   <td style="min-width:200px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Reply to employee…" onblur="setFbReply('${r.id}',this.value)">${esc(r.admin_reply||'')}</textarea></td></tr>`).join('')||'<tr><td colspan="7" style="color:#889">No feedback yet.</td></tr>'}</table></div>`);
 }
-async function setFbStatus(id,v){const{error}=await sb.from('feedback').update({status:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message)}
-async function setFbReply(id,v){const{error}=await sb.from('feedback').update({admin_reply:v||null,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(error.message)}
+async function setFbStatus(id,v){const{error}=await sb.from('feedback').update({status:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(saveErr(error))}
+async function setFbReply(id,v){const{error}=await sb.from('feedback').update({admin_reply:v||null,updated_at:new Date().toISOString()}).eq('id',id);if(error)alert(saveErr(error))}
 async function myslip(){
   if(!ME.employee)return mydash();
   // Only full-time employees receive payslips.
