@@ -281,6 +281,8 @@ h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
 .auth-panel .sub{color:#6b7a90;font-size:13.5px;margin-bottom:22px}
 .auth-panel label{margin-top:14px}
 .auth-msg{margin-top:14px;font-size:13px;padding:11px 14px;border-radius:9px;display:none}
+.req{color:var(--red);margin-left:2px;font-weight:700}
+input.miss,textarea.miss{border-color:var(--red);background:#FDECEA}
 .auth-msg.err{display:block;background:#FDECEA;color:#B42318;border-left:4px solid var(--orange)}
 .auth-msg.ok{display:block;background:#E6F7EC;color:#1E6B3A;border-left:4px solid #1E8449}
 .auth-full{width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:22px}
@@ -401,14 +403,14 @@ function renderLogin(tab){
     <div id="lerr" class="auth-msg"></div>
     <p style="font-size:12px;color:#889;margin-top:16px">Employees: use the email &amp; password your admin created for you.</p>`;
   const signup=`<h2>Register your company</h2><div class="sub">Tell us about your business — the Merik team will review and approve your workspace.</div>
-    <div class="row"><div><label>Company name</label><input id="su_company" placeholder="Acme Inc."></div>
-    <div><label>Your name</label><input id="su_contact" placeholder="Jane Doe"></div></div>
-    <div class="row"><div><label>Work email</label><input id="su_email" type="email" placeholder="jane@acme.com"></div>
+    <div class="row"><div><label>Company name<span class="req" aria-hidden="true">*</span></label><input id="su_company" required aria-required="true" placeholder="Acme Inc."></div>
+    <div><label>Your name<span class="req" aria-hidden="true">*</span></label><input id="su_contact" required aria-required="true" placeholder="Jane Doe"></div></div>
+    <div class="row"><div><label>Work email<span class="req" aria-hidden="true">*</span></label><input id="su_email" type="email" required aria-required="true" placeholder="jane@acme.com"></div>
     <div><label>Phone (optional)</label><input id="su_phone" placeholder="+91 …"></div></div>
     <label>Anything we should know? (optional)</label><textarea id="su_msg" rows="2" placeholder="Team size, what you need Merik for…"></textarea>
     <button class="btn auth-full" onclick="submitSignup()"><i class="fa-solid fa-paper-plane"></i> Submit for approval</button>
     <div id="serr" class="auth-msg"></div>
-    <p style="font-size:12px;color:#889;margin-top:16px">After approval, you'll receive your admin login credentials from the Merik team.</p>`;
+    <p style="font-size:12px;color:#889;margin-top:16px"><span class="req">*</span> Required. After approval, you'll receive your admin login credentials from the Merik team.</p>`;
   $('root').innerHTML=`<div class="auth-wrap">${brand}<div class="auth-panel">${tabs}${AUTH_TAB==='login'?login:signup}<div style="margin-top:22px;display:flex;justify-content:center;gap:6px">${['light','dark','system'].map(m=>`<button class="tl-icon-btn" style="padding:7px 12px;font-size:12px" onclick="setTheme('${m}')"><i class="fa-solid ${m==='light'?'fa-sun':m==='dark'?'fa-moon':'fa-desktop'}"></i> ${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div></div></div>`;
   applyTheme();
 }
@@ -421,8 +423,17 @@ async function doLogin(){
 async function submitSignup(){
   const o={company_name:($('su_company').value||'').trim(),contact_name:($('su_contact').value||'').trim(),
     email:($('su_email').value||'').trim(),phone:($('su_phone').value||'').trim()||null,message:($('su_msg').value||'').trim()||null,status:'Pending'};
-  if(!o.company_name||!o.contact_name||!o.email)return authMsg('serr','err','Company, your name and email are required.');
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email))return authMsg('serr','err','Please enter a valid email address.');
+  // Name the field that's missing and put the cursor in it — a lead with no
+  // company, name or reachable email is unusable, and the same rule is enforced
+  // by CHECK constraints so it holds for anything posting past this form.
+  ['su_company','su_contact','su_email'].forEach(id=>$(id).classList.remove('miss'));
+  const missing=[['su_company',o.company_name,'Please enter your company name.'],
+                 ['su_contact',o.contact_name,'Please enter your name.'],
+                 ['su_email',o.email,'Please enter your work email.']].find(([,v])=>!v);
+  if(missing){$(missing[0]).classList.add('miss');$(missing[0]).focus();return authMsg('serr','err',missing[2])}
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email)){
+    $('su_email').classList.add('miss');$('su_email').focus();
+    return authMsg('serr','err','Please enter a valid email address.')}
   const{error}=await sb.from('signup_requests').insert(o);
   if(error)return authMsg('serr','err',error.message);
   $('root').querySelector('.auth-panel').innerHTML=`<div style="text-align:center">
