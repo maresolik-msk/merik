@@ -338,9 +338,24 @@ function av(n){n=(n||'?').trim()||'?';const pr=n.split(/\s+/);const ini=((pr[0][
 function pgh(t,sub,action){return `<div class="pghead"><div><h2>${t}</h2><div class="sub">${sub}</div></div><div class="noprint">${action||''}</div></div>`}
 function kpis(arr){return `<div class="kpi" style="margin-bottom:16px">${arr.map(([ic,bg,label,val,sub,vid])=>`<div class="card" style="display:flex;gap:14px;align-items:center;margin:0"><div class="kicon" style="background:${bg}">${ic}</div><div style="text-align:left"><div style="font-size:12.5px;color:#6b7a90">${label}</div><div ${vid?`id="${vid}"`:''} style="font-size:21px;font-weight:800;color:#14284B">${val}</div>${sub?`<div style="font-size:11.5px;color:#9aa8bc">${sub}</div>`:''}</div></div>`).join('')}</div>`}
 
+// Postgres reports an RLS rejection as "new row violates row-level security
+// policy", which tells the user nothing. In practice it means the signed-in
+// account lacks the rights the current page assumes — almost always a session
+// that changed underneath the tab.
+function saveErr(error){
+  const m=error?.message||'Something went wrong.';
+  return /row-level security/i.test(m)
+    ? "You don't have permission to save this. Your sign-in may have changed in another tab — sign out and back in, then try again."
+    : m;
+}
+let BOOTING=false;
 async function boot(){
+  if(BOOTING)return;BOOTING=true;
+  try{await bootInner()}finally{BOOTING=false}
+}
+async function bootInner(){
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){renderLogin();return}
+  if(!session){ME=null;renderLogin();return}
   const {data:prof}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
   // Merik super admin is product-level: no tenant org, goes straight to the product console.
   if(prof?.role==='superadmin'){ME={user:session.user,profile:prof,employee:null,org:{name:'Merik'}};renderShell();return}
@@ -2531,7 +2546,7 @@ async function saveDoc(t,id){
   if(isQ){o.quote_no=$('d_no').value;o.quote_date=$('d_date').value;o.valid_until=$('d_due').value||null}
   else{o.invoice_no=$('d_no').value;o.invoice_date=$('d_date').value;o.due_date=$('d_due').value||null}
   const q=id?sb.from(t).update(o).eq('id',id):sb.from(t).insert(o);
-  const{error}=await q;if(error)return alert(error.message);
+  const{error}=await q;if(error)return alert(saveErr(error));
   document.querySelector('.modal').remove();docList(t);
 }
 async function delDoc(t,id){if(confirm('Delete?')){await sb.from(t).delete().eq('id',id);docList(t)}}
@@ -2540,7 +2555,7 @@ async function quoteToInvoice(qid){
   const no='INV-'+Date.now().toString().slice(-6);
   const{error}=await sb.from('invoices').insert({invoice_no:no,client_id:q.client_id,quote_id:qid,items:q.items,
     subtotal:q.subtotal,tax_pct:q.tax_pct,tax_amount:q.tax_amount,total:q.total,status:'Unpaid',notes:q.notes});
-  alert(error?error.message:`Invoice ${no} created from quote.`);if(!error)docList('invoices');
+  alert(error?saveErr(error):`Invoice ${no} created from quote.`);if(!error)docList('invoices');
 }
 async function docPrint(t,id){
   const isQ=t==='quotes';
@@ -3001,8 +3016,11 @@ async function myfb(){
   <td style="max-width:260px;font-size:12px;color:#445">${esc(r.admin_reply||'—')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:#889">No feedback submitted yet.</td></tr>'}</table></div>`);
 }
 async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return alert('Please write your feedback.');
-  const{error}=await sb.from('feedback').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,category:$('fb_cat').value,message:msg});
-  error?alert(error.message):myfb()}
+  // org_id / employee_id are filled by trg_setactor_feedback from the caller's
+  // own JWT, so the row is attributed correctly even if this tab's cached
+  // session is out of date.
+  const{error}=await sb.from('feedback').insert({category:$('fb_cat').value,message:msg});
+  error?alert(saveErr(error)):myfb()}
 // ---- Tenant admin: submit & manage the org's feedback ----
 // An admin sees only the feedback they submitted themselves, plus the Merik
 // team's reply. RLS (p_fb_own_created: created_by = auth.uid()) is what scopes
@@ -3023,8 +3041,8 @@ async function adminfb(){
   ||'<tr><td colspan="5" style="color:#889">You haven’t submitted any feedback yet.</td></tr>'}</table></div>`);
 }
 async function sendAdminFb(){const msg=$('afb_msg').value.trim();if(!msg)return alert('Please write your feedback.');
-  const{error}=await sb.from('feedback').insert({employee_id:ME.employee?.id||null,org_id:ME.org?.id||null,category:$('afb_cat').value,message:msg});
-  error?alert(error.message):adminfb()}
+  const{error}=await sb.from('feedback').insert({category:$('afb_cat').value,message:msg});
+  error?alert(saveErr(error)):adminfb()}
 /* ================= MERIK SUPER ADMIN — product management ================= */
 const suStat=(ic,bg,col,label,val,sub)=>`<div class="card" style="margin:0;flex:1;min-width:190px"><div style="display:flex;gap:14px;align-items:flex-start">
   <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
@@ -3451,6 +3469,19 @@ async function myslip(){
   <td><span class="badge ${r.pay_status==='Paid'?'stP':'stA'}">${r.pay_status||'Unpaid'}</span></td>
   <td><button class="btn sm" onclick="slip('${r.employee_id}',${r.pay_year},${r.pay_month})"><i class="fa-solid fa-download"></i> Download</button></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No payslips released yet.</td></tr>'}</table></div>`);
 }
+// Keep the rendered portal tied to the session that actually backs the requests.
+// supabase-js shares its session through localStorage, so signing out or signing
+// in as somebody else in one tab silently swaps the token used by every other
+// tab. A tab left on the admin portal kept rendering admin pages and firing
+// admin writes with an employee's token — every one of them rejected by RLS as a
+// 403 (invoices, feedback) with nothing on screen to explain it. Re-boot on any
+// change of user so the UI can never outlive the privileges behind it.
+sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED')return;
+  const next=session?.user?.id||null;
+  if(!next){if(ME){ME=null;renderLogin()}return}
+  if(next!==(ME?.user?.id||null))boot();
+});
 boot();
 </script>
 </body>

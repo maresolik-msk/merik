@@ -48,11 +48,12 @@ export function FeedbackView() {
   const submit = useMutation({
     mutationFn: async () => {
       if (!message.trim()) throw new Error("Please write your feedback.");
-      const { data: orgId } = await supabase.rpc("my_org");
-      const { data: employeeId } = await supabase.rpc("my_employee_id");
+      // org_id / employee_id are filled by trg_setactor_feedback from the
+      // caller's own JWT — sending them from the client risks attributing the
+      // row to a session that has since changed, which RLS then rejects.
       const { error } = await supabase
         .from("feedback")
-        .insert({ org_id: orgId, employee_id: employeeId, category, message: message.trim() });
+        .insert({ category, message: message.trim() });
       if (error) throw error;
     },
     onSuccess: () => {
