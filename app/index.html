@@ -189,6 +189,9 @@ tbody tr:hover td{background:var(--surface)}
 /* ---- Notifications bell + panel ---- */
 .nf-wrap{position:relative;flex:none}
 .nf-dot{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--brand);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sidebar-2);line-height:1}
+/* display:flex outranks the UA rule behind the hidden attribute, so an empty
+   badge would sit there reading "0". */
+.nf-dot[hidden]{display:none}
 /* Opens rightward from the bell: the sidebar is only 262px wide, so a
    right-anchored panel would hang off the left edge of the screen. */
 .nf-panel{position:absolute;bottom:calc(100% + 10px);left:0;width:330px;max-width:78vw;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow-lg);z-index:80;overflow:hidden}
@@ -227,6 +230,32 @@ tbody tr:hover td{background:var(--surface)}
   .kpi .card{min-width:calc(50% - 7px)}
   .pghead{flex-wrap:wrap;gap:10px}
   table{font-size:12.5px}
+
+  /* ---- Stacked tables: one card per row ----
+     Labels come from data-label, written by stackTables() from each column
+     header. Grids and printable documents keep their table layout. */
+  .card.stkhost{background:transparent;border:none;box-shadow:none;padding:0;margin-bottom:12px;overflow:visible}
+  table.stk{background:transparent;border-radius:0;display:block}
+  table.stk .hrow{display:none}
+  table.stk tbody{display:block}
+  table.stk tr{display:block;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;margin-bottom:10px;padding:4px 0;box-shadow:var(--shadow);overflow:hidden}
+  table.stk tr:nth-child(even) td,table.stk tbody tr:hover td{background:transparent}
+  table.stk td{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+    width:auto;border:none;border-bottom:1px solid var(--line);padding:8px 13px;
+    font-size:13px;text-align:right;overflow-wrap:anywhere}
+  table.stk tr td:last-child{border-bottom:none}
+  table.stk td::before{content:attr(data-label);flex:none;max-width:42%;text-align:left;
+    font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;
+    padding-top:2px}
+  /* Cells with no header (action buttons) and empty cells shouldn't hold a row */
+  table.stk td:not([data-label])::before,table.stk td[data-label=""]::before{display:none}
+  table.stk td:not([data-label]),table.stk td[data-label=""]{justify-content:flex-end;gap:8px;flex-wrap:wrap}
+  table.stk td:empty{display:none}
+  table.stk td.emptycell{justify-content:center;text-align:center}
+  table.stk td.emptycell::before{display:none}
+  /* form controls inside a stacked cell get the room they need */
+  table.stk td input,table.stk td select,table.stk td textarea{max-width:62%}
 }
 @media(max-width:440px){.kpi .card{min-width:100%}}
 /* ---- Task Log redesign ---- */
@@ -502,6 +531,31 @@ function viewLoading(){
   return `<div class="kpi" style="margin-bottom:18px">${'<div class="card sk sk-kpi"></div>'.repeat(4)}</div>
     <div class="card"><div class="sk sk-row" style="width:38%;height:22px;margin-bottom:16px"></div>
     ${'<div class="sk sk-row"></div>'.repeat(6)}</div>`;
+}
+// Below 768px a 20-column payroll or task table is unreadable however small the
+// font gets, so each row becomes its own card. The label for every cell is
+// copied off its column header here, at render time — the alternative is
+// hand-writing data-label onto hundreds of <td>s across every view.
+// Opt a table out with class "nostack".
+function stackTables(){
+  document.querySelectorAll('#main table').forEach(tb=>{
+    // Calendar grids stay a grid (they scroll sideways); printable documents
+    // must keep their real table layout.
+    if(tb.classList.contains('nostack')||tb.classList.contains('grid-att')
+      ||tb.closest('.payslip')||tb.closest('#docsheet'))return;
+    const hrow=[...tb.rows].find(r=>r.cells[0]&&r.cells[0].tagName==='TH');
+    if(!hrow)return;
+    const head=[...hrow.cells].map(c=>c.textContent.trim());
+    hrow.classList.add('hrow');
+    tb.classList.add('stk');
+    // Each row becomes its own card, so the card wrapping the table would just
+    // be a box drawn around a stack of boxes.
+    tb.closest('.card')?.classList.add('stkhost');
+    [...tb.rows].forEach(r=>{
+      if(!r.cells[0]||r.cells[0].tagName!=='TD')return;
+      [...r.cells].forEach((c,i)=>{if(!c.dataset.label&&head[i])c.dataset.label=head[i]});
+    });
+  });
 }
 // Any table that renders with no rows gets a readable empty state instead of a
 // bare header. One hook here covers every table in the app.
@@ -900,7 +954,7 @@ function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW
       <h3>This page didn't load</h3><p>${esc(err&&err.message||'Something went wrong.')}</p>
       <button class="btn sec" onclick="go('${v}')"><i class="fa-solid fa-rotate-right"></i> Try again</button></div>`)});
 }
-const M=h=>{$('main').innerHTML=h;paginateTables();emptyStates()};
+const M=h=>{$('main').innerHTML=h;paginateTables();emptyStates();stackTables()};
 const PAGE_SIZE=10;
 const FILTER_MIN=4; // add a search/filter box to any data table with at least this many rows
 // Numbered page buttons (‹ 1 2 … N ›) for the generic table pager; buttons carry data-p.
