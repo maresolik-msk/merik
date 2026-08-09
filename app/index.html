@@ -186,6 +186,27 @@ tbody tr:hover td{background:var(--surface)}
 #side .ufoot .out{background:rgba(255,255,255,.07);border:none;color:#C9C7C1;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none;box-shadow:none;padding:0;transition:background .12s ease,color .12s ease}
 #side .ufoot .out:hover{background:var(--brand);color:#fff}
 #side .ufoot .out:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* ---- Notifications bell + panel ---- */
+.nf-wrap{position:relative;flex:none}
+.nf-dot{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--brand);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sidebar-2);line-height:1}
+/* Opens rightward from the bell: the sidebar is only 262px wide, so a
+   right-anchored panel would hang off the left edge of the screen. */
+.nf-panel{position:absolute;bottom:calc(100% + 10px);left:0;width:330px;max-width:78vw;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow-lg);z-index:80;overflow:hidden}
+.nf-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13.5px}
+.nf-list{max-height:330px;overflow-y:auto}
+.nf-item{display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);padding:11px 14px;box-shadow:none;font-family:inherit;transition:background .12s ease}
+.nf-item:last-child{border-bottom:none}
+.nf-item:hover{background:var(--surface)}
+.nf-item.new{background:var(--brand-soft)}
+.nf-item.new:hover{filter:brightness(.97)}
+.nf-ic{font-size:14px;color:var(--muted);margin-top:2px;flex:none;width:16px;text-align:center}
+.nf-ic.ok{color:var(--green)}.nf-ic.warn{color:var(--amber)}
+.nf-tx{flex:1;min-width:0;display:block}
+.nf-t{display:block;font-size:13px;font-weight:600;color:var(--ink);line-height:1.35}
+.nf-b{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4;overflow-wrap:anywhere}
+.nf-none{text-align:center;color:var(--muted);padding:28px 14px;font-size:13px}
+.nf-none i{font-size:22px;opacity:.35;display:block;margin-bottom:8px;color:var(--brand)}
+@media(max-width:768px){.nf-panel{position:fixed;left:12px;right:12px;bottom:78px;width:auto;max-width:none}}
 #main{flex:1;padding:26px 30px;overflow-y:auto;overflow-x:hidden;height:100vh}
 /* ---- Mobile top bar + drawer ---- */
 #topbar{display:none;align-items:center;gap:12px;height:56px;padding:0 14px;background:var(--sidebar);color:#fff;position:fixed;top:0;left:0;right:0;z-index:60;box-shadow:0 2px 10px rgba(0,0,0,.25)}
@@ -513,6 +534,117 @@ async function fetchAll(build,size=1000){
     if(!data||data.length<size)return out;
   }
 }
+/* ---------- NOTIFICATIONS ----------
+   Derived from rows that already exist rather than from a notifications table.
+   That choice buys two things: no migration to coordinate, and it works
+   retroactively — a leave approved yesterday shows up the moment this ships,
+   where an event table would only ever capture what happened after deploy.
+   ponytail: "seen" is a per-user timestamp in localStorage, so the unread dot
+   is per-device. Move it to a column on profiles if that starts to annoy. */
+const NOTIF_SEEN='merik.notif.seen';
+let NOTIFS=[],NOTIF_TIMER=null;
+function notifSeen(){try{return localStorage.getItem(NOTIF_SEEN+'.'+ME.user.id)||''}catch(e){return ''}}
+function notifUnread(){const s=notifSeen();return NOTIFS.filter(n=>n.ts>s).length}
+// Each source is independently guarded: one table with an unexpected shape
+// must not take the whole bell down with it.
+async function notifSource(fn){try{return await fn()||[]}catch(e){console.warn('notif source failed',e);return[]}}
+// Rows carry different timestamp columns across tables; take whatever is there.
+const nts=r=>r.updated_at||r.created_at||r.req_date||'';
+async function loadNotifs(){
+  const role=ME.profile?.role,me=ME.employee?.id;
+  let out=[];
+  if(role==='employee'&&me){
+    out=out.concat(...await Promise.all([
+      notifSource(async()=>{
+        const{data}=await sb.from('wfh_leave').select('*').eq('employee_id',me)
+          .neq('approved','Pending').order('req_date',{ascending:false}).limit(15);
+        return (data||[]).map(r=>({ts:nts(r),view:'mywfh',ok:r.approved==='Yes',
+          icon:r.approved==='Yes'?'fa-circle-check':'fa-circle-xmark',
+          title:`${r.status} ${r.approved==='Yes'?'approved':'rejected'}`,
+          body:r.end_date&&r.end_date!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(r.end_date)}`:fmtDate(r.req_date)}));}),
+      notifSource(async()=>{
+        const{data}=await sb.from('payroll').select('*').eq('employee_id',me)
+          .order('pay_year',{ascending:false}).order('pay_month',{ascending:false}).limit(4);
+        return (data||[]).map(r=>({ts:nts(r)||`${r.pay_year}-${String(r.pay_month).padStart(2,'0')}-28`,
+          view:'myslip',icon:'fa-file-invoice-dollar',
+          title:'Payslip available',body:`${MONTHS[(r.pay_month||1)-1]} ${r.pay_year}`}));}),
+      notifSource(async()=>{
+        const{data}=await sb.from('feedback').select('*').eq('created_by',ME.user.id)
+          .not('admin_reply','is',null).order('updated_at',{ascending:false}).limit(8);
+        return (data||[]).map(r=>({ts:nts(r),view:'myfb',icon:'fa-comment-dots',
+          title:'Merik replied to your feedback',body:(r.admin_reply||'').slice(0,90)}));}),
+    ]));
+  } else if(role==='admin'){
+    out=await notifSource(async()=>{
+      const{data}=await sb.from('wfh_leave').select('*,employees(full_name)').eq('approved','Pending')
+        .order('req_date',{ascending:false}).limit(20);
+      return (data||[]).map(r=>({ts:nts(r),view:'wfh',icon:'fa-hourglass-half',warn:true,
+        title:`${r.employees?.full_name||'An employee'} requested ${r.status}`,
+        body:(r.end_date&&r.end_date!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(r.end_date)}`:fmtDate(r.req_date))+' — awaiting your approval'}));});
+  } else if(role==='superadmin'){
+    out=out.concat(...await Promise.all([
+      notifSource(async()=>{
+        const{data}=await sb.from('signup_requests').select('*').eq('status','Pending')
+          .order('created_at',{ascending:false}).limit(15);
+        return (data||[]).map(r=>({ts:nts(r),view:'signups',icon:'fa-user-plus',warn:true,
+          title:`Signup request — ${r.company_name||'Unnamed company'}`,body:`${r.contact_name||''} · ${r.email||''}`}));}),
+      notifSource(async()=>{
+        const{data}=await sb.from('feedback').select('*').eq('status','New')
+          .order('created_at',{ascending:false}).limit(15);
+        return (data||[]).map(r=>({ts:nts(r),view:'fb',icon:'fa-comment-dots',
+          title:`New ${(r.category||'feedback').toLowerCase()} feedback`,body:(r.message||'').slice(0,90)}));}),
+    ]));
+  }
+  NOTIFS=out.filter(n=>n.ts).sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,25);
+  paintNotifBadge();
+}
+function paintNotifBadge(){
+  const b=$('notifdot');if(!b)return;
+  const n=notifUnread();
+  b.textContent=n>9?'9+':n;b.hidden=!n;
+  const btn=$('notifbtn');
+  if(btn)btn.setAttribute('aria-label',n?`Notifications, ${n} unread`:'Notifications');
+}
+function toggleNotifs(){
+  const p=$('notifpanel');if(!p)return;
+  const open=p.hidden;p.hidden=!open;
+  $('notifbtn').setAttribute('aria-expanded',open);
+  if(open){renderNotifs();loadNotifs().then(renderNotifs)}
+}
+function renderNotifs(){
+  const p=$('notifpanel');if(!p||p.hidden)return;
+  const seen=notifSeen();
+  p.innerHTML=`<div class="nf-head"><b>Notifications</b>
+    ${NOTIFS.length?`<button class="linkbtn" onclick="markNotifsRead()">Mark all read</button>`:''}</div>
+    <div class="nf-list">${NOTIFS.length?NOTIFS.map((n,i)=>`
+      <button class="nf-item${n.ts>seen?' new':''}" onclick="openNotif(${i})">
+        <i class="fa-solid ${n.icon} nf-ic${n.warn?' warn':n.ok?' ok':''}"></i>
+        <span class="nf-tx"><span class="nf-t">${esc(n.title)}</span>
+        <span class="nf-b">${esc(n.body)}</span></span></button>`).join('')
+      :`<div class="nf-none"><i class="fa-solid fa-bell-slash"></i><div>You're all caught up.</div></div>`}</div>`;
+}
+function markNotifsRead(){
+  try{localStorage.setItem(NOTIF_SEEN+'.'+ME.user.id,new Date().toISOString())}catch(e){}
+  paintNotifBadge();renderNotifs();
+}
+function openNotif(i){
+  const n=NOTIFS[i];if(!n)return;
+  markNotifsRead();closeNotifs();
+  if(n.view)go(n.view);
+}
+function closeNotifs(){
+  const p=$('notifpanel');if(!p||p.hidden)return;
+  p.hidden=true;const b=$('notifbtn');if(b)b.setAttribute('aria-expanded','false');
+}
+// renderShell runs again on every re-auth, so these bind once, not per render.
+let NOTIF_BOUND=false;
+function bindNotifDismiss(){
+  if(NOTIF_BOUND)return;NOTIF_BOUND=true;
+  document.addEventListener('click',e=>{if(!e.target.closest('.nf-wrap'))closeNotifs()});
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    const p=$('notifpanel');if(p&&!p.hidden){closeNotifs();$('notifbtn').focus()}});
+}
 let BOOTING=false;
 async function boot(){
   if(BOOTING)return;BOOTING=true;
@@ -706,8 +838,19 @@ function renderShell(){
   ${themeSwitch()}
   <div class="ufoot"><div class="av">${esc(nm[0].toUpperCase())}</div>
   <div class="who"><div class="nm" title="${esc(nm)}">${esc(nm)}</div><div class="rl">${ME.profile?.role}</div></div>
+  <div class="nf-wrap">
+    <button class="out" id="notifbtn" onclick="toggleNotifs()" title="Notifications"
+      aria-label="Notifications" aria-expanded="false" aria-haspopup="true"><i class="fa-solid fa-bell"></i>
+      <span class="nf-dot" id="notifdot" hidden>0</span></button>
+    <div class="nf-panel" id="notifpanel" role="dialog" aria-label="Notifications" hidden></div>
+  </div>
   <button class="out" onclick="logout()" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-right-from-bracket"></i></button></div>
   </nav><main id="main"></main></div>`;
+  // Poll so an approval that lands mid-session is noticed without a refresh.
+  clearInterval(NOTIF_TIMER);
+  NOTIFS=[];loadNotifs();
+  NOTIF_TIMER=setInterval(()=>{if(ME)loadNotifs();else clearInterval(NOTIF_TIMER)},180000);
+  bindNotifDismiss();
   // Reopen where they left off — losing your place on every refresh is a small
   // insult that adds up over a working day.
   let start=first;
