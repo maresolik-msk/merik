@@ -256,6 +256,8 @@ tbody tr:hover td{background:var(--surface)}
   table.stk td.emptycell::before{display:none}
   /* form controls inside a stacked cell get the room they need */
   table.stk td input,table.stk td select,table.stk td textarea{max-width:62%}
+  /* Primary actions go full width and hit the 44px touch target on a phone */
+  .btn.wide{width:100%;justify-content:center;padding:12px;font-size:15px}
 }
 @media(max-width:440px){.kpi .card{min-width:100%}}
 /* ---- Task Log redesign ---- */
@@ -416,6 +418,8 @@ td.emptycell{text-align:center;color:var(--muted);padding:30px 12px;font-size:13
 .auth-full{width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:22px}
 @media(max-width:840px){.auth-brand{display:none}.auth-panel{width:100%;box-shadow:none;margin:0 auto}}
 .warnbar{background:#FFF3E5;color:#A34A00;border-left:4px solid var(--orange);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
+[data-theme="dark"] .warnbar{background:#2A2118;color:#E8B98A}
+.warnbar a{color:inherit;font-weight:700}
 
 /* ---- Print ---- */
 @media print{#side,.noprint{display:none!important}#main{padding:0}body{background:#fff}#docsheet{outline:none!important}}
@@ -453,7 +457,13 @@ let RECOVERING=/type=recovery/.test(location.hash);
 const $=id=>document.getElementById(id);
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2});
-const today=()=>new Date().toISOString().slice(0,10);
+// LOCAL date, not UTC. toISOString() gave the UTC day while the times we stamp
+// (toTimeString) and the dates we print are local — so between midnight and
+// 05:29 IST "today" was yesterday. A 05:00 check-in then upserted onto
+// yesterday's attendance row (unique on employee_id+att_date) and destroyed the
+// real entry_time for that day. Self-contained so it can't depend on load order.
+const today=()=>{const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const fmtDate=d=>{if(!d)return '—';const p=String(d).slice(0,10).split('-');return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:d;};
 const fmtTime=t=>t?new Date(t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -2163,6 +2173,8 @@ async function wfh(){
 }
 // Approved WFH/Leave → attendance code. WFH→W, Half Day→H, all leave kinds→OL (Paid Leave).
 const LEAVE_TO_ATT={'WFH':'W','Half Day':'H','Leave':'OL','Sick Leave':'OL','Emergency Leave':'OL'};
+// The employee portal has no status legend, so never show a bare letter code there.
+const ATT_LABEL={P:'Present',A:'Absent',L:'Late',H:'Half Day',W:'WFH',OL:'Paid Leave',UL:'Unpaid Leave'};
 // Inclusive list of YYYY-MM-DD dates from a to b (b defaults to a).
 function leaveDates(a,b){const out=[];const d=new Date(a+'T00:00:00'),end=new Date((b||a)+'T00:00:00');
   while(d<=end){out.push(isoD(d));d.setDate(d.getDate()+1);}return out;}
@@ -3095,45 +3107,124 @@ async function resetDocHtml(t,id){
 }
 
 /* ---------- EMPLOYEE VIEWS ---------- */
+/* The dashboard names the one thing to do right now, lets you do it without
+   leaving the page, and says nothing else unless something is actually wrong.
+   It replaced four equal-weight KPI cards, one of which ("Status") printed a
+   raw attendance code with no legend, and another of which ("Today's Update")
+   nagged with a red X that wasn't clickable. */
+let SHEET_TODAY=[];   // open task-sheet rows offered as checkboxes in the hero card
 async function mydash(){
-  if(!ME.employee){M('<h2>Welcome</h2><div class="warnbar">Your account is not yet linked to an employee record. Ask your admin to add your email to the Employee List, then sign out and back in.</div>');return}
-  const d=today();
-  const [{data:t},{data:a},{data:slips},{data:lv}]=await Promise.all([
-    sb.from('task_updates').select('id').eq('employee_id',ME.employee.id).eq('upd_date',d),
-    sb.from('attendance').select('*').eq('employee_id',ME.employee.id).eq('att_date',d),
+  if(!ME.employee)return M(`<div class="empty">
+    <i class="fa-solid fa-user-slash ill"></i><h3>Account not linked yet</h3>
+    <p>Ask your admin to add your work email to the Employee List — this page fills in
+    once they do.</p></div>`);
+  const d=today(),dt=new Date(d+'T00:00:00'),yest=isoD(new Date(dt.getTime()-864e5));
+  // One round trip. Everything is RLS-scoped to this employee and bounded well
+  // under the row cap, so none of it needs fetchAll().
+  const [{data:t},{data:a,error:aErr},{data:slips},{data:lv},hol,{data:sheet},ann]=await Promise.all([
+    sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).eq('upd_date',d),
+    // Two days, not one: yesterday's row is what powers the missed-checkout warning.
+    sb.from('attendance').select('*').eq('employee_id',ME.employee.id).gte('att_date',yest).lte('att_date',d),
     // RLS only returns payslips the admin has released to this full-time employee.
     sb.from('payroll').select('pay_year,pay_month').eq('employee_id',ME.employee.id).order('pay_year',{ascending:false}).order('pay_month',{ascending:false}).limit(1),
-    sb.from('wfh_leave').select('status,req_date,end_date').eq('employee_id',ME.employee.id).eq('approved','Yes').lte('req_date',d)]);
-  const rec=(a||[])[0]||{};
+    // One bounded read answers three questions: on leave today, pending requests, history.
+    sb.from('wfh_leave').select('status,req_date,end_date,approved').eq('employee_id',ME.employee.id).order('req_date',{ascending:false}).limit(50),
+    // Employee access to holidays isn't guaranteed by any migration in this repo —
+    // fail soft and let the weekend check carry the day rather than break the page.
+    sb.from('holidays').select('name').eq('holiday_date',d).then(r=>r.data||[],()=>[]),
+    sb.from('emp_tasks').select('id,task,project,est_min,last_logged_on').eq('employee_id',ME.employee.id).eq('done',false),
+    annBanner()]);
+
+  const head=pgh(`Hi, ${esc(ME.employee.full_name)}`,new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+ann;
+  // Never offer a write button off a failed read — we don't know what's already there.
+  if(aErr)return M(head+`<div class="card"><div class="empty">
+    <i class="fa-solid fa-triangle-exclamation ill" style="color:var(--red)"></i>
+    <h3>Couldn't load today</h3><p>${esc(saveErr(aErr))}</p>
+    <button class="btn sec" onclick="go('mydash')"><i class="fa-solid fa-rotate-right"></i> Try again</button>
+    </div></div>`);
+
+  const rec=(a||[]).find(r=>r.att_date===d)||{},prev=(a||[]).find(r=>r.att_date===yest);
+  const upd=(t||[])[0],shared=upd&&upd.update_status==='Update Shared',noUpd=upd&&upd.update_status==='No Update';
+  TODAY_UPD=upd||null;
   // An approved WFH/Leave that covers today blocks self check-in (only admin can mark Present).
-  const leaveToday=(lv||[]).find(r=>(r.end_date||r.req_date)>=d);
-  const slip=(slips||[])[0];
-  const slipNote=slip?`<div class="warnbar" style="background:#E6F7EC;border-color:#B7E4C7"><i class="fa-solid fa-money-bill-wave" style="color:var(--green)"></i> Your payslip for <b>${MONTHS[slip.pay_month-1]} ${slip.pay_year}</b> is available. <a href="#" onclick="go('myslip');return false" style="color:var(--green);font-weight:700">Download now ›</a></div>`:'';
-  const locLink=(lat,lng,label)=>lat?`<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" style="font-size:12px"><i class="fa-solid fa-location-dot"></i> ${label}</a>`:'';
-  const ann=await annBanner();
-  M(pgh(`Hi, ${esc(ME.employee.full_name)}`,new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+ann+
-  `<div class="kpi" style="margin-bottom:16px">
-  <div class="card" style="margin:0;text-align:center">
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Check In</div>
-    <div style="font-size:24px;font-weight:800;color:var(--ink)">${rec.entry_time?rec.entry_time.slice(0,5):'—'}</div>
-    ${locLink(rec.in_lat,rec.in_lng,esc(rec.in_loc||'Location'))}
-    <div style="margin-top:10px">${rec.entry_time?'<span class="badge stP">Checked in <i class="fa-solid fa-check"></i></span>':leaveToday?`<span class="badge st${LEAVE_TO_ATT[leaveToday.status]||'OL'}">${esc(leaveToday.status)} (approved)</span><div style="font-size:11px;color:#889;margin-top:6px">Only your admin can mark you present.</div>`:`<button class="btn" style="background:var(--green)" onclick="checkIn(event)"><i class="fa-solid fa-arrow-right-to-bracket"></i> Check In</button>`}</div></div>
-  <div class="card" style="margin:0;text-align:center">
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Check Out</div>
-    <div style="font-size:24px;font-weight:800;color:var(--ink)">${rec.exit_time?rec.exit_time.slice(0,5):'—'}</div>
-    ${locLink(rec.out_lat,rec.out_lng,esc(rec.out_loc||'Location'))}
-    <div style="margin-top:10px">${rec.exit_time?'<span class="badge stA">Checked out <i class="fa-solid fa-check"></i></span>':(rec.entry_time?`<button class="btn" style="background:var(--red)" onclick="checkOut(event)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Check Out</button>`:'<span style="font-size:12px;color:#889">Check in first</span>')}</div></div>
-  <div class="card" style="margin:0;text-align:center"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Today's Update</div>
-    <div style="font-size:24px">${t&&t.length?'<i class="fa-solid fa-circle-check" style="color:var(--green)"></i>':'<i class="fa-solid fa-circle-xmark" style="color:var(--red)"></i>'}</div>
-    <div style="font-size:12px;color:var(--muted)">${t&&t.length?'Shared':'PENDING (due 5:30 PM)'}</div></div>
-  <div class="card" style="margin:0;text-align:center"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Status</div>
-    <div style="font-size:24px;font-weight:800;color:var(--ink)">${rec.status||'—'}</div></div></div>
-  ${slipNote}
-  <div class="warnbar">Daily update format: Task Assigned · Completed (with proof) · Not working · Exact blocker · Proof link · Next task. Missing update = no work done for the day.</div>
-  <p id="geoerr" style="color:${FLASH&&FLASH.ok?'var(--green)':'var(--red)'};font-size:13px">${FLASH?esc(FLASH.msg):''}</p>`);
-  FLASH=null;
+  const leaveToday=(lv||[]).find(r=>r.approved==='Yes'&&r.req_date<=d&&(r.end_date||r.req_date)>=d);
+  const pending=(lv||[]).filter(r=>r.approved==='Pending').length;
+  const weekend=dt.getDay()===0||dt.getDay()===6,holiday=(hol||[])[0];
+  const offboarded=!!(ME.employee.left_on&&d>String(ME.employee.left_on).slice(0,10));
+  // Half Day is a working day — the person still clocks in.
+  const onLeave=leaveToday&&leaveToday.status!=='Half Day'&&leaveToday.status!=='WFH';
+  const dayOff=weekend||holiday;
+  const workday=!dayOff&&!onLeave&&!offboarded;
+
+  const badge=holiday?`<span class="badge stL"><i class="fa-solid fa-umbrella-beach"></i> ${esc(holiday.name)}</span>`
+    :weekend?'<span class="badge stL">Weekend</span>'
+    :offboarded?'<span class="badge stA">No longer active</span>'
+    :leaveToday?`<span class="badge st${LEAVE_TO_ATT[leaveToday.status]||'OL'}">${esc(leaveToday.status)} (approved)</span>`
+    :rec.status?`<span class="badge st${rec.status}">${ATT_LABEL[rec.status]||esc(rec.status)}</span>`
+    :'<span class="badge stL">Working day</span>';
+
+  const locLink=(lat,lng,label)=>lat?` <a class="tl-sub" href="https://maps.google.com/?q=${lat},${lng}" target="_blank" rel="noopener"><i class="fa-solid fa-location-dot"></i> ${label}</a>`:'';
+  const hhmm=s=>s?`<time datetime="${d}T${s.slice(0,5)}">${s.slice(0,5)}</time>`:'—';
+  const late=!shared&&!noUpd&&new Date().getHours()*60+new Date().getMinutes()>17*60+30;
+  const facts=[`In ${hhmm(rec.entry_time)}${locLink(rec.in_lat,rec.in_lng,esc(rec.in_loc||'Location'))}`,
+    `Out ${hhmm(rec.exit_time)}${locLink(rec.out_lat,rec.out_lng,esc(rec.out_loc||'Location'))}`,
+    workday?(shared?'Update shared':noUpd?'<b style="color:var(--red)">Recorded as No Update</b>'
+      :late?'<b style="color:var(--red)">Update overdue</b>':'Update pending, due 5:30 PM'):''].filter(Boolean).join(' &middot; ');
+
+  // Exactly one primary action, and only when there is genuinely one to take.
+  let cta='',note='';
+  if(dayOff) note='Enjoy the day off.';
+  else if(offboarded) note='Your account is closed for new entries. Payslips stay available.';
+  else if(onLeave) note='Only your admin can mark you present.';
+  else if(!rec.entry_time) cta=`<button class="btn wide" style="background:var(--green)" onclick="checkIn(event)"><i class="fa-solid fa-arrow-right-to-bracket"></i> Check In</button>`;
+  else if(!shared) cta=`<button class="btn wide" onclick="logToday()"><i class="fa-solid fa-pen-to-square"></i> ${noUpd?'Fix today’s update':'Log today’s update'}</button>`;
+  else if(!rec.exit_time) cta=`<button class="btn wide" style="background:var(--red)" onclick="checkOut(event)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Check Out</button>`;
+  else{const mins=(x=>x[0]*60+x[1])(rec.exit_time.split(':').map(Number))-(x=>x[0]*60+x[1])(rec.entry_time.split(':').map(Number));
+    note=mins>0?`Done for the day — ${Math.floor(mins/60)}h ${String(mins%60).padStart(2,'0')}m.`:'Done for the day.';}
+
+  // Offer today's open sheet items as tick boxes, but only while the update is the
+  // next action — after it's posted this is just a report, and reports don't belong here.
+  SHEET_TODAY=(sheet||[]).filter(s=>String(s.last_logged_on||'').slice(0,10)!==d);
+  const showSheet=workday&&rec.entry_time&&!shared&&SHEET_TODAY.length;
+  const sheetBox=showSheet?`<div class="tl-sub" style="margin-top:14px;margin-bottom:6px">Add from your sheet:</div>`+
+    // The global label rule is 11.5px muted — override it or the task reads as a caption.
+    SHEET_TODAY.slice(0,5).map(s=>`<label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--ink);margin:0">
+      <input type="checkbox" class="nx-checkbox" value="${s.id}" style="margin-top:2px">
+      <span>${esc(s.task)}${s.project?` <span class="tl-sub">&middot; ${esc(s.project)}</span>`:''}</span></label>`).join('')+
+    (SHEET_TODAY.length>5?`<div style="margin-top:6px"><a href="#" class="tl-sub" onclick="go('mynotes');return false">See all ${SHEET_TODAY.length} on your sheet ›</a></div>`:''):'';
+
+  const slipRow=(slips||[])[0];
+  const canSlip=ME.employee.employment_type==='Full-time'&&slipRow;
+  const launch=[
+    // Not repeated when it is already the hero action.
+    (workday&&rec.entry_time&&!shared)?'':`<div><button class="btn sec wide" onclick="logToday()"><i class="fa-solid fa-pen-to-square"></i> ${shared?'Edit today’s update':'Log today’s update'}</button></div>`,
+    `<div><button class="btn sec wide" onclick="go('mywfh')"><i class="fa-solid fa-house"></i> Request WFH / Leave</button></div>`,
+    canSlip?`<div><button class="btn sec wide" onclick="slip('${ME.employee.id}',${slipRow.pay_year},${slipRow.pay_month})"><i class="fa-solid fa-file-invoice-dollar"></i> Payslip — ${MONTHS[slipRow.pay_month-1]}</button></div>`:''
+  ].filter(Boolean).join('');
+
+  // Only ever rendered when something is genuinely wrong. Usually neither shows.
+  const warns=[
+    prev&&prev.entry_time&&!prev.exit_time?`<div class="warnbar"><i class="fa-solid fa-clock"></i> You didn't check out on ${fmtDate(yest)} — ask your admin to correct it.</div>`:'',
+    pending?`<div class="warnbar"><i class="fa-solid fa-hourglass-half"></i> ${pending} leave request${pending>1?'s':''} awaiting approval. <a href="#" onclick="go('mywfh');return false">View ›</a></div>`:''
+  ].filter(Boolean).join('');
+
+  M(head+`<div class="card"><h3 style="margin-bottom:8px">${badge}</h3>
+  <div class="tl-sub" style="font-size:13px">${facts}</div>
+  ${cta?`<div style="margin-top:14px">${cta}</div>`:''}
+  ${note?`<div class="tl-sub" style="margin-top:12px;font-size:13px">${note}</div>`:''}
+  ${sheetBox}</div>
+  <div class="row" style="margin-bottom:16px">${launch}</div>
+  ${warns}`);
 }
-let FLASH=null;// {msg,ok} shown once after a mydash() re-render
+// Carry any ticked sheet rows into the task log form — same shape sheetToLog uses,
+// and saveTask already stamps first_logged_on/last_logged_on for anything with a sheet_id.
+function logToday(){
+  const ticked=[...document.querySelectorAll('#main .nx-checkbox:checked')].map(c=>c.value);
+  PENDING_SHEET=SHEET_TODAY.filter(s=>ticked.includes(String(s.id)))
+    .map(s=>({task:s.task,project:s.project||'',est_min:s.est_min,status:'In Progress',sheet_id:s.id}));
+  taskForm(ME.employee.id,today(),TODAY_UPD||{});
+}
+let TODAY_UPD=null;// today's task_updates row, so the form opens in edit mode
 // Best-effort location: never rejects. Tries high accuracy, then falls back to a
 // low-accuracy/cached fix so a slow or blocked GPS can't stop the employee checking in.
 function getPos(){return new Promise(res=>{
@@ -3165,40 +3256,56 @@ async function geoName(lat,lng){
   // Last resort: store the coordinates so the check-in always has a location value.
   return `${(+lat).toFixed(5)}, ${(+lng).toFixed(5)}`;
 }
+// A check-in can take ~25s across GPS and two geocoders. Only re-render if the
+// employee is still looking at the dashboard — otherwise it yanks them back from
+// wherever they navigated in the meantime.
+const backToDash=()=>{if(VIEW==='mydash')mydash()};
 async function checkIn(ev){
   const btn=ev&&ev.target?ev.target.closest('button'):null;
   if(btn){btn.disabled=true;btn.style.opacity=.6;}
-  const g=$('geoerr');if(g){g.style.color='var(--muted)';g.textContent='Getting your location…';}
+  const undo=()=>{if(btn){btn.disabled=false;btn.style.opacity=1;}};
   try{
-    // Block self check-in when an approved WFH/Leave covers today — only admin can mark Present.
+    // Block self check-in when approved leave covers today — only admin can mark Present.
+    // WFH and Half Day are working days: the person still clocks in, and the status
+    // stamped has to match what the admin approved or it silently overwrites their mark.
     const dt=today();
-    const{data:lv}=await sb.from('wfh_leave').select('status,req_date,end_date').eq('employee_id',ME.employee.id).eq('approved','Yes').lte('req_date',dt);
+    const{data:lv}=await sb.from('wfh_leave').select('status,req_date,end_date').eq('employee_id',ME.employee.id)
+      .eq('approved','Yes').lte('req_date',dt).limit(50);
     const lt=(lv||[]).find(r=>(r.end_date||r.req_date)>=dt);
-    if(lt){if(g){g.style.color='var(--red)';g.textContent=`You have approved ${lt.status} for today — only your admin can mark you present.`;}if(btn){btn.disabled=false;btn.style.opacity=1;}return;}
+    if(lt&&lt.status!=='WFH'&&lt.status!=='Half Day'){
+      toast(`You have approved ${lt.status} for today — only your admin can mark you present.`,'warn');
+      return undo();
+    }
     const {coords,err}=await getPos();
     const loc=coords?await geoName(coords.latitude,coords.longitude):'';
     const t=new Date().toTimeString().slice(0,5);
-    const{error}=await sb.from('attendance').upsert({employee_id:ME.employee.id,att_date:today(),entry_time:t,status:'P',
+    const{error}=await sb.from('attendance').upsert({employee_id:ME.employee.id,att_date:dt,entry_time:t,
+      status:lt?(LEAVE_TO_ATT[lt.status]||'P'):'P',
       in_lat:coords?coords.latitude:null,in_lng:coords?coords.longitude:null,in_loc:loc||null},{onConflict:'employee_id,att_date'});
     if(error)throw error;
-    FLASH=coords?{msg:'Checked in'+(loc?' — '+loc:'')+'.',ok:true}:{msg:'Checked in, but location was unavailable ('+err+')',ok:false};
-    mydash();
-  }catch(e){if(g){g.style.color='var(--red)';g.textContent='Check-in failed: '+e.message;}if(btn){btn.disabled=false;btn.style.opacity=1;}}
+    // A check-in with no location still succeeded — say so in the neutral tone,
+    // not in red as if it had failed.
+    toast(coords?'Checked in'+(loc?' — '+loc:'')+'.':'Checked in — location unavailable ('+err+')',coords?'ok':'info');
+    backToDash();
+  }catch(e){toast('Check-in failed: '+saveErr(e),'err');undo();}
 }
 async function checkOut(ev){
   const btn=ev&&ev.target?ev.target.closest('button'):null;
   if(btn){btn.disabled=true;btn.style.opacity=.6;}
-  const g=$('geoerr');if(g){g.style.color='var(--muted)';g.textContent='Getting your location…';}
+  const undo=()=>{if(btn){btn.disabled=false;btn.style.opacity=1;}};
   try{
     const {coords,err}=await getPos();
     const loc=coords?await geoName(coords.latitude,coords.longitude):'';
     const t=new Date().toTimeString().slice(0,5);
-    const{error}=await sb.from('attendance').update({exit_time:t,out_lat:coords?coords.latitude:null,out_lng:coords?coords.longitude:null,out_loc:loc||null})
-      .eq('employee_id',ME.employee.id).eq('att_date',today());
+    // .select() matters: PostgREST reports no error when an update matches no rows,
+    // so without it a check-out with no morning row reported success and wrote nothing.
+    const{data,error}=await sb.from('attendance').update({exit_time:t,out_lat:coords?coords.latitude:null,out_lng:coords?coords.longitude:null,out_loc:loc||null})
+      .eq('employee_id',ME.employee.id).eq('att_date',today()).select('id');
     if(error)throw error;
-    FLASH=coords?{msg:'Checked out'+(loc?' — '+loc:'')+'.',ok:true}:{msg:'Checked out, but location was unavailable ('+err+')',ok:false};
-    mydash();
-  }catch(e){if(g){g.style.color='var(--red)';g.textContent='Check-out failed: '+e.message;}if(btn){btn.disabled=false;btn.style.opacity=1;}}
+    if(!data||!data.length){toast("No check-in found for today, so there's nothing to check out of.",'warn');return undo()}
+    toast(coords?'Checked out'+(loc?' — '+loc:'')+'.':'Checked out — location unavailable ('+err+')',coords?'ok':'info');
+    backToDash();
+  }catch(e){toast('Check-out failed: '+saveErr(e),'err');undo();}
 }
 let MY_TASK={period:'monthly',date:today(),search:'',page:0,pageSize:10,_focus:false};
 function setMyPeriod(p){MY_TASK.period=p;MY_TASK.page=0;myupd()}
@@ -3293,7 +3400,7 @@ async function myatt(ym){
   const{data}=await sb.from('attendance').select('*').eq('employee_id',ME.employee.id).gte('att_date',`${ym}-01`).lte('att_date',`${ym}-${dim}`).order('att_date');
   M(`<h2>My Attendance</h2><div class="row" style="margin-bottom:10px"><div style="max-width:180px"><label>Month</label><input type="month" value="${ym}" onchange="myatt(this.value)"></div></div>
   <div class="card"><table><tr><th>Date</th><th>Status</th><th>Entry</th><th>Exit</th><th>Remarks</th></tr>
-  ${(data||[]).map(r=>`<tr><td>${fmtDate(r.att_date)}</td><td><span class="badge st${r.status}">${r.status||''}</span></td>
+  ${(data||[]).map(r=>`<tr><td>${fmtDate(r.att_date)}</td><td><span class="badge st${r.status}">${ATT_LABEL[r.status]||r.status||''}</span></td>
   <td>${r.entry_time||''}</td><td>${r.exit_time||''}</td><td>${esc(r.remarks)}</td></tr>`).join('')}</table></div>`);
 }
 async function mywfh(){
