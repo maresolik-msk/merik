@@ -453,6 +453,12 @@ if(/[?&]selftest\b/.test(location.search))setTimeout(()=>{
   const bad=cases.filter(([m,want])=>toastType(m)!==want);
   console[bad.length?'error':'log']('toastType self-check:',
     bad.length?bad.map(([m,w])=>`${m} => ${toastType(m)} (want ${w})`):'all '+cases.length+' pass');
+  // fetchAll must survive a total that lands exactly on the page size.
+  const capped=total=>()=>({range:(a,b)=>Promise.resolve(
+    {data:Array.from({length:Math.max(0,Math.min(total,b+1)-a)},(_,i)=>({i:a+i})),error:null})});
+  Promise.all([0,37,1000,2500].map(n=>fetchAll(capped(n),1000).then(r=>r.length===n)))
+    .then(r=>console[r.every(Boolean)?'log':'error']('fetchAll self-check:',
+      r.every(Boolean)?'all 4 pass':'FAILED '+JSON.stringify(r)));
 },0);
 function toast(msg,type){
   const m=(msg??'').toString();if(!m)return;
@@ -492,6 +498,20 @@ function emptyStates(){
       Nothing here yet.</td>`;
     body.appendChild(tr);
   });
+}
+// PostgREST caps every response at the project's max-rows setting (1000 on
+// Supabase by default) and returns the truncated page with no error and no
+// signal — so a month of attendance for a larger team silently loses rows and
+// the totals just come out wrong. Page until a short page comes back.
+// Takes a builder so each page gets a fresh query.
+async function fetchAll(build,size=1000){
+  const out=[];
+  for(let from=0;;from+=size){
+    const{data,error}=await build().range(from,from+size-1);
+    if(error)throw error;
+    out.push(...(data||[]));
+    if(!data||data.length<size)return out;
+  }
 }
 let BOOTING=false;
 async function boot(){
@@ -1089,9 +1109,11 @@ async function saveAtt(d){
 async function mtr(ym){
   const now=new Date();ym=ym||`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const [y,m]=ym.split('-').map(Number);const dim=new Date(y,m,0).getDate();
-  const [{data:emps},{data:rows},{data:hols}]=await Promise.all([
+  const [{data:emps},rows,{data:hols}]=await Promise.all([
     sb.from('employees').select('*').eq('status','Active').order('emp_code'),
-    sb.from('attendance').select('employee_id,att_date,status').gte('att_date',`${ym}-01`).lte('att_date',`${ym}-${dim}`),
+    // 40 staff × 30 days is past the API's row cap; page it or the grid quietly
+    // shows blanks for whoever falls off the end.
+    fetchAll(()=>sb.from('attendance').select('employee_id,att_date,status').gte('att_date',`${ym}-01`).lte('att_date',`${ym}-${dim}`).order('att_date')),
     sb.from('holidays').select('holiday_date').gte('holiday_date',`${ym}-01`).lte('holiday_date',`${ym}-${dim}`)]);
   const H=new Set((hols||[]).map(h=>h.holiday_date));
   const map={};(rows||[]).forEach(r=>{(map[r.employee_id]=map[r.employee_id]||{})[+r.att_date.slice(8)]=r.status});
@@ -1126,11 +1148,19 @@ async function hol(){
   <div><button class="btn" onclick="addHol()">+ Add</button></div></div></div>
   <div class="card"><table><tr><th>Date</th><th>Name</th><th>Type</th><th></th></tr>
   ${(data||[]).map(h=>`<tr><td>${fmtDate(h.holiday_date)}</td><td>${esc(h.name)}</td><td>${esc(h.type)}</td>
-  <td><button class="btn sm warn" onclick="delHol('${h.id}')">Del</button></td></tr>`).join('')}</table></div>`);
+  <td><button class="btn sm warn" onclick="delHol('${h.id}','${esc(h.name).replace(/'/g,"\\'")}','${fmtDate(h.holiday_date)}')">Del</button></td></tr>`).join('')}</table></div>`);
 }
-async function addHol(){const{error}=await sb.from('holidays').insert({holiday_date:$('hd').value,name:$('hn').value,type:$('ht').value});
-  error?toast(saveErr(error)):hol()}
-async function delHol(id){await sb.from('holidays').delete().eq('id',id);hol()}
+async function addHol(){
+  if(!$('hd').value)return toast('Choose the holiday date.');
+  if(!($('hn').value||'').trim())return toast('Enter a name for the holiday.');
+  const{error}=await sb.from('holidays').insert({holiday_date:$('hd').value,name:$('hn').value,type:$('ht').value});
+  error?toast(saveErr(error)):(toast('Holiday added'),hol())}
+// Deleting a holiday silently changes attendance and payroll for that date, so
+// it gets the same confirmation every other destructive action has.
+async function delHol(id,name,date){
+  if(!confirm(`Delete the holiday "${name}" on ${date}?\n\nAttendance and payroll for that date will be recalculated as a working day.`))return;
+  const{error}=await sb.from('holidays').delete().eq('id',id);
+  error?toast(saveErr(error)):(toast('Holiday deleted'),hol())}
 
 /* ---------- TASK LOG (admin) ---------- */
 /* ---- Numbered task list (per daily update) ---- */
@@ -1354,9 +1384,9 @@ async function task(d){
   if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
   else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
   else{from=to=a;}
-  const [{data:emps},{data:rows},{data:cls},{data:pjs}]=await Promise.all([
+  const [{data:emps},rows,{data:cls},{data:pjs}]=await Promise.all([
     sb.from('employees').select('id,emp_code,full_name,designation').eq('status','Active').order('emp_code'),
-    sb.from('task_updates').select('*').gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false}),
+    fetchAll(()=>sb.from('task_updates').select('*').gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false})),
     sb.from('clients').select('id,name').order('name'),
     sb.from('projects').select('name,client_id')]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e);
@@ -1454,8 +1484,8 @@ async function insights(){
   const from=day?INS_STATE.date:`${ym}-01`;const to=day?INS_STATE.date:`${ym}-${String(dim).padStart(2,'0')}`;
   const periodLabel=day?fmtDate(INS_STATE.date):new Date(`${ym}-01T00:00:00`).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
   const periodSub=day?'this day':'this month';
-  const [{data:rows},{data:emps},{data:pjs},{data:cls}]=await Promise.all([
-    sb.from('task_updates').select('employee_id,upd_date,project,tasks,task_assigned,completed,blocker,next_task,proof_link,update_status').gte('upd_date',from).lte('upd_date',to),
+  const [rows,{data:emps},{data:pjs},{data:cls}]=await Promise.all([
+    fetchAll(()=>sb.from('task_updates').select('employee_id,upd_date,project,tasks,task_assigned,completed,blocker,next_task,proof_link,update_status').gte('upd_date',from).lte('upd_date',to).order('upd_date')),
     sb.from('employees').select('id,full_name').eq('status','Active'),
     sb.from('projects').select('name,client_id'),
     sb.from('clients').select('id,name')]);
@@ -2404,16 +2434,19 @@ async function saveSpend(id){
   const{error}=await sb.from('software_spend').upsert({software_id:id,spend_month:m+'-01',amount:+a,notes:$('sp_notes').value||null},{onConflict:'software_id,spend_month'});
   if(error)return toast(saveErr(error));spendForm(id);
 }
-async function delSpend(rid,id){const{error}=await sb.from('software_spend').delete().eq('id',rid);
-  if(error)return toast(saveErr(error));spendForm(id);}
+async function delSpend(rid,id){
+  if(!confirm('Delete this spend entry? It will drop out of the monthly software cost.'))return;
+  const{error}=await sb.from('software_spend').delete().eq('id',rid);
+  if(error)return toast(saveErr(error));toast('Spend entry deleted');spendForm(id);}
 async function addSeat(id){
   const eid=$('se_emp').value;if(!eid)return;
   const{error}=await sb.from('software_seats').insert({software_id:id,employee_id:eid});
   if(error)return toast(saveErr(error));seatForm(id);
 }
 async function delSeat(seatId,id){
+  if(!confirm('Remove this seat? The employee loses access to the tool.'))return;
   const{error}=await sb.from('software_seats').delete().eq('id',seatId);
-  if(error)return toast(saveErr(error));seatForm(id);
+  if(error)return toast(saveErr(error));toast('Seat removed');seatForm(id);
 }
 
 /* ---------- QUOTES & INVOICES (shared doc engine) ---------- */
@@ -3075,17 +3108,28 @@ async function mywfh(){
   <div><label>To</label><input id="w_end" type="date" value="${today()}"></div>
   <div><label>Type</label><select id="w_status">${['WFH','Leave','Sick Leave','Emergency Leave','Half Day'].map(s=>`<option>${s}</option>`).join('')}</select></div>
   <div><label>Reason</label><input id="w_reason"></div><div><button class="btn" onclick="reqWfh()">Submit</button></div></div></div>
-  <div class="card"><table><tr><th>Dates</th><th>Days</th><th>Type</th><th>Reason</th><th>Approved</th></tr>
+  <div class="card"><table><tr><th>Dates</th><th>Days</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
   ${(data||[]).map(r=>{const e=r.end_date||r.req_date;const days=Math.round((new Date(e)-new Date(r.req_date))/864e5)+1;
   return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td><td>${days}</td><td>${r.status}</td><td>${esc(r.reason)}</td>
-  <td><span class="badge ${r.approved==='Yes'?'stP':r.approved==='No'?'stA':'stL'}">${r.approved}</span></td></tr>`}).join('')}</table></div>`);
+  <td><span class="badge ${r.approved==='Yes'?'stP':r.approved==='No'?'stA':'stL'}">${r.approved}</span></td>
+  <td class="noprint">${r.approved==='Pending'?`<button class="btn sm sec" onclick="withdrawWfh('${r.id}')"><i class="fa-solid fa-xmark"></i> Withdraw</button>`:''}</td></tr>`}).join('')}</table></div>`);
 }
 async function reqWfh(){
   const from=$('w_date').value,to=$('w_end').value||from;
   if(!from)return toast('Please choose a start date.');
   if(to<from)return toast('The "To" date cannot be before the "From" date.');
   const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:from,end_date:to,status:$('w_status').value,reason:$('w_reason').value||null});
-  error?toast(saveErr(error)):mywfh()}
+  error?toast(saveErr(error)):(toast('Request submitted for approval'),mywfh())}
+// A mistyped request could only be fixed by asking an admin to reject it, which
+// left a permanent "rejected" mark against the employee for their own typo.
+// Only ever touches a still-Pending row of the caller's own; RLS enforces the rest.
+async function withdrawWfh(id){
+  if(!confirm('Withdraw this request? Your admin will no longer see it.'))return;
+  const{error,data}=await sb.from('wfh_leave').delete()
+    .eq('id',id).eq('employee_id',ME.employee.id).eq('approved','Pending').select();
+  if(error)return toast(saveErr(error));
+  if(!data||!data.length)return toast('That request was already actioned by your admin.');
+  toast('Request withdrawn');mywfh()}
 /* ----- task sheet: draft tasks once, push them to the daily Task Log ----- */
 let SHEET=[];
 // Frozen once it was reported on an EARLIER day — a task re-logged today must stay
@@ -3174,7 +3218,7 @@ async function mynotes(){
     <textarea rows="3" style="width:100%;background:transparent;border:none;font-size:14px;resize:vertical" onblur="saveNote('${n.id}',this.value)">${esc(n.content||'')}</textarea>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
       <span style="font-size:11px;color:#889">${fmtDate((n.updated_at||n.created_at).slice(0,10))}</span>
-      <button class="btn sm warn" onclick="delNote('${n.id}')">Delete</button></div></div>`).join('')
+      <button class="btn sm warn" onclick="delNote('${n.id}','note')">Delete</button></div></div>`).join('')
     :`<div class="nx-empty"><div class="ill"><i class="fa-solid fa-note-sticky"></i></div>
       <div style="font-weight:600;color:var(--muted)">No notes yet</div>
       <div style="font-size:12.5px">Your saved notes will appear here.</div></div>`}
@@ -3189,7 +3233,7 @@ async function mynotes(){
     <div style="margin-top:12px">${todos.length?todos.map(t=>`<div class="nx-todo">
       <input type="checkbox" class="nx-checkbox" ${t.done?'checked':''} onchange="toggleTodo('${t.id}',this.checked)">
       <span class="txt ${t.done?'done':''}">${esc(t.content||'')}</span>
-      <button class="nx-del" onclick="delNote('${t.id}')" title="Delete"><i class="fa-solid fa-trash-can"></i></button></div>`).join('')
+      <button class="nx-del" onclick="delNote('${t.id}','todo')" title="Delete"><i class="fa-solid fa-trash-can"></i></button></div>`).join('')
       :'<div class="nx-empty"><div class="ill"><i class="fa-solid fa-clipboard-check"></i></div><div style="font-weight:600;color:var(--muted)">Nothing to do yet</div></div>'}</div>
     ${totalCnt?`<div style="display:flex;align-items:center;gap:12px;margin-top:14px">
       <span style="font-size:12.5px;color:var(--muted);white-space:nowrap">${doneCnt} of ${totalCnt} completed</span>
@@ -3238,15 +3282,20 @@ async function sheetToLog(id){
   PENDING_SHEET=[{task:t.task,project:t.project||'',est_min:t.est_min,status:'In Progress',sheet_id:t.id}];
   await taskForm(ME.employee.id,today(),(data&&data[0])||{});
 }
-async function addNote(){const v=$('nt_new').value.trim();if(!v)return;
+async function addNote(){const v=$('nt_new').value.trim();if(!v)return toast('Write the note first.');
   const{error}=await sb.from('emp_notes').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,kind:'note',content:v});
-  error?toast(saveErr(error)):mynotes()}
+  error?toast(saveErr(error)):(toast('Note added'),mynotes())}
 async function saveNote(id,v){const{error}=await sb.from('emp_notes').update({content:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)toast(saveErr(error))}
-async function addTodo(){const v=$('td_new').value.trim();if(!v)return;
+async function addTodo(){const v=$('td_new').value.trim();if(!v)return toast('Write the to-do first.');
   const{error}=await sb.from('emp_notes').insert({employee_id:ME.employee.id,org_id:ME.org?.id||null,kind:'todo',content:v});
-  error?toast(saveErr(error)):mynotes()}
+  error?toast(saveErr(error)):(toast('To-do added'),mynotes())}
 async function toggleTodo(id,done){const{error}=await sb.from('emp_notes').update({done,updated_at:new Date().toISOString()}).eq('id',id);error?toast(saveErr(error)):mynotes()}
-async function delNote(id){const{error}=await sb.from('emp_notes').delete().eq('id',id);error?toast(saveErr(error)):mynotes()}
+// A note or to-do is typed work with no other copy — deleting one on a single
+// stray click, with no confirm and no undo, loses it for good.
+async function delNote(id,kind){
+  if(!confirm(`Delete this ${kind==='todo'?'to-do':'note'}? This cannot be undone.`))return;
+  const{error}=await sb.from('emp_notes').delete().eq('id',id);
+  error?toast(saveErr(error)):(toast('Deleted'),mynotes())}
 const FB_CATS=['Product','Requirement','Bug','Improvement','Other'];
 const FB_STATUS=['New','Reviewed','Planned','Done'];
 const fbBadge=s=>({New:'stL',Reviewed:'stW',Planned:'stOL',Done:'stP'}[s]||'stL');
