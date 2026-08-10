@@ -79,6 +79,15 @@ def main():
                     if _norm(_qa["acceptedAnswer"]["text"]) not in _vis:
                         print(f"FAQ ANSWER NOT VISIBLE {rel}: {_qa['acceptedAnswer']['text'][:60]}"); bad += 1
 
+
+        # assets/images/logo.png is the 4320x4320 brand master. It is fine as an
+        # og:image source but must never be an <img> — it was shipped that way
+        # twice, once because a broad `git checkout --` reverted the fix along
+        # with unrelated churn in the same file.
+        for _img in re.findall(r"<img[^>]+>", t):
+            if re.search(r'src="[^"]*assets/images/logo\.png"', _img):
+                print(f"4320px MASTER USED AS <img> {rel}: {_img[:80]}"); bad += 1
+
         ti = re.search(r"<title>(.*?)</title>", t, re.S)
         de = re.search(r'<meta name="description" content="(.*?)"', t, re.S)
         for store, m, label in ((titles, ti, "title"), (descs, de, "description")):
