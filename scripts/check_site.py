@@ -8,21 +8,21 @@ Exits non-zero on any problem, so it can gate a deploy.
 import json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PAGES = {"/": "index.html", "/features": "features.html", "/how-it-works": "how-it-works.html",
+PAGES = {"/search": "search.html", "/": "index.html", "/features": "features.html", "/how-it-works": "how-it-works.html",
          "/modules": "modules.html", "/pricing": "pricing.html", "/roi": "roi.html",
          "/blog/": "blog/index.html", "/app/": None}
 
 
 def main():
     files = sorted(list(ROOT.glob("*.html")) + list((ROOT / "blog").glob("*.html")))
-    indexable = [f for f in files if f.name != "404.html"]
+    indexable = [f for f in files if f.name not in ("404.html", "search.html")]
     bad = 0
     titles, descs = {}, {}
     for f in files:
         t = f.read_text(encoding="utf-8")
         rel = f.relative_to(ROOT)
-        if f.name == "404.html" and "noindex" not in t:
-            print("404 page must be noindex"); bad += 1
+        if f.name in ("404.html", "search.html") and "noindex" not in t:
+            print(f"{rel} must be noindex"); bad += 1
 
         for m in re.finditer(r'<script type="application/ld\+json">(.*?)</script>', t, re.S):
             try:

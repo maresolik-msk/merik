@@ -31,7 +31,8 @@ STATIC_PAGES = {
     "modules.html": "modules",
     "pricing.html": "pricing",
     "roi.html": "roi",
-    "404.html": "",   # noindex, but its nav must still match
+    "404.html": "",     # noindex, but its nav must still match
+    "search.html": "",  # noindex; exists so SearchAction is honest
 }
 
 
