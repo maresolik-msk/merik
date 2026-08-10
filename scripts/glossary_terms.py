@@ -28,7 +28,7 @@ TERMS = [
 {
 "term": "Gross salary", "slug": "gross-salary", "cat": "Pay",
 "short": "Gross salary is the total of all earnings components for a pay period — basic, allowances, overtime, incentives and arrears — before any deduction is applied.",
-"body": """<p>Gross is the subtotal on a payslip where the earnings block ends. It is the figure most statutory and internal calculations key off, and the one an employee should be able to reach by adding up the earnings lines themselves.</p>
+"body": """<p>Gross is the subtotal on a payslip where the earnings block ends. It is the figure most internal calculations key off, and the one an employee should be able to reach by adding up the earnings lines themselves. Several statutory contributions, though, are computed on basic rather than on gross.</p>
 <p>Gross differs from CTC because it excludes employer-side costs, and differs from net because deductions have not yet been taken. If a payslip does not let you add the earnings lines and arrive at the printed gross, the payslip format is incomplete.</p>""",
 "example": """<p><b>Illustrative only.</b> Basic ₹30,000 + HRA ₹15,000 + conveyance ₹2,000 + special allowance ₹13,000 = <b>gross ₹60,000</b> for the month.</p>""",
 "related": ["ctc", "net-salary", "basic-salary"], "post": "payslip-format-what-to-include",
@@ -55,14 +55,14 @@ TERMS = [
 "body": """<p>HRA is usually set as a percentage of basic salary, which is why changing basic changes HRA automatically in most structures.</p>
 <p>The exemption an employee can claim depends on rent actually paid, the city of residence, and the rules in force for that year — it is not automatic and it is not the full HRA amount. Employees should confirm their own position with a qualified adviser rather than assuming.</p>""",
 "example": """<p><b>Illustrative only.</b> With basic ₹30,000 and HRA set at 50% of basic, the monthly HRA line is ₹15,000. What portion of that is exempt from tax is a separate calculation based on rent actually paid.</p>""",
-"related": ["basic-salary", "gross-salary"], "post": "ctc-vs-in-hand-salary-payslip",
+"related": ["basic-salary", "gross-salary"], "post": "",
 },
 {
 "term": "Loss of Pay (LOP)", "slug": "loss-of-pay", "cat": "Pay",
 "short": "Loss of pay is the salary reduction for days an employee neither worked nor had approved paid leave for. It is calculated as per-day pay multiplied by the number of unpaid days.",
 "body": """<p>The formula is simple; the argument is always about the divisor used to get per-day pay. The three conventions are calendar days in the month, a fixed 30 days, or the month's actual working days — and they can differ by around 20% for the same absence.</p>
 <p>None is uniquely correct. What matters is choosing one, writing it into policy, and applying it to every employee in every month. Most LOP disputes are not about arithmetic at all — they are about whether a day should have been unpaid in the first place.</p>""",
-"example": """<p><b>Illustrative only.</b> ₹60,000 monthly gross, 2 unpaid days, in a 31-day month with 26 working days: dividing by 30 gives ₹2,000/day and ₹4,000 of LOP; dividing by 26 working days gives ₹2,307.69/day and ₹4,615.38.</p>""",
+"example": """<p><b>Illustrative only.</b> ₹60,000 monthly gross, 2 unpaid days, in a 31-day month with 26 working days: dividing by 31 calendar days gives ₹1,935.48/day and ₹3,870.97 of LOP; dividing by a fixed 30 gives ₹2,000/day and ₹4,000; dividing by 26 working days gives ₹2,307.69/day and ₹4,615.38 — a spread of about 19% on the same absence.</p>""",
 "related": ["net-salary", "half-day", "attendance-regularisation"], "post": "loss-of-pay-calculation-explained",
 },
 {
@@ -156,11 +156,11 @@ TERMS = [
 },
 {
 "term": "Comp off (compensatory off)", "slug": "comp-off", "cat": "Time",
-"short": "A compensatory off is a day of leave granted in exchange for working on a holiday or weekly off, instead of paying overtime for that day.",
+"short": "A compensatory off is a day of leave granted in exchange for working on a holiday or weekly off. Whether it may substitute for overtime pay depends on the legislation applicable to the establishment.",
 "body": """<p>Comp off works only when it has an expiry and a record. Without an expiry, unused comp offs accumulate indefinitely and become an untracked liability; without a record, employees and managers disagree about how many are owed.</p>
 <p>Whether comp off is a permissible substitute for overtime pay depends on the legislation applicable to your establishment. Confirm before adopting it as standard practice.</p>""",
 "example": """<p><b>Illustrative only.</b> An employee who works a Sunday to meet a deadline is granted one comp off, to be taken within 30 days, recorded against that specific worked date.</p>""",
-"related": ["earned-leave", "half-day"], "post": "company-holiday-calendar-india",
+"related": ["earned-leave", "half-day"], "post": "",
 },
 {
 "term": "Notice period", "slug": "notice-period", "cat": "Time",
@@ -168,7 +168,7 @@ TERMS = [
 "body": """<p>Notice serves handover, not punishment. The practical questions a policy must answer are whether leave can be taken during notice, whether notice can be bought out and at what rate, and what happens to accrued leave at the end of it.</p>
 <p>Enforceability of buyout and recovery clauses depends on the contract and applicable law. Take professional advice rather than assuming a clause is enforceable because it is written down.</p>""",
 "example": """<p><b>Illustrative only.</b> An employee on a 30-day notice period resigning on 1 August has a last working day of 30 August, with asset return and full and final settlement keyed to that date.</p>""",
-"related": ["full-and-final-settlement", "leave-encashment"], "post": "employee-exit-full-and-final-settlement",
+"related": ["full-and-final-settlement", "leave-encashment"], "post": "",
 },
 {
 "term": "Full and final settlement", "slug": "full-and-final-settlement", "cat": "Time",

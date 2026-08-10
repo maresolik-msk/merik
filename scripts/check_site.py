@@ -5,6 +5,7 @@
 
 Exits non-zero on any problem, so it can gate a deploy.
 """
+import html as _html
 import json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -52,6 +53,31 @@ def main():
             p = (ROOT / s.lstrip("/")) if s.startswith("/") else (f.parent / s)
             if not p.resolve().exists():
                 print(f"MISSING IMAGE {rel} -> {src}"); bad += 1
+
+
+        # Google requires FAQPage text to be visible on the page. Anything
+        # declared but unrendered risks the rich result being suppressed.
+        def _norm(s):
+            s = _html.unescape(s)
+            for a, b in [("\u2019", "'"), ("\u2018", "'"), ("\u201c", '"'),
+                         ("\u201d", '"'), ("\u2014", "-"), ("\u2013", "-")]:
+                s = s.replace(a, b)
+            return re.sub(r"\s+", " ", s.replace('"', "'")).strip().lower()
+        _vis = _norm(re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>", " ", t, flags=re.S)))
+        for _m in re.finditer(r'<script type="application/ld\+json">(.*?)</script>', t, re.S):
+            try:
+                _d = json.loads(_m.group(1))
+            except Exception:
+                continue
+            _nodes = ([_d] if isinstance(_d, dict) else []) + (_d.get("@graph") or [])
+            for _n in _nodes:
+                if _n.get("@type") != "FAQPage":
+                    continue
+                for _qa in _n.get("mainEntity", []):
+                    if _norm(_qa["name"]) not in _vis:
+                        print(f"FAQ QUESTION NOT VISIBLE {rel}: {_qa['name'][:70]}"); bad += 1
+                    if _norm(_qa["acceptedAnswer"]["text"]) not in _vis:
+                        print(f"FAQ ANSWER NOT VISIBLE {rel}: {_qa['acceptedAnswer']['text'][:60]}"); bad += 1
 
         ti = re.search(r"<title>(.*?)</title>", t, re.S)
         de = re.search(r'<meta name="description" content="(.*?)"', t, re.S)

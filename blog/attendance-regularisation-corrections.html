@@ -199,7 +199,8 @@
 
     <h2 id="merik">How Merik handles it</h2>
 
-    <p>Merik treats corrections as first-class records. An employee raises the change from their own dashboard; the admin reviews and applies it, and the entry keeps its history rather than being silently overwritten — so a disputed day months later can still be reconstructed. Because leave and work-from-home approvals write to the attendance record directly, the most common category of "wrong day" — approved leave showing as absent — largely stops occurring in the first place.</p>
+    <p>Merik removes the largest category of wrong days rather than correcting them after the fact. Approving a work-from-home or leave request auto-stamps the attendance log for every date in the request — WFH becomes W, a half-day becomes H, and paid leave becomes OL — so the classic "approved leave recorded as absent" simply does not arise. Approved leave also blocks self check-in for that day, so the two records cannot contradict each other.</p>
+    <p>Where a day still needs changing, an admin edits it in the attendance grid. To be straight about the limits: Merik does not currently have the employee-raised, manager-approved correction request described above, and an admin edit replaces the previous value rather than keeping it alongside. If you need a correction trail for disputes, keep the requests in whatever system you already use for approvals until that lands.</p>
     <p>The monthly summary recalculates from the corrected register, and that summary is exactly what the payroll run consumes, so no one re-counts payable days by hand after a correction lands. See the <a href="/modules">attendance and leave modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 
 
@@ -241,7 +242,7 @@
         <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
         <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
       </div>
-      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a></div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
       <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
       <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
       <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>

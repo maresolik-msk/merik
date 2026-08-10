@@ -389,7 +389,7 @@ def build_index():
 <meta property="og:title" content="Merik Blog — Workforce, Attendance, Payroll &amp; HR Guides">
 <meta property="og:description" content="Practical guides on workforce management, attendance, leave, payroll and HR for small and growing businesses.">
 <meta property="og:url" content="{SITE}/blog/">
-<meta property="og:image" content="{SITE}/assets/images/logo.png">
+<meta property="og:image" content="{SITE}/assets/images/og-image.png">
 <meta property="og:locale" content="en_IN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Merik Blog">

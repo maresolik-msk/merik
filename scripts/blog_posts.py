@@ -206,7 +206,7 @@ POSTS = [
 ],
 "merik": """
     <p>A policy is only as good as the system applying it. Merik holds the rules that this template describes — grace windows, late marks, half-day thresholds, holiday calendar — and applies them to every employee identically, so the register reflects the policy without anyone doing the arithmetic by hand.</p>
-    <p>Employees mark their own attendance and raise leave or work-from-home requests from their dashboard; approvals update the attendance record directly, so approved leave never appears as absence. Corrections go through an approval route rather than an untracked edit. At month-end, the payable days that payroll uses are the same days the register shows — see the <a href="/modules">attendance and leave modules</a>, the <a href="/features">full feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
+    <p>Employees mark their own attendance and raise leave or work-from-home requests from their dashboard; approvals update the attendance record directly, so approved leave never appears as absence. Where a day still needs changing, an admin edits it in the attendance grid — note that this replaces the previous value rather than keeping it alongside. At month-end, the payable days that payroll uses are the same days the register shows — see the <a href="/modules">attendance and leave modules</a>, the <a href="/features">full feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
 "related": ["calculating-late-marks-half-days-fairly", "attendance-regularisation-corrections", "work-from-home-policy-template"],
 },
@@ -298,7 +298,8 @@ POSTS = [
 ("How do I stop employees misusing regularisation?", "Require manager approval and a stated reason, and review a simple report of corrections per employee per month. Patterns become visible without anyone policing individual entries. If the whole team's rate rises at once, treat it as a process or tooling problem rather than a discipline issue."),
 ],
 "merik": """
-    <p>Merik treats corrections as first-class records. An employee raises the change from their own dashboard; the admin reviews and applies it, and the entry keeps its history rather than being silently overwritten — so a disputed day months later can still be reconstructed. Because leave and work-from-home approvals write to the attendance record directly, the most common category of "wrong day" — approved leave showing as absent — largely stops occurring in the first place.</p>
+    <p>Merik removes the largest category of wrong days rather than correcting them after the fact. Approving a work-from-home or leave request auto-stamps the attendance log for every date in the request — WFH becomes W, a half-day becomes H, and paid leave becomes OL — so the classic "approved leave recorded as absent" simply does not arise. Approved leave also blocks self check-in for that day, so the two records cannot contradict each other.</p>
+    <p>Where a day still needs changing, an admin edits it in the attendance grid. To be straight about the limits: Merik does not currently have the employee-raised, manager-approved correction request described above, and an admin edit replaces the previous value rather than keeping it alongside. If you need a correction trail for disputes, keep the requests in whatever system you already use for approvals until that lands.</p>
     <p>The monthly summary recalculates from the corrected register, and that summary is exactly what the payroll run consumes, so no one re-counts payable days by hand after a correction lands. See the <a href="/modules">attendance and leave modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
 "related": ["attendance-policy-template-small-business", "calculating-late-marks-half-days-fairly", "loss-of-pay-calculation-explained"],
@@ -806,7 +807,7 @@ POSTS = [
 ],
 "merik": """
     <p>Merik holds the company holiday calendar as data, not as a document — the days you declare feed the attendance module directly, so nobody shows as absent on a day the office was closed, and they feed the same payable-days figure the monthly payroll run uses. One entry, applied everywhere, instead of a PDF plus forty manual corrections.</p>
-    <p>Leave and work-from-home requests are evaluated against the same calendar, so employees do not spend leave on non-working days. Because attendance, holidays, leave and payroll share one dataset, the calendar you publish in December is the calendar every payslip for the year is computed against. See the <a href="/modules">holidays and attendance modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
+    <p>One entry, applied everywhere, instead of a PDF plus forty manual corrections. Worth knowing how it reaches pay: the monthly payroll run prorates on calendar days and derives unpaid days from attendance status, so a declared holiday protects the day in the register rather than changing the divisor. See the <a href="/modules">holidays and attendance modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
 "related": ["how-many-leaves-small-business-india", "leave-encashment-carry-forward", "attendance-to-payroll-automation"],
 },

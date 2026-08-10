@@ -42,21 +42,71 @@
     {"@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
       {"@type":"ListItem","position":2,"name":"Pricing","item":"https://www.merik.in/pricing"}]},
-    {"@type":"Product","name":"Merik Workforce Suite","description":"All-in-one workforce management for small and growing businesses — employees, attendance, leave, payroll, daily tasks, clients and assets in one secure company workspace.","brand":{"@id":"https://www.merik.in/#org"},"offers":{"@type":"Offer","name":"Free workspace","price":"0","priceCurrency":"INR","availability":"https://schema.org/InStock","url":"https://www.merik.in/pricing","description":"Create a company workspace free, with unlimited employee self sign-up. No setup fee and no card required."}}
+    {"@type":"Product","@id":"https://www.merik.in/#product","isSimilarTo":{"@id":"https://www.merik.in/#software"},"name":"Merik Workforce Suite","description":"All-in-one workforce management for small and growing businesses — employees, attendance, leave, payroll, daily tasks, clients and assets in one secure company workspace.","brand":{"@id":"https://www.merik.in/#org"},"offers":{"@type":"Offer","name":"Free workspace","price":"0","priceCurrency":"INR","availability":"https://schema.org/InStock","url":"https://www.merik.in/pricing","description":"Create a company workspace free, with unlimited employee self sign-up. No setup fee and no card required."}}
   ]
 }
 </script>
 <script type="application/ld+json">
 {
-  "@context":"https://schema.org",
-  "@type":"FAQPage",
-  "mainEntity":[
-    {"@type":"Question","name":"How much does Merik cost?","acceptedAnswer":{"@type":"Answer","text":"Merik is free to start. You can create a company workspace at no cost, invite your whole team with unlimited employee self sign-up, and use employee management, attendance, leave, daily task tracking, payroll and payslips. There is no setup fee and no card required to begin."}},
-    {"@type":"Question","name":"Is there a limit on how many employees I can add?","acceptedAnswer":{"@type":"Answer","text":"No. Employee self sign-up is unlimited on the free workspace, so you can bring your whole team in rather than paying per head to find out whether the product works for you."}},
-    {"@type":"Question","name":"Do I need a credit card to create a Merik workspace?","acceptedAnswer":{"@type":"Answer","text":"No. Creating a workspace requires no card and no payment details. You sign up, name your company, and start recording attendance the same day."}},
-    {"@type":"Question","name":"Is there a setup or onboarding fee?","acceptedAnswer":{"@type":"Answer","text":"No. Setting the workspace up yourself is free and takes under five minutes. If you would rather we configure it around your existing data — departments, designations, CTC, holiday calendar, leave policy, asset registers — talk to us and we will scope that with you."}},
-    {"@type":"Question","name":"What happens to my data if I stop using Merik?","acceptedAnswer":{"@type":"Answer","text":"It stays yours. Employees, attendance, leave, payroll history and the task log can be exported, and the task log has CSV export built in. We would rather you be able to leave than feel trapped, because a tool you cannot leave is a tool you stop trusting."}},
-    {"@type":"Question","name":"Are the AI features included, and can I turn them off?","acceptedAnswer":{"@type":"Answer","text":"The optional AI layer is off unless it is enabled for your workspace. It drafts performance summaries and quotes for a human to edit, and it is gated per feature and per company with a monthly call cap. Every core feature — attendance, leave, payroll, task tracking, clients and assets — works with AI switched off entirely."}}
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How much does Merik cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Merik is free to start. You can create a company workspace at no cost, invite your whole team with unlimited employee self sign-up, and use employee management, attendance, leave, daily task tracking, payroll and payslips. There is no setup fee and no card required to begin."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is there a limit on how many employees I can add?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Employee self sign-up is unlimited on the free workspace, so you can bring your whole team in rather than paying per head to find out whether the product works for you."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need a credit card to create a workspace?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Creating a workspace requires no card and no payment details. You sign up, name your company, and start recording attendance the same day."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is there a setup or onboarding fee?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Setting the workspace up yourself is free and takes under five minutes — the three steps are here . If you would rather we configure it around your existing data — departments, designations, CTC, holiday calendar, leave policy, asset registers — talk to us and we will scope that with you."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens to my data if I stop using Merik?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It stays yours. Employees, attendance, leave, payroll history and the task log can be exported, and the task log has CSV export built in. We would rather you be able to leave than feel trapped, because a tool you cannot leave is a tool you stop trusting. What else to ask any HR vendor →"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are the AI features included, and can I turn them off?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The optional AI layer is off unless it is enabled for your workspace. It drafts performance summaries and quotes for a human to edit, and it is gated per feature and per company with a monthly call cap. Every core feature works with AI switched off entirely. Where AI actually helps in HR →"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I migrate from spreadsheets without breaking payroll?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, and the safe way is to run one month in parallel before switching off the old sheets. We wrote up a week-by-week plan for exactly this — the 30-day migration plan — including what to migrate, what to leave in an archive, and why you should always cut over at a month boundary."
+      }
+    }
   ]
 }
 </script>
@@ -227,7 +277,7 @@
         <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
         <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
       </div>
-      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a></div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
       <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
       <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
       <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>

@@ -34,18 +34,81 @@
 <link rel="stylesheet" href="../assets/css/site.css?v=9">
 <script type="application/ld+json">
 {
-  "@context":"https://schema.org",
-  "@graph":[
-    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/daily-standups-without-meetings#post","headline":"How to Run Daily Standups Without a Meeting","description":"An async, written update flow that gives the same visibility as a standup meeting.","datePublished":"2026-07-12","dateModified":"2026-07-12","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/daily-standups-without-meetings","image":"https://www.merik.in/assets/images/blog/tasks.svg","isPartOf":{"@id":"https://www.merik.in/blog/#blog"}},
-    {"@type":"BreadcrumbList","itemListElement":[
-      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
-      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
-      {"@type":"ListItem","position":3,"name":"Standups without meetings","item":"https://www.merik.in/blog/daily-standups-without-meetings"}]},
-    {"@type":"FAQPage","mainEntity":[
-      {"@type":"Question","name":"Can a daily standup work without a live meeting?","acceptedAnswer":{"@type":"Answer","text":"Yes. An async standup asks each person to write what they completed, what's next, and any blockers at a set time each day — giving the team the same visibility a live standup provides, without everyone stopping work at the same moment."}},
-      {"@type":"Question","name":"What should an async standup update include?","acceptedAnswer":{"@type":"Answer","text":"Three things: what was completed (ideally with proof, like a link), what's blocking progress, and what's planned next. Kept to three questions, it takes under a minute to write."}},
-      {"@type":"Question","name":"Do async standups work for in-office teams too?","acceptedAnswer":{"@type":"Answer","text":"Yes — even co-located teams benefit from a written record, since it's searchable later and doesn't require everyone to be free at the same time of day."}}
-    ]}
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "@id": "https://www.merik.in/blog/daily-standups-without-meetings#post",
+      "headline": "How to Run Daily Standups Without a Meeting",
+      "description": "An async, written update flow that gives the same visibility as a standup meeting.",
+      "datePublished": "2026-07-12",
+      "dateModified": "2026-07-12",
+      "author": {
+        "@type": "Organization",
+        "name": "Merik",
+        "@id": "https://www.merik.in/#org"
+      },
+      "publisher": {
+        "@id": "https://www.merik.in/#org"
+      },
+      "mainEntityOfPage": "https://www.merik.in/blog/daily-standups-without-meetings",
+      "image": "https://www.merik.in/assets/images/blog/tasks.svg",
+      "isPartOf": {
+        "@id": "https://www.merik.in/blog/#blog"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.merik.in/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Blog",
+          "item": "https://www.merik.in/blog/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Standups without meetings",
+          "item": "https://www.merik.in/blog/daily-standups-without-meetings"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Can a daily standup work without a live meeting?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. An async standup asks each person to write what they completed, what's next, and any blockers at a set time each day — giving the team the same visibility a live standup provides, without everyone stopping work at the same moment."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What should an async standup update include?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Three things: what was completed (ideally with proof, like a link), what's blocking progress, and what's planned next. Kept to three questions, it takes under a minute to write."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do async standups work for in-office teams too?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes — even co-located teams benefit from a written record, since it's searchable later and doesn't require everyone to be free at the same time of day."
+          }
+        }
+      ]
+    }
   ]
 }
 </script>
@@ -108,6 +171,13 @@
     <h3>3. Review exceptions, not every entry</h3>
     <p>Managers should scan for blockers and skipped days, not read every update line by line every day.</p>
 
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>Can a daily standup work without a live meeting?</summary><p>Yes. An async standup asks each person to write what they completed, what&#x27;s next, and any blockers at a set time each day — giving the team the same visibility a live standup provides, without everyone stopping work at the same moment.</p></details>
+      <details><summary>What should an async standup update include?</summary><p>Three things: what was completed (ideally with proof, like a link), what&#x27;s blocking progress, and what&#x27;s planned next. Kept to three questions, it takes under a minute to write.</p></details>
+      <details><summary>Do async standups work for in-office teams too?</summary><p>Yes — even co-located teams benefit from a written record, since it&#x27;s searchable later and doesn&#x27;t require everyone to be free at the same time of day.</p></details>
+    </div>
+
     <h2>How Merik handles it</h2>
     <p>Merik's daily task log captures exactly this: what was completed (with proof), any blocker, and what's next — visible to managers without a single meeting. It's the same flow behind <a href="/blog/daily-task-tracking-small-teams">daily task tracking</a>, and it feeds the same workspace as attendance and payroll.</p>
 
@@ -149,7 +219,7 @@
         <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
         <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
       </div>
-      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a></div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
       <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
       <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
       <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>

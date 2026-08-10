@@ -58,7 +58,7 @@ def build():
             post = ""
         blocks.append(f"""      <article class="g-term reveal" id="{t['slug']}">
         <span class="tag2">{t['cat']}</span>
-        <h2>{html.escape(t['term'])}</h2>
+        <h2>What is {html.escape(t['term'])}?</h2>
         <p class="g-short">{html.escape(t['short'])}</p>
 {t['body']}
         <div class="g-example">{t['example']}</div>
