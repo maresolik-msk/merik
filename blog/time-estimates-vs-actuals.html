@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Why Your Time Estimates Are Always Wrong (And How to Fix Them)</title>
+<meta name="description" content="Why software and services estimates run over, how to measure estimate accuracy from your own task log, and a practical method for improving estimation using historical data instead of optimism.">
+<meta name="keywords" content="time estimation, estimate vs actual, why estimates are wrong, planning fallacy, project estimation techniques, estimating tasks accurately, reference class forecasting">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/time-estimates-vs-actuals">
+<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Why your time estimates are always wrong">
+<meta property="og:description" content="Close the gap between estimated and actual using your own history, not better intentions.">
+<meta property="og:url" content="https://www.merik.in/blog/time-estimates-vs-actuals">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/tasks.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-06">
+<meta property="article:modified_time" content="2026-08-10">
+<meta property="article:section" content="Tasks">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Why your time estimates are always wrong">
+<meta name="twitter:description" content="Close the gap between estimated and actual using your own history, not better intentions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/time-estimates-vs-actuals#post","headline":"Why Your Time Estimates Are Always Wrong (And How to Fix Them)","description":"Why software and services estimates run over, how to measure estimate accuracy from your own task log, and a practical method for improving estimation using historical data instead of optimism.","datePublished":"2026-08-06","dateModified":"2026-08-10","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/time-estimates-vs-actuals","image":"https://www.merik.in/assets/images/blog/tasks.svg","articleSection":"Tasks","keywords":"time estimation, estimate vs actual, why estimates are wrong, planning fallacy, project estimation techniques, estimating tasks accurately, reference class forecasting","wordCount":813,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Estimates vs actuals","item":"https://www.merik.in/blog/time-estimates-vs-actuals"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"Why are time estimates always too low?","acceptedAnswer":{"@type":"Answer","text":"Because people estimate the path they can picture — the work itself — and omit the work they cannot picture: clarification, review, revision, waiting on dependencies and interruptions. This is the planning fallacy, and it is structural rather than a matter of carelessness, which is why asking for more careful estimates does not fix it."}},
+      {"@type":"Question","name":"How do you calculate estimate accuracy?","acceptedAnswer":{"@type":"Answer","text":"Take completed tasks that carry both an estimate and a recorded actual, and compute the ratio of actual time to estimated time. Use the median rather than the mean so one extreme task does not distort the figure. For example, 96 hours estimated against 154 hours actual gives a ratio of about 1.6."}},
+      {"@type":"Question","name":"What is a good estimate-to-actual ratio?","acceptedAnswer":{"@type":"Answer","text":"A ratio between 1.0 and 1.2 is healthy. Services work with client feedback loops commonly sits between 1.5 and 2.0, which is workable if you plan with it. Above 2.5 usually means scope is not defined before estimating. Consistently below 1.0 means estimates are padded, which inflates quotes and makes planning unreliable in the other direction."}},
+      {"@type":"Question","name":"How can I improve my team's estimates?","acceptedAnswer":{"@type":"Answer","text":"Record actuals against estimates so the feedback loop closes, estimate by comparing to similar completed work rather than reasoning forward, use ranges instead of single numbers, break anything longer than a day into smaller pieces, and apply your measured correction factor to new estimates. Review misses by asking what was unaccounted for, never why someone was late."}},
+      {"@type":"Question","name":"Should estimates be given in hours or days?","acceptedAnswer":{"@type":"Answer","text":"Estimate in focused hours, then convert to elapsed days using a realistic focus factor. Most people have four to five genuinely focused hours in a working day rather than eight, so eight estimated hours is closer to two days than one. Conflating the two is one of the most common sources of missed deadlines."}},
+      {"@type":"Question","name":"How does estimation accuracy affect profitability?","acceptedAnswer":{"@type":"Answer","text":"Directly. A fixed-price quote built on estimates that run 1.6 times over is priced at roughly 62% of its real cost, and a retainer sized on optimistic estimates is delivered at a loss. Your measured correction factor belongs in pricing and in project profitability analysis, not just in project planning."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="../app/">Sign In</a>
+        <a class="btn btn-primary" href="../app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Estimates vs actuals</nav>
+    <div class="eyebrow">Tasks</div>
+    <h1>Why your time estimates are <span class="accent">always wrong</span></h1>
+    <p class="lead">Estimates don't fail because your team is careless. They fail for structural reasons — which means they can be fixed structurally.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="../assets/images/blog/tasks.svg" alt="Comparing estimated and actual time on tasks" width="640" height="384">
+    <p class="post-meta">Published 6 August 2026 · Updated 10 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>Estimates run over because people estimate the work they can picture, and the work they cannot picture is where the time goes.</b> Review, revision, waiting on someone else, the third round of client feedback, the environment that broke — none of it appears in the mental model, all of it appears in the calendar. The fix is not to try harder; it is to compare estimates against recorded actuals from your own history and let the ratio correct you.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>The <b>planning fallacy</b> is structural, not personal: we estimate the ideal path and omit coordination, review and rework.</li>
+      <li>You cannot improve estimates without <b>recorded actuals</b>. Estimation is a feedback loop that most teams never close.</li>
+      <li>Compare a <b>similar past task</b> to the one you're estimating — historical comparison beats fresh reasoning almost every time.</li>
+      <li>Track your team's <b>estimate-to-actual ratio</b> and apply it as a correction factor. If you consistently run 1.6×, plan at 1.6×.</li>
+      <li>Estimate in <b>ranges</b>, and treat estimates as forecasts to be updated, not commitments to be defended.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#why">Why estimates run over — the structural reasons</a></li>
+      <li><a href="#measure">You cannot fix what you don't measure</a></li>
+      <li><a href="#ratio">The correction factor, with arithmetic</a></li>
+      <li><a href="#compare">Estimate by comparison, not by reasoning</a></li>
+      <li><a href="#practice">Practices that measurably help</a></li>
+      <li><a href="#business">Why this shows up in your margins</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="why">Why estimates run over — the structural reasons</h2>
+
+    <p>Five causes account for most of the overrun, and only one is about the person estimating:</p>
+    <ul>
+      <li><b>The planning fallacy.</b> We imagine the task going as intended and estimate that path. Interruptions, dependencies and rework are known in the abstract but not included in the specific number.</li>
+      <li><b>Uncounted invisible work.</b> The estimate covers doing the thing; it omits reading the brief again, the clarifying conversation, review, revision, handover, deployment.</li>
+      <li><b>Ambiguous scope.</b> "Build the reports page" means different things to the person estimating and the person asking, and the difference surfaces only during the work.</li>
+      <li><b>Interruption load.</b> Four hours of work does not fit in a four-hour day for anyone who also attends meetings and answers messages. Estimates are usually in focused hours; calendars are in elapsed hours.</li>
+      <li><b>Social pressure.</b> An estimate given in a room where the desired answer is obvious is not an estimate.</li>
+    </ul>
+    <p>Notice that none of these are solved by asking for a more careful estimate. They are solved by changing what the estimate is based on.</p>
+
+
+    <h2 id="measure">You cannot fix what you don't measure</h2>
+
+    <p>Most teams have estimates. Very few have actuals recorded against those same estimates. That missing half is why estimation never improves — the loop never closes, so each new estimate is made with exactly the information available last time.</p>
+    <p>The minimum viable measurement, recorded on the task itself:</p>
+    <ul>
+      <li><b>Estimated time</b>, captured before work starts.</li>
+      <li><b>Actual time</b>, captured as the work happens — <a href="/blog/timesheets-vs-daily-task-logs">daily, not reconstructed at week-end</a>.</li>
+      <li><b>Task type or project</b>, so like can be compared with like.</li>
+    </ul>
+    <p>Three fields. After two months you can compute a ratio; after six you can compute it per task type, which is where it becomes genuinely useful.</p>
+
+
+    <h2 id="ratio">The correction factor, with arithmetic</h2>
+
+    <p>Once actuals exist, compute the ratio of actual to estimated across completed tasks. Use the <b>median</b> rather than the mean — one catastrophic task should not redefine your planning.</p>
+    <p><b>Example.</b> Twelve completed tasks in a month, estimated at 96 hours, actually taking 154 hours. The ratio is 154 ÷ 96 ≈ <b>1.6</b>. So when the team next estimates 40 hours of work, plan for roughly 64.</p>
+    <p>That correction factor is more valuable than any estimation technique, because it is measured from your team, your clients and your kind of work. And the ratio itself is diagnostic:</p>
+    <ul>
+      <li><b>Around 1.0–1.2</b> — healthy. Small buffer, nothing to fix.</li>
+      <li><b>Around 1.5–2.0</b> — normal for services work with client feedback loops. Plan with it rather than fighting it.</li>
+      <li><b>Above 2.5</b> — something structural is wrong: scope is not defined before estimating, or estimates are being given under pressure.</li>
+      <li><b>Consistently below 1.0</b> — estimates are padded, which sounds safe but destroys your ability to plan and quietly inflates every quote.</li>
+    </ul>
+
+
+    <h2 id="compare">Estimate by comparison, not by reasoning</h2>
+
+    <p>The single most effective change to how estimates are made: stop reasoning forward from the task and start comparing backward to similar completed work.</p>
+    <p>"How long will this landing page take?" invites a mental simulation that omits everything unglamorous. "How long did the last three landing pages take?" invites a lookup — and the historical answer already includes the review rounds, the feedback, and the day the client went quiet.</p>
+    <blockquote>Reasoning forward gives you the ideal case. Looking backward gives you the real case, because the past already contains everything you're about to forget.</blockquote>
+    <p>This requires a searchable history of past work with times attached — which is exactly what a well-kept task log is. Without it, every estimate is made from scratch, forever.</p>
+
+
+    <h2 id="practice">Practices that measurably help</h2>
+
+    <ul>
+      <li><b>Estimate in ranges.</b> "6–10 hours" carries information that "8 hours" destroys. If the range is uncomfortably wide, the scope is not clear enough to estimate.</li>
+      <li><b>Break down anything over a day.</b> Estimation error compounds with duration. Four half-day estimates beat one two-day estimate.</li>
+      <li><b>Estimate focused hours, plan in elapsed days.</b> Convert with a realistic focus factor — most people have four to five genuinely focused hours in a working day, not eight.</li>
+      <li><b>Re-estimate at the halfway point.</b> An estimate is a forecast. When you learn something, update it — and tell whoever is depending on it, early.</li>
+      <li><b>Let the person doing the work estimate it.</b> Estimates handed down are targets wearing an estimate's clothes.</li>
+      <li><b>Review misses without blame.</b> The question is "what did we not account for?", not "why were you late?" One of those produces better estimates; the other produces padding.</li>
+    </ul>
+
+
+    <h2 id="business">Why this shows up in your margins</h2>
+
+    <p>Estimation is not a project-management nicety — it is priced into everything. A fixed-price quote built on estimates that run 1.6× is a quote priced at 62% of its true cost. A retainer sized on optimistic estimates is a retainer you deliver at a loss while feeling busy.</p>
+    <p>So the correction factor is directly a commercial input: it belongs in <a href="/blog/pricing-retainers-from-time-data">how you price retainers</a> and in <a href="/blog/project-profitability-from-task-hours">how you assess project profitability</a>. Teams that measure it typically discover their most-loved client is their least profitable — which is a useful, if uncomfortable, thing to learn from your own data rather than from a bad year.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Root cause</th><td>Estimating the ideal path; omitting coordination, review, rework and interruption</td></tr>
+      <tr><th>Minimum to measure</th><td>Estimated time, actual time, task type — three fields</td></tr>
+      <tr><th>Correction factor</th><td>Median actual ÷ median estimated, across completed tasks</td></tr>
+      <tr><th>Worked example</th><td>96h estimated vs 154h actual → ratio ≈ 1.6 → plan 40h of work as 64h</td></tr>
+      <tr><th>Healthy ratio</th><td>1.0–1.2; services work commonly sits at 1.5–2.0</td></tr>
+      <tr><th>Red flag</th><td>Above 2.5 (scope undefined) or consistently below 1.0 (padded estimates)</td></tr>
+      <tr><th>Best single technique</th><td>Compare to similar completed tasks instead of reasoning forward</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>Why are time estimates always too low?</summary><p>Because people estimate the path they can picture — the work itself — and omit the work they cannot picture: clarification, review, revision, waiting on dependencies and interruptions. This is the planning fallacy, and it is structural rather than a matter of carelessness, which is why asking for more careful estimates does not fix it.</p></details>
+      <details><summary>How do you calculate estimate accuracy?</summary><p>Take completed tasks that carry both an estimate and a recorded actual, and compute the ratio of actual time to estimated time. Use the median rather than the mean so one extreme task does not distort the figure. For example, 96 hours estimated against 154 hours actual gives a ratio of about 1.6.</p></details>
+      <details><summary>What is a good estimate-to-actual ratio?</summary><p>A ratio between 1.0 and 1.2 is healthy. Services work with client feedback loops commonly sits between 1.5 and 2.0, which is workable if you plan with it. Above 2.5 usually means scope is not defined before estimating. Consistently below 1.0 means estimates are padded, which inflates quotes and makes planning unreliable in the other direction.</p></details>
+      <details><summary>How can I improve my team's estimates?</summary><p>Record actuals against estimates so the feedback loop closes, estimate by comparing to similar completed work rather than reasoning forward, use ranges instead of single numbers, break anything longer than a day into smaller pieces, and apply your measured correction factor to new estimates. Review misses by asking what was unaccounted for, never why someone was late.</p></details>
+      <details><summary>Should estimates be given in hours or days?</summary><p>Estimate in focused hours, then convert to elapsed days using a realistic focus factor. Most people have four to five genuinely focused hours in a working day rather than eight, so eight estimated hours is closer to two days than one. Conflating the two is one of the most common sources of missed deadlines.</p></details>
+      <details><summary>How does estimation accuracy affect profitability?</summary><p>Directly. A fixed-price quote built on estimates that run 1.6 times over is priced at roughly 62% of its real cost, and a retainer sized on optimistic estimates is delivered at a loss. Your measured correction factor belongs in pricing and in project profitability analysis, not just in project planning.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's task log captures estimated and actual time on the same entry, so the comparison exists without anyone running a separate exercise. Task Insights aggregates it across the log, and <code>predictTime()</code> suggests a duration for a new task by scoring it against similar past tasks — token overlap in the description, plus the same project and client — rather than by asking someone to guess again.</p>
+    <p>It is deliberately not a language model. It is a similarity lookup over your own history, and it tunes itself: <code>tuneTimeModel()</code> backtests its own weights leave-one-out against tasks whose real duration is already known, keeping whichever settings minimise median error. So the suggestion improves as your log grows, and it is explainable — you can see which past tasks it matched. See the <a href="/modules">task insights module</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="../app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Tasks" href="/blog/timesheets-vs-daily-task-logs">
+        <img class="thumb" src="../assets/images/blog/tasks.svg" alt="Timesheets vs daily task logs: which one does your team need?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Tasks</span>
+        <h3>Timesheets vs daily task logs: which one does your team need?</h3>
+        <p>Same raw material, very different compliance and usefulness.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Clients" href="/blog/project-profitability-from-task-hours">
+        <img class="thumb" src="../assets/images/blog/clients.svg" alt="Working out project profitability from your task hours" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Clients</span>
+        <h3>Working out project profitability from your task hours</h3>
+        <p>Turn the hours your team already logs into a per-project margin.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Clients" href="/blog/pricing-retainers-from-time-data">
+        <img class="thumb" src="../assets/images/blog/clients.svg" alt="How to price a retainer using your own time data" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Clients</span>
+        <h3>How to price a retainer using your own time data</h3>
+        <p>Stop guessing the monthly number — derive it from logged hours.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/#pricing">Pricing</a><a href="/blog/">Blog</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a></div>
+      <div><h5>Get started</h5><a href="../app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="../app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){
+    addEventListener('scroll',function(){
+      var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+      bar.style.width=(max>0?(y/max)*100:0)+'%';
+    },{passive:true});
+  }
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

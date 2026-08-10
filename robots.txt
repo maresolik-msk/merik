@@ -2,7 +2,9 @@ User-agent: *
 Allow: /
 Disallow: /app/
 
-# AI / answer-engine crawlers explicitly welcomed on marketing pages
+# AI / answer-engine crawlers explicitly welcomed on marketing pages.
+# Two kinds are listed: training/indexing crawlers, and the live retrieval
+# agents that fetch a page while answering a user's question.
 User-agent: GPTBot
 Allow: /
 Disallow: /app/
@@ -11,7 +13,15 @@ User-agent: OAI-SearchBot
 Allow: /
 Disallow: /app/
 
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /app/
+
 User-agent: PerplexityBot
+Allow: /
+Disallow: /app/
+
+User-agent: Perplexity-User
 Allow: /
 Disallow: /app/
 
@@ -19,7 +29,39 @@ User-agent: ClaudeBot
 Allow: /
 Disallow: /app/
 
+User-agent: Claude-User
+Allow: /
+Disallow: /app/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /app/
+
 User-agent: Google-Extended
+Allow: /
+Disallow: /app/
+
+User-agent: Applebot
+Allow: /
+Disallow: /app/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /app/
+
+User-agent: Amazonbot
+Allow: /
+Disallow: /app/
+
+User-agent: meta-externalagent
+Allow: /
+Disallow: /app/
+
+User-agent: Bytespider
+Allow: /
+Disallow: /app/
+
+User-agent: cohere-ai
 Allow: /
 Disallow: /app/
 

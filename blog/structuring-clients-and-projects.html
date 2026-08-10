@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>How to Structure Clients and Projects So Reporting Actually Works</title>
+<meta name="description" content="Get the client-project hierarchy right once and every report downstream is free. How to name projects, avoid free-typed entries, handle retainers vs one-off work, and fix a messy history.">
+<meta name="keywords" content="client project structure, project naming convention, agency project management, client hierarchy, project taxonomy, project reporting structure, clean project data">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/structuring-clients-and-projects">
+<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Structuring clients and projects so reporting works">
+<meta property="og:description" content="Get the hierarchy right once and every report downstream comes free.">
+<meta property="og:url" content="https://www.merik.in/blog/structuring-clients-and-projects">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/clients.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-07">
+<meta property="article:modified_time" content="2026-08-10">
+<meta property="article:section" content="Clients">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Structuring clients and projects so reporting works">
+<meta name="twitter:description" content="Get the hierarchy right once and every report downstream comes free.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/structuring-clients-and-projects#post","headline":"How to Structure Clients and Projects So Reporting Actually Works","description":"Get the client-project hierarchy right once and every report downstream is free. How to name projects, avoid free-typed entries, handle retainers vs one-off work, and fix a messy history.","datePublished":"2026-08-07","dateModified":"2026-08-10","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/structuring-clients-and-projects","image":"https://www.merik.in/assets/images/blog/clients.svg","articleSection":"Clients","keywords":"client project structure, project naming convention, agency project management, client hierarchy, project taxonomy, project reporting structure, clean project data","wordCount":801,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Clients & projects","item":"https://www.merik.in/blog/structuring-clients-and-projects"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"How should clients and projects be structured?","acceptedAnswer":{"@type":"Answer","text":"Use two levels. A client is the organisation that receives the invoice, and a project is a named body of work belonging to exactly one client. Daily task entries carry the project, and therefore inherit the client. A third level such as sub-projects usually adds admin without changing any decision you make."}},
+      {"@type":"Question","name":"Why shouldn't project names be typed freely?","acceptedAnswer":{"@type":"Answer","text":"Because free text produces multiple spellings of the same project — different capitalisation, punctuation and abbreviations — which a database treats as distinct values. Reports then split one project across several rows and no total is correct. Selecting from a picklist scoped to the chosen client prevents this at the point of entry."}},
+      {"@type":"Question","name":"How should recurring retainer work be structured?","acceptedAnswer":{"@type":"Answer","text":"Create one project per client per period, such as a quarter, half-year or year, rather than one project per deliverable. Per-deliverable projects multiply into hundreds of records within a couple of years and make comparison impossible. A period boundary lets you compare utilisation across periods."}},
+      {"@type":"Question","name":"How do you track internal and non-billable time?","acceptedAnswer":{"@type":"Answer","text":"Create an internal client representing your own company and log admin, business development, training and similar work against projects under it. If internal time is not captured, it either disappears from the record or gets attributed to a client project, and every profitability figure you produce is overstated as a result."}},
+      {"@type":"Question","name":"How do I clean up a messy history of project names?","acceptedAnswer":{"@type":"Answer","text":"List every distinct project string with its entry count, create proper client and project records, map each old string to a real project, apply the mapping in bulk while retaining the original text for audit, and then switch to a picklist immediately. Skipping that final step means repeating the exercise next year."}},
+      {"@type":"Question","name":"Should closed projects be deleted?","acceptedAnswer":{"@type":"Answer","text":"No. Mark them closed instead. Closed projects still hold the history you need for estimating similar future work, for profitability comparisons, and for answering questions about past invoices. Deleting them removes exactly the reference data that makes future estimates better."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="../app/">Sign In</a>
+        <a class="btn btn-primary" href="../app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Clients &amp; projects</nav>
+    <div class="eyebrow">Clients</div>
+    <h1>Structure clients and projects so <span class="accent">reporting works</span></h1>
+    <p class="lead">Every question you'll ever want answered about profitability depends on a hierarchy decision you make in week one.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="../assets/images/blog/clients.svg" alt="Client and project hierarchy for reporting" width="640" height="384">
+    <p class="post-meta">Published 7 August 2026 · Updated 10 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>Get the client-project hierarchy right and every report downstream is free; get it wrong and no amount of reporting effort recovers it.</b> The rule is short: clients are the entity that pays, projects belong to exactly one client, and both are selected from a list rather than typed. Almost every messy analytics situation in a small services business traces back to breaking one of those three.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li><b>Client = who pays. Project = a body of work for exactly one client.</b> Don't blur the two levels.</li>
+      <li><b>Never allow free-typed project names.</b> "Rajvi SEO", "rajvi seo" and "Rajvi S.E.O." are three projects to a database and one to a human.</li>
+      <li>Two levels is usually enough. A third level of sub-projects doubles the admin and rarely changes a decision.</li>
+      <li>Use a <b>continuous retainer project per client per period</b>, not one project per deliverable, or you'll drown in projects.</li>
+      <li>Fixing a messy history is a one-time mapping exercise — do it once and then close the door with a picklist.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#model">The two-level model, and why not three</a></li>
+      <li><a href="#freetype">The free-typed project name problem</a></li>
+      <li><a href="#naming">A naming convention that survives contact with reality</a></li>
+      <li><a href="#retainers">Retainers, one-offs and internal time</a></li>
+      <li><a href="#fixing">Fixing a messy history</a></li>
+      <li><a href="#payoff">What the structure gives you</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="model">The two-level model, and why not three</h2>
+
+    <p>The structure that works for almost every small services business:</p>
+    <table class="facts">
+      <tr><th>Client</th><td>The organisation that receives an invoice. One record, one code, however many projects it has.</td></tr>
+      <tr><th>Project</th><td>A named body of work belonging to exactly one client. Time is logged against this.</td></tr>
+      <tr><th>Task entry</th><td>An individual piece of work, logged daily, carrying its project (and therefore its client).</td></tr>
+    </table>
+    <p>Teams frequently want a third level — phases, workstreams, sub-projects. Before you add it, ask what decision it changes. Usually the answer is none: you already know the project's total cost and who worked on it. What the third level reliably adds is one more field on every task entry, which reduces <a href="/blog/timesheets-vs-daily-task-logs">the rate at which the log gets filled in at all</a>. If you genuinely need phases, express them as separate projects ("Website — Phase 2") rather than a new hierarchy level.</p>
+
+
+    <h2 id="freetype">The free-typed project name problem</h2>
+
+    <p>If your task log lets people type a project name, you do not have project data. You have text. Within a few months you will have "Rajvi SEO", "Rajvi Seo", "rajvi-seo", "Rajvi SEO &amp; Marketing" and "Rajvi (SEO)" — five distinct values to a database, one project to a human, and no report that adds them up.</p>
+    <p>The fix is a picklist: projects are created deliberately, then selected. This costs one small moment of friction when a genuinely new project starts, and saves the entire reporting layer. Combine it with:</p>
+    <ul>
+      <li><b>Projects scoped to a client</b> — picking a client filters the project list, which makes selection fast and prevents cross-client mistakes.</li>
+      <li><b>Uniqueness per client</b> — the same project name may exist for two different clients, but not twice for one.</li>
+      <li><b>An explicit "create project" action</b> that a manager takes, not an implicit one triggered by typing something new.</li>
+    </ul>
+    <blockquote>Free-typed project names are the single most common cause of "we can't report on that" in small services businesses. The damage is invisible for months and then permanent.</blockquote>
+
+
+    <h2 id="naming">A naming convention that survives contact with reality</h2>
+
+    <p>Keep it short and mechanical:</p>
+    <ul>
+      <li><b>Don't repeat the client name in the project name.</b> The hierarchy already carries it. "Rajvi — Rajvi Website Revamp" wastes the readable part of every report column.</li>
+      <li><b>Lead with the work type</b> — "Website revamp", "SEO retainer", "Brand identity". This makes lists scannable and groupable.</li>
+      <li><b>Add a period for recurring work</b> — "SEO retainer 2026" or "Social media — H2 2026". Recurring work without a period boundary becomes an immortal project you can never analyse.</li>
+      <li><b>Avoid dates in one-off project names</b> unless the date is meaningful. Start dates belong in fields, not in names.</li>
+      <li><b>Avoid internal codes as names.</b> "PRJ-0142" is precise and unreadable; nobody selects the right one from a dropdown at 6pm.</li>
+    </ul>
+
+
+    <h2 id="retainers">Retainers, one-offs and internal time</h2>
+
+    <p>Three patterns cover nearly everything:</p>
+    <ul>
+      <li><b>Retainers</b> — one project per client per period (quarter, half-year or year). Not one per deliverable, or a monthly social media retainer becomes 200 projects in two years and every report becomes unusable. The period boundary is what lets you compare this quarter with last.</li>
+      <li><b>One-off projects</b> — one project, closed when delivered. Mark them closed rather than deleting; closed projects still hold history you will want.</li>
+      <li><b>Internal work</b> — create an internal "client" for your own company and log admin, business development, training and leave-adjacent work against projects under it. Without this, internal time either vanishes or gets misattributed to whichever client is nearest, which quietly corrupts every profitability number you produce.</li>
+    </ul>
+    <p>That last point matters more than it sounds. If 20% of your team's time is internal and untracked, every client project looks 20% more profitable than it is. <a href="/blog/project-profitability-from-task-hours">The full calculation is here.</a></p>
+
+
+    <h2 id="fixing">Fixing a messy history</h2>
+
+    <p>If you already have months of free-typed entries, the data is recoverable — it is a one-time mapping exercise, not a rebuild:</p>
+    <ol>
+      <li><b>List every distinct project string</b> in the history, with its entry count. The long tail is usually typos; the head is usually five real projects.</li>
+      <li><b>Create the real client and project records</b> properly, using the naming convention.</li>
+      <li><b>Map each old string to a real project.</b> Most map obviously; a small number need someone who was there to decide.</li>
+      <li><b>Apply the mapping in bulk</b>, keeping the original string on the row so you can audit or reverse it.</li>
+      <li><b>Close the door</b> — switch to a picklist the same day, or you will be repeating this exercise next year.</li>
+    </ol>
+    <p>Step 5 is the one people skip. Cleaning historical data without preventing new mess is a treadmill.</p>
+
+
+    <h2 id="payoff">What the structure gives you</h2>
+
+    <p>With clients and projects clean, these all become queries rather than projects in themselves:</p>
+    <ul>
+      <li>Hours and cost per client, per project, per person, per month.</li>
+      <li>Retainer utilisation — delivered against sold, which drives <a href="/blog/pricing-retainers-from-time-data">the next renewal price</a>.</li>
+      <li>Profitability per project, and therefore which clients are worth expanding.</li>
+      <li>Estimate accuracy per project type, feeding <a href="/blog/time-estimates-vs-actuals">better estimation</a>.</li>
+      <li>A defensible basis for an invoice, because the hours behind it are itemised — see <a href="/blog/quote-to-invoice-workflow">the quote-to-invoice flow</a>.</li>
+    </ul>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Client</th><td>The organisation that receives an invoice — one record, one code</td></tr>
+      <tr><th>Project</th><td>A named body of work belonging to exactly one client</td></tr>
+      <tr><th>Levels needed</th><td>Two. A third level rarely changes a decision and reduces log compliance</td></tr>
+      <tr><th>Hard rule</th><td>Projects are selected from a list, never free-typed</td></tr>
+      <tr><th>Uniqueness</th><td>Project names unique per client, reusable across different clients</td></tr>
+      <tr><th>Retainer pattern</th><td>One project per client per period — never one per deliverable</td></tr>
+      <tr><th>Internal time</th><td>Create an internal client, or client profitability is overstated</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>How should clients and projects be structured?</summary><p>Use two levels. A client is the organisation that receives the invoice, and a project is a named body of work belonging to exactly one client. Daily task entries carry the project, and therefore inherit the client. A third level such as sub-projects usually adds admin without changing any decision you make.</p></details>
+      <details><summary>Why shouldn't project names be typed freely?</summary><p>Because free text produces multiple spellings of the same project — different capitalisation, punctuation and abbreviations — which a database treats as distinct values. Reports then split one project across several rows and no total is correct. Selecting from a picklist scoped to the chosen client prevents this at the point of entry.</p></details>
+      <details><summary>How should recurring retainer work be structured?</summary><p>Create one project per client per period, such as a quarter, half-year or year, rather than one project per deliverable. Per-deliverable projects multiply into hundreds of records within a couple of years and make comparison impossible. A period boundary lets you compare utilisation across periods.</p></details>
+      <details><summary>How do you track internal and non-billable time?</summary><p>Create an internal client representing your own company and log admin, business development, training and similar work against projects under it. If internal time is not captured, it either disappears from the record or gets attributed to a client project, and every profitability figure you produce is overstated as a result.</p></details>
+      <details><summary>How do I clean up a messy history of project names?</summary><p>List every distinct project string with its entry count, create proper client and project records, map each old string to a real project, apply the mapping in bulk while retaining the original text for audit, and then switch to a picklist immediately. Skipping that final step means repeating the exercise next year.</p></details>
+      <details><summary>Should closed projects be deleted?</summary><p>No. Mark them closed instead. Closed projects still hold the history you need for estimating similar future work, for profitability comparisons, and for answering questions about past invoices. Deleting them removes exactly the reference data that makes future estimates better.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik models clients and projects the way this article describes: client records with auto-derived codes, projects belonging to one client and unique per client, and task entries that select a project rather than typing one. Bulk edit and delete are available for the housekeeping that inevitably comes up.</p>
+    <p>For teams arriving with a messy history, there is a dedicated repair screen — Fix Project Names — that attaches historical, free-typed project names on task entries to real project records: it guesses the mapping, lets you review it, and applies it per-row or in bulk, retaining the original value. Once clean, Project Intelligence rolls everything up: stage stepper, contributor avatars, sparklines and per-project drill-down. See the <a href="/modules">client and project modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="../app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Clients" href="/blog/project-profitability-from-task-hours">
+        <img class="thumb" src="../assets/images/blog/clients.svg" alt="Working out project profitability from your task hours" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Clients</span>
+        <h3>Working out project profitability from your task hours</h3>
+        <p>Turn the hours your team already logs into a per-project margin.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Clients" href="/blog/quote-to-invoice-workflow">
+        <img class="thumb" src="../assets/images/blog/clients.svg" alt="The quote-to-invoice workflow for a small services business" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Clients</span>
+        <h3>The quote-to-invoice workflow for a small services business</h3>
+        <p>From line-item quote to sent invoice without retyping anything.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Tasks" href="/blog/timesheets-vs-daily-task-logs">
+        <img class="thumb" src="../assets/images/blog/tasks.svg" alt="Timesheets vs daily task logs: which one does your team need?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Tasks</span>
+        <h3>Timesheets vs daily task logs: which one does your team need?</h3>
+        <p>Same raw material, very different compliance and usefulness.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/#pricing">Pricing</a><a href="/blog/">Blog</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a></div>
+      <div><h5>Get started</h5><a href="../app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="../app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){
+    addEventListener('scroll',function(){
+      var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+      bar.style.width=(max>0?(y/max)*100:0)+'%';
+    },{passive:true});
+  }
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

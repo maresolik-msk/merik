@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>IT Asset Management for Small Businesses: The Register You Actually Need</title>
+<meta name="description" content="How to build a hardware asset register that stays accurate — what fields to track, assignment and return workflows, tying assets to employee exit, and the audit routine that keeps it honest.">
+<meta name="keywords" content="IT asset management small business, hardware asset register, laptop tracking employees, asset assignment, IT inventory management, asset tracking spreadsheet, employee equipment tracking">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/it-asset-management-small-business">
+<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="IT asset management for small businesses">
+<meta property="og:description" content="Who has which laptop, since when, and what comes back at exit.">
+<meta property="og:url" content="https://www.merik.in/blog/it-asset-management-small-business">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/assets.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-09">
+<meta property="article:modified_time" content="2026-08-10">
+<meta property="article:section" content="Assets">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="IT asset management for small businesses">
+<meta name="twitter:description" content="Who has which laptop, since when, and what comes back at exit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/it-asset-management-small-business#post","headline":"IT Asset Management for Small Businesses: The Register You Actually Need","description":"How to build a hardware asset register that stays accurate — what fields to track, assignment and return workflows, tying assets to employee exit, and the audit routine that keeps it honest.","datePublished":"2026-08-09","dateModified":"2026-08-10","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/it-asset-management-small-business","image":"https://www.merik.in/assets/images/blog/assets.svg","articleSection":"Assets","keywords":"IT asset management small business, hardware asset register, laptop tracking employees, asset assignment, IT inventory management, asset tracking spreadsheet, employee equipment tracking","wordCount":756,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"IT asset management","item":"https://www.merik.in/blog/it-asset-management-small-business"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What should an IT asset register include?","acceptedAnswer":{"@type":"Answer","text":"An asset ID matching a physical tag, the asset type, make, model and serial number, purchase date and cost, warranty or AMC end date, current status, the employee it is assigned to, the assignment date and condition notes. Nine fields is enough — registers fail from being too detailed to maintain, not from being too simple."}},
+      {"@type":"Question","name":"Why track asset assignment history instead of just the current holder?","acceptedAnswer":{"@type":"Answer","text":"Because the current holder alone cannot settle a dispute. If a device has passed through three people, damage reported by the third can only be assessed against the condition recorded when the second returned it. Assignment history is also what answers security questions such as who held a particular device on a particular date."}},
+      {"@type":"Question","name":"How do you stop employees leaving with company laptops?","acceptedAnswer":{"@type":"Answer","text":"Tie asset return to the offboarding process, specifically as a checkpoint before the full and final settlement is released. That creates a natural moment where both parties need something from each other, which is far more reliable than reminders. It only works if the register records who holds what in the first place."}},
+      {"@type":"Question","name":"How often should an asset register be audited?","acceptedAnswer":{"@type":"Answer","text":"Once or twice a year. Export the register, physically sight each asset — a photo of the device with its asset tag is sufficient for remote staff — and reconcile matches, mismatches and missing items. Record the audit date against each asset so the next audit knows what has been verified and when."}},
+      {"@type":"Question","name":"Should asset condition be recorded at handover?","acceptedAnswer":{"@type":"Answer","text":"Yes, at both handover and return. Without a recorded condition, every damage conversation becomes one person's recollection against another's, which is unresolvable and damages trust regardless of who is right. A short note and, ideally, a photo takes a minute and settles the question permanently."}},
+      {"@type":"Question","name":"What asset policies should a small business write down?","acceptedAnswer":{"@type":"Answer","text":"Whether personal use is permitted, what happens in cases of accidental damage or loss, whether devices may be taken home or travelled with, when assets must be returned during a notice period, and how personal devices used for work are handled. Each of these must be written before an incident, not decided during one."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="../app/">Sign In</a>
+        <a class="btn btn-primary" href="../app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> IT asset management</nav>
+    <div class="eyebrow">Assets</div>
+    <h1>The asset register you <span class="accent">actually need</span></h1>
+    <p class="lead">Nobody plans to lose a laptop. They just never write down who took it, and three job changes later it's gone.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="../assets/images/blog/assets.svg" alt="Hardware asset register with assignment history" width="640" height="384">
+    <p class="post-meta">Published 9 August 2026 · Updated 10 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>An IT asset register records every piece of company hardware, who currently holds it, and every assignment it has had.</b> Small businesses usually start one in a spreadsheet, keep it accurate for four months, and then discover during an exit that the record has not been touched since. The fix is not a bigger spreadsheet — it is tying assignment and return to events that already happen, namely onboarding and offboarding.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Track <b>assignment history</b>, not just the current holder. "Who has it now" without "who had it before" can't settle a dispute.</li>
+      <li>Nine fields are enough. Registers fail from being too detailed to maintain, never from being too simple.</li>
+      <li>Attach assignment to <b>onboarding</b> and return to <b>offboarding</b> — a register maintained separately always rots.</li>
+      <li>Record the <b>condition</b> at handover and return, or every damage conversation is one person's word against another's.</li>
+      <li>Audit once or twice a year by physical sighting. An unaudited register is a claim, not a record.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#why">What an unmaintained register actually costs</a></li>
+      <li><a href="#fields">The nine fields worth tracking</a></li>
+      <li><a href="#history">Why assignment history matters more than current state</a></li>
+      <li><a href="#workflow">Assignment and return as part of joining and leaving</a></li>
+      <li><a href="#policy">The policy points to settle in advance</a></li>
+      <li><a href="#audit">The audit that keeps it honest</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="why">What an unmaintained register actually costs</h2>
+
+    <p>The costs are rarely dramatic and always add up:</p>
+    <ul>
+      <li><b>Equipment that never comes back.</b> Someone leaves, the laptop goes with them, and nobody realises for a year because no record said they had it.</li>
+      <li><b>Buying what you already own.</b> Three machines sit in a cupboard while you order two new ones, because the cupboard is not in any list.</li>
+      <li><b>Missed warranty and AMC windows.</b> A failed machine that was under warranty until last month is a pure avoidable cost.</li>
+      <li><b>Unresolvable damage disputes.</b> Without a recorded condition at handover, "it was already cracked" cannot be checked.</li>
+      <li><b>Security exposure.</b> You cannot secure or wipe a device you do not know exists or cannot locate.</li>
+    </ul>
+    <p>None of these are catastrophic individually. Collectively, for a 40-person business, they are easily worth several lakh a year in replaced equipment and lost warranty cover.</p>
+
+
+    <h2 id="fields">The nine fields worth tracking</h2>
+
+    <p>Resist the urge to be comprehensive. A register with 25 fields is a register nobody updates:</p>
+    <ol>
+      <li><b>Asset ID</b> — your own tag, physically stuck on the device.</li>
+      <li><b>Type</b> — laptop, monitor, phone, keyboard, router.</li>
+      <li><b>Make, model and serial number</b> — the serial is what insurance, warranty and police reports need.</li>
+      <li><b>Purchase date and cost</b> — feeds warranty tracking and depreciation.</li>
+      <li><b>Warranty or AMC end date</b> — the field that most often pays for the whole exercise.</li>
+      <li><b>Current status</b> — assigned, available, under repair, retired, lost.</li>
+      <li><b>Currently assigned to</b> — an employee record, not a typed name.</li>
+      <li><b>Assignment date</b>.</li>
+      <li><b>Condition notes</b> — recorded at each handover and return.</li>
+    </ol>
+    <p>Everything else — MAC address, OS version, installed software — belongs in a device management tool if you need it, not in the register that HR and ops maintain by hand.</p>
+
+
+    <h2 id="history">Why assignment history matters more than current state</h2>
+
+    <p>Most registers record only who holds the asset now, which is exactly the information that fails you when it matters. Consider a laptop passed from Anita to Ravi to Priya over two years. Priya reports a cracked hinge. Without history you know only that Priya has it. With history you know Ravi returned it noted as damaged, which changes the conversation entirely.</p>
+    <p>The same applies to security incidents ("who had this device in March?"), to depreciation and to warranty claims. Keep <b>assigned-to, assigned-on, returned-on and condition at each transition</b> — one row per assignment, never overwritten.</p>
+    <blockquote>Overwriting the assignment field is the asset-register equivalent of overwriting an attendance record: fast, easy, and it destroys the only evidence you have.</blockquote>
+
+
+    <h2 id="workflow">Assignment and return as part of joining and leaving</h2>
+
+    <p>Registers rot when maintaining them is a separate task. Attach them to events that already happen:</p>
+    <p><b>At onboarding</b>, alongside creating the employee record and login: assign the laptop and peripherals, record condition and accessories, and have the employee acknowledge receipt. <a href="/blog/employee-onboarding-checklist-small-business">Add it to the onboarding checklist</a> rather than treating it as IT's private business.</p>
+    <p><b>At offboarding</b>, before the final settlement is released: collect the assets, record the return with condition, and mark them available or under repair. This is the control that matters most — tying asset return to <a href="/blog/employee-exit-full-and-final-settlement">full and final settlement</a> means it actually happens, because there is a natural checkpoint where both parties need something from each other.</p>
+    <p><b>Between those</b>, handle transfers as a return followed by an assignment, so the history stays clean rather than jumping from one holder to the next with no record of the intervening state.</p>
+
+
+    <h2 id="policy">The policy points to settle in advance</h2>
+
+    <ul>
+      <li><b>Personal use.</b> Is the laptop usable for personal things? Say so either way — silence is interpreted as yes.</li>
+      <li><b>Damage and loss.</b> What happens on accidental damage, and on loss? A recovery policy must be written before an incident, or it reads as retaliation.</li>
+      <li><b>Home and travel use.</b> Whether devices leave the office, and what care is expected.</li>
+      <li><b>Return timing.</b> Which day of the notice period assets are returned — usually the last working day, before settlement is released.</li>
+      <li><b>Bring-your-own devices.</b> If employees use personal machines for work, that is a security decision that belongs in <a href="/blog/workforce-data-security-checklist">your data security posture</a>, not an afterthought.</li>
+    </ul>
+
+
+    <h2 id="audit">The audit that keeps it honest</h2>
+
+    <p>An unaudited register drifts within a year regardless of how good the process is. Once or twice a year:</p>
+    <ol>
+      <li>Export the register.</li>
+      <li>Physically sight every asset — for remote staff, a photo of the device with its asset tag is adequate.</li>
+      <li>Reconcile: found and matching, found but assigned to someone else, not found.</li>
+      <li>Investigate the third category immediately, while people still remember.</li>
+      <li>Record the audit date on each asset, so the next audit knows what has been verified and when.</li>
+    </ol>
+    <p>The first audit is always uncomfortable and always worth doing. Subsequent ones take a fraction of the time, because the process fixes itself once people know a sighting is coming.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Core fields</th><td>Asset ID, type, make/model/serial, purchase date and cost, warranty end, status, assigned to, assignment date, condition</td></tr>
+      <tr><th>Most valuable single field</th><td>Warranty or AMC end date — it typically pays for the whole exercise</td></tr>
+      <tr><th>Keep as history</th><td>One row per assignment: assigned to, assigned on, returned on, condition</td></tr>
+      <tr><th>Assignment trigger</th><td>Employee onboarding</td></tr>
+      <tr><th>Return trigger</th><td>Offboarding, before full and final settlement is released</td></tr>
+      <tr><th>Transfers</th><td>Record as a return followed by a new assignment, never as an overwrite</td></tr>
+      <tr><th>Audit cadence</th><td>Once or twice a year, by physical sighting or photo with asset tag</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What should an IT asset register include?</summary><p>An asset ID matching a physical tag, the asset type, make, model and serial number, purchase date and cost, warranty or AMC end date, current status, the employee it is assigned to, the assignment date and condition notes. Nine fields is enough — registers fail from being too detailed to maintain, not from being too simple.</p></details>
+      <details><summary>Why track asset assignment history instead of just the current holder?</summary><p>Because the current holder alone cannot settle a dispute. If a device has passed through three people, damage reported by the third can only be assessed against the condition recorded when the second returned it. Assignment history is also what answers security questions such as who held a particular device on a particular date.</p></details>
+      <details><summary>How do you stop employees leaving with company laptops?</summary><p>Tie asset return to the offboarding process, specifically as a checkpoint before the full and final settlement is released. That creates a natural moment where both parties need something from each other, which is far more reliable than reminders. It only works if the register records who holds what in the first place.</p></details>
+      <details><summary>How often should an asset register be audited?</summary><p>Once or twice a year. Export the register, physically sight each asset — a photo of the device with its asset tag is sufficient for remote staff — and reconcile matches, mismatches and missing items. Record the audit date against each asset so the next audit knows what has been verified and when.</p></details>
+      <details><summary>Should asset condition be recorded at handover?</summary><p>Yes, at both handover and return. Without a recorded condition, every damage conversation becomes one person's recollection against another's, which is unresolvable and damages trust regardless of who is right. A short note and, ideally, a photo takes a minute and settles the question permanently.</p></details>
+      <details><summary>What asset policies should a small business write down?</summary><p>Whether personal use is permitted, what happens in cases of accidental damage or loss, whether devices may be taken home or travelled with, when assets must be returned during a notice period, and how personal devices used for work are handled. Each of these must be written before an incident, not decided during one.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik includes a hardware asset register with assignment to employees, return, and a full assignment history — so the chain of custody survives people changing roles or leaving. Because assets sit in the same workspace as the employee records, assigning a laptop is part of setting someone up rather than a separate spreadsheet somebody remembers to open.</p>
+    <p>Offboarding runs through the same system, so asset return is visible at the point where an employee is being removed or given a last working day. Software subscriptions and seats are tracked alongside hardware, which is where the other half of your equipment spend usually hides. See the <a href="/modules">asset and software modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="../app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Assets" href="/blog/software-subscription-spend-management">
+        <img class="thumb" src="../assets/images/blog/assets.svg" alt="Software subscription spend: finding the seats nobody uses" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Assets</span>
+        <h3>Software subscription spend: finding the seats nobody uses</h3>
+        <p>A monthly routine that quietly removes 20–30% of SaaS waste.</p></div>
+      </a>
+      <a class="blog-card" data-cat="HR" href="/blog/employee-exit-full-and-final-settlement">
+        <img class="thumb" src="../assets/images/blog/hr.svg" alt="Employee exit and full &amp;amp; final settlement" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">HR</span>
+        <h3>Employee exit and full &amp; final settlement</h3>
+        <p>What to check, calculate, and how to close out cleanly.</p></div>
+      </a>
+      <a class="blog-card" data-cat="HR" href="/blog/employee-onboarding-checklist-small-business">
+        <img class="thumb" src="../assets/images/blog/hr.svg" alt="Employee onboarding checklist for small businesses" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">HR</span>
+        <h3>Employee onboarding checklist for small businesses</h3>
+        <p>What to set up before day one, in week one, and the first month.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/#pricing">Pricing</a><a href="/blog/">Blog</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a></div>
+      <div><h5>Get started</h5><a href="../app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="../app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){
+    addEventListener('scroll',function(){
+      var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+      bar.style.width=(max>0?(y/max)*100:0)+'%';
+    },{passive:true});
+  }
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

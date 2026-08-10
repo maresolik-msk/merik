@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Workforce Data Security: What to Check Before You Upload Your Team</title>
+<meta name="description" content="The questions to ask any HR or payroll tool before it holds your salaries, IDs and bank details — tenant isolation, access control, encryption, where salary maths runs, backups, exports and vendor exit.">
+<meta name="keywords" content="HR data security, employee data protection, multi-tenant isolation, row level security, payroll data security, HR software security checklist, DPDP employee data">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/workforce-data-security-checklist">
+<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Workforce data security: what to check before you upload your team">
+<meta property="og:description" content="The questions to ask any HR tool that will hold your salaries and IDs.">
+<meta property="og:url" content="https://www.merik.in/blog/workforce-data-security-checklist">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/security.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-10">
+<meta property="article:modified_time" content="2026-08-10">
+<meta property="article:section" content="HR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Workforce data security: what to check before you upload your team">
+<meta name="twitter:description" content="The questions to ask any HR tool that will hold your salaries and IDs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/workforce-data-security-checklist#post","headline":"Workforce Data Security: What to Check Before You Upload Your Team","description":"The questions to ask any HR or payroll tool before it holds your salaries, IDs and bank details — tenant isolation, access control, encryption, where salary maths runs, backups, exports and vendor exit.","datePublished":"2026-08-10","dateModified":"2026-08-10","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/workforce-data-security-checklist","image":"https://www.merik.in/assets/images/blog/security.svg","articleSection":"HR","keywords":"HR data security, employee data protection, multi-tenant isolation, row level security, payroll data security, HR software security checklist, DPDP employee data","wordCount":701,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Data security","item":"https://www.merik.in/blog/workforce-data-security-checklist"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What should I check before putting employee data into an HR system?","acceptedAnswer":{"@type":"Answer","text":"Ask where tenant isolation is enforced, where salary calculations run, how access is scoped by role, what is encrypted at rest, how backups and restores work, whether you can export all your data, where the data is stored geographically, and what happens to it if you cancel. The clarity of the answers is itself informative."}},
+      {"@type":"Question","name":"What is multi-tenant isolation in HR software?","acceptedAnswer":{"@type":"Answer","text":"It is the separation between different companies' data in a system that serves many companies. The important distinction is where it is enforced: if only application code filters by company, a single missing filter exposes another company's records. If the database enforces it — for example with row-level security in Postgres — a missing application filter still returns nothing extra, because it fails closed."}},
+      {"@type":"Question","name":"Why does it matter where payroll calculations run?","acceptedAnswer":{"@type":"Answer","text":"Because anything computed in the browser runs on a machine the user controls and can therefore be modified there, regardless of what the interface displays. Salary calculations should run server-side, with the browser sending inputs and displaying results, so the numbers that get saved are the ones the server computed."}},
+      {"@type":"Question","name":"Should employees be able to see each other's salaries in HR software?","acceptedAnswer":{"@type":"Answer","text":"No. Access should be scoped so an employee sees only their own attendance, leave, tasks and payslips, a company administrator sees everything for their own company and nothing beyond it, and vendor staff have no routine access at all — with any support access logged, time-bound and disclosed to you."}},
+      {"@type":"Question","name":"Can I export my data from an HR system?","acceptedAnswer":{"@type":"Answer","text":"You should be able to, and you should test it during the trial rather than assuming. A full export of employees, attendance, leave, payroll history and tasks in CSV or a similar usable format protects you against vendor failure, gives you leverage at renewal, and covers the everyday need to work with data in a spreadsheet."}},
+      {"@type":"Question","name":"What does DPDP mean for employee data in India?","acceptedAnswer":{"@type":"Answer","text":"Under India's Digital Personal Data Protection framework, the organisation determining how employee personal data is processed carries obligations regarding its handling — and choosing a vendor does not transfer that accountability. Confirm where your data is stored, what your vendor does with it, and take professional advice on the specific obligations that apply to your business."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="../app/">Sign In</a>
+        <a class="btn btn-primary" href="../app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Data security</nav>
+    <div class="eyebrow">HR</div>
+    <h1>What to check before you upload <span class="accent">your whole team</span></h1>
+    <p class="lead">An HR system holds more sensitive data than almost anything else you run. Most buyers ask about features and never ask this.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="../assets/images/blog/security.svg" alt="Isolated company workspaces with enforced data separation" width="640" height="384">
+    <p class="post-meta">Published 10 August 2026 · Updated 10 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>An HR and payroll system holds salaries, government IDs, bank details, addresses and health-related leave records for every person you employ — a concentration of sensitive data unlike anything else a small business runs.</b> Before uploading it, there are eight questions worth asking any vendor. None require technical expertise to ask, and the quality of the answers tells you most of what you need to know.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Ask <b>where tenant isolation is enforced</b> — in the database, or only in application code. The difference is what a single bug costs you.</li>
+      <li>Ask <b>where salary calculations run</b>. Anything computed in the browser can be manipulated by the browser.</li>
+      <li>Check <b>role scoping</b>: an employee should see their own record, an admin only their own company.</li>
+      <li>Confirm you can <b>export everything</b> in a usable format. No export is a lock-in risk and a continuity risk.</li>
+      <li>Ask what happens to your data <b>when you leave</b> — deletion timeline, and what is retained.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#what">What you are actually handing over</a></li>
+      <li><a href="#isolation">Question 1 — Where is tenant isolation enforced?</a></li>
+      <li><a href="#compute">Question 2 — Where do salary calculations run?</a></li>
+      <li><a href="#roles">Question 3 — How is access scoped?</a></li>
+      <li><a href="#encryption">Question 4 — What is encrypted, and how are secrets held?</a></li>
+      <li><a href="#backups">Question 5 — Backups, retention and recovery</a></li>
+      <li><a href="#export">Question 6 — Can you get your data out?</a></li>
+      <li><a href="#legal">Questions 7 and 8 — Where does it live, and what happens when you leave?</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="what">What you are actually handing over</h2>
+
+    <p>Worth stating plainly, because it changes the seriousness of the evaluation. A workforce system typically holds, for every employee:</p>
+    <ul>
+      <li>Full name, address, date of birth, personal phone and email</li>
+      <li>Government identifiers — PAN, Aadhaar, PF/UAN, ESI numbers</li>
+      <li>Bank account details for salary credit</li>
+      <li>Full salary structure and revision history</li>
+      <li>Attendance, including location data where captured</li>
+      <li>Leave records, which can imply health information</li>
+      <li>Performance assessments and disciplinary notes</li>
+    </ul>
+    <p>A breach here is materially worse than a leak of your customer list, because it exposes people who did not choose the vendor and cannot mitigate the consequences themselves.</p>
+
+
+    <h2 id="isolation">Question 1 — Where is tenant isolation enforced?</h2>
+
+    <p>Almost every HR product is multi-tenant: many companies' data lives in one system, separated logically. The question is <i>where</i> that separation is enforced.</p>
+    <table class="facts">
+      <tr><th>Application-only</th><td>Every query includes a company filter written by a developer. One missing filter in one endpoint exposes another company's rows. The safety depends on nobody ever making a mistake.</td></tr>
+      <tr><th>Database-enforced</th><td>The database itself refuses to return rows outside the current company — row-level security in Postgres, or equivalent. A missing application filter still returns nothing extra.</td></tr>
+    </table>
+    <p>Database-enforced isolation is meaningfully stronger because it fails closed. Ask the question directly; a vendor that cannot answer it clearly is telling you something.</p>
+
+
+    <h2 id="compute">Question 2 — Where do salary calculations run?</h2>
+
+    <p>If payroll maths runs in the browser, then the numbers arriving at the server were computed on a machine the user controls. Anything computed client-side can be modified client-side, whatever the interface shows.</p>
+    <p>Salary calculation should run server-side, in code the user cannot reach, with the browser sending inputs and displaying results. Ask where it runs. This one question separates products built with an adversarial mindset from products built to demo well.</p>
+
+
+    <h2 id="roles">Question 3 — How is access scoped?</h2>
+
+    <p>Three levels should be distinct and enforced:</p>
+    <ul>
+      <li><b>Employee</b> — their own attendance, leave, tasks and payslips. Not their colleagues' salaries.</li>
+      <li><b>Company admin</b> — everything for their company, nothing outside it.</li>
+      <li><b>Vendor staff</b> — ideally nothing routinely, with any support access logged and time-bound.</li>
+    </ul>
+    <p>Ask specifically what vendor employees can see. "Our support team can view your workspace to help you" is common and not automatically wrong — but it should be logged, limited and disclosed rather than discovered.</p>
+
+
+    <h2 id="encryption">Question 4 — What is encrypted, and how are secrets held?</h2>
+
+    <p>Transport encryption (HTTPS) is table stakes; the interesting question is what happens to particularly sensitive values at rest. Any third-party API keys the product holds on your behalf, for instance, should be stored encrypted rather than in plain text, and should never be displayed back in full in a settings screen — showing only the last few characters is the correct pattern.</p>
+    <p>Ask: is data encrypted at rest, are secrets encrypted separately from general data, and can any staff member read a stored credential in plain text?</p>
+
+
+    <h2 id="backups">Question 5 — Backups, retention and recovery</h2>
+
+    <p>Three separate questions people tend to merge:</p>
+    <ul>
+      <li><b>Are there backups, how often, and are restores tested?</b> An untested backup is a hypothesis.</li>
+      <li><b>How long is data retained after deletion?</b> Relevant both for recovering a mistake and for knowing when data is genuinely gone.</li>
+      <li><b>What is the recovery expectation after an incident?</b> Not a contractual guarantee necessarily, but a straight answer.</li>
+    </ul>
+
+
+    <h2 id="export">Question 6 — Can you get your data out?</h2>
+
+    <p>Ask for an export of everything — employees, attendance, leave, payroll history, tasks — in a usable format such as CSV. Then actually try it during a trial.</p>
+    <p>This matters for three reasons: continuity if the vendor disappears, leverage at renewal, and the practical reality that you will occasionally need data in a spreadsheet. A product that makes export difficult is making a statement about how it expects to retain you.</p>
+
+
+    <h2 id="legal">Questions 7 and 8 — Where does it live, and what happens when you leave?</h2>
+
+    <p><b>Data location.</b> Ask which country the data is stored in and whether that is configurable. Data localisation expectations vary by sector and jurisdiction, and India's Digital Personal Data Protection framework places obligations on you as the entity determining how employee data is processed — you remain accountable for the processor you chose.</p>
+    <p><b>Vendor exit.</b> Ask what happens to your data if you cancel: how long before deletion, what is retained and why, and whether you receive confirmation. "It stays in backups indefinitely" is a real answer some vendors give, and you should know it before you sign rather than after.</p>
+    <p>None of this is legal advice — if you handle employee data at scale or in a regulated sector, take proper professional advice on your specific obligations. <a href="/blog/choosing-hr-software-small-business-checklist">The broader buying checklist is here.</a></p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Strongest isolation model</th><td>Enforced in the database (e.g. Postgres row-level security), not only in application code</td></tr>
+      <tr><th>Salary calculation</th><td>Must run server-side; anything client-side can be manipulated</td></tr>
+      <tr><th>Role scoping</th><td>Employee → own records only · Admin → own company only · Vendor → logged, limited, disclosed</td></tr>
+      <tr><th>Secrets</th><td>Encrypted at rest and never displayed in full — last-4 masking is the correct pattern</td></tr>
+      <tr><th>Backups</th><td>Regular, with tested restores; an untested backup is a hypothesis</td></tr>
+      <tr><th>Export</th><td>Full export in CSV or similar — test it during the trial</td></tr>
+      <tr><th>Vendor exit</th><td>Ask for the deletion timeline and what is retained afterwards</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What should I check before putting employee data into an HR system?</summary><p>Ask where tenant isolation is enforced, where salary calculations run, how access is scoped by role, what is encrypted at rest, how backups and restores work, whether you can export all your data, where the data is stored geographically, and what happens to it if you cancel. The clarity of the answers is itself informative.</p></details>
+      <details><summary>What is multi-tenant isolation in HR software?</summary><p>It is the separation between different companies' data in a system that serves many companies. The important distinction is where it is enforced: if only application code filters by company, a single missing filter exposes another company's records. If the database enforces it — for example with row-level security in Postgres — a missing application filter still returns nothing extra, because it fails closed.</p></details>
+      <details><summary>Why does it matter where payroll calculations run?</summary><p>Because anything computed in the browser runs on a machine the user controls and can therefore be modified there, regardless of what the interface displays. Salary calculations should run server-side, with the browser sending inputs and displaying results, so the numbers that get saved are the ones the server computed.</p></details>
+      <details><summary>Should employees be able to see each other's salaries in HR software?</summary><p>No. Access should be scoped so an employee sees only their own attendance, leave, tasks and payslips, a company administrator sees everything for their own company and nothing beyond it, and vendor staff have no routine access at all — with any support access logged, time-bound and disclosed to you.</p></details>
+      <details><summary>Can I export my data from an HR system?</summary><p>You should be able to, and you should test it during the trial rather than assuming. A full export of employees, attendance, leave, payroll history and tasks in CSV or a similar usable format protects you against vendor failure, gives you leverage at renewal, and covers the everyday need to work with data in a spreadsheet.</p></details>
+      <details><summary>What does DPDP mean for employee data in India?</summary><p>Under India's Digital Personal Data Protection framework, the organisation determining how employee personal data is processed carries obligations regarding its handling — and choosing a vendor does not transfer that accountability. Confirm where your data is stored, what your vendor does with it, and take professional advice on the specific obligations that apply to your business.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik is multi-tenant with isolation enforced in Postgres by row-level security, not only in application code — every company gets one workspace, and a query from one company cannot return another's rows. Roles are scoped accordingly: employees see their own work, company admins see their own company, and each role has its own navigation and its own allowed set of views.</p>
+    <p>All salary maths runs server-side in a secured payroll function rather than in the browser. Where the product holds provider API keys for its optional AI features, they are stored only as encrypted ciphertext and the dashboard displays only the last four characters. That AI layer is itself fail-closed behind four gates — a master switch, a per-feature flag, a per-company grant and a monthly call cap — and everything else works with it switched off. See the <a href="/features">feature list</a>, the <a href="/modules">module breakdown</a>, or <a href="/how-it-works">how it works</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="../app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="HR" href="/blog/choosing-hr-software-small-business-checklist">
+        <img class="thumb" src="../assets/images/blog/hr.svg" alt="Choosing HR software for a small business: a buyer&#x27;s checklist" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">HR</span>
+        <h3>Choosing HR software for a small business: a buyer's checklist</h3>
+        <p>What to look for before picking a workforce platform.</p></div>
+      </a>
+      <a class="blog-card" data-cat="AI" href="/blog/ai-in-hr-software-what-actually-helps">
+        <img class="thumb" src="../assets/images/blog/ai.svg" alt="AI in HR software: what actually helps, and what&#x27;s theatre" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">AI</span>
+        <h3>AI in HR software: what actually helps, and what's theatre</h3>
+        <p>Where a language model earns its place — and where it must not go.</p></div>
+      </a>
+      <a class="blog-card" data-cat="HR" href="/blog/employee-self-service-what-it-means">
+        <img class="thumb" src="../assets/images/blog/hr.svg" alt="Employee self-service: what it means and why it matters" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">HR</span>
+        <h3>Employee self-service: what it means and why it matters</h3>
+        <p>How self-service removes HR as a bottleneck across the business.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/#pricing">Pricing</a><a href="/blog/">Blog</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a></div>
+      <div><h5>Get started</h5><a href="../app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="../app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){
+    addEventListener('scroll',function(){
+      var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+      bar.style.width=(max>0?(y/max)*100:0)+'%';
+    },{passive:true});
+  }
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

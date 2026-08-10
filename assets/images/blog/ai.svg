@@ -1,0 +1,24 @@
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="240" fill="#F7F6F3"/>
+  <rect x="112" y="52" width="176" height="140" rx="16" fill="#ffffff" stroke="#ECECEC" stroke-width="2"/>
+  <rect x="112" y="52" width="176" height="34" rx="16" fill="#15161A"/>
+  <rect x="112" y="70" width="176" height="16" fill="#15161A"/>
+  <circle cx="132" cy="69" r="4" fill="#D93A31"/>
+  <rect x="146" y="65" width="54" height="8" rx="4" fill="#ffffff" opacity=".85"/>
+  <rect x="132" y="104" width="100" height="8" rx="4" fill="#C9CCD3"/>
+  <rect x="132" y="122" width="136" height="8" rx="4" fill="#C9CCD3"/>
+  <rect x="132" y="140" width="76" height="8" rx="4" fill="#C9CCD3"/>
+  <rect x="132" y="164" width="66" height="14" rx="7" fill="#D93A31"/>
+  <rect x="208" y="164" width="60" height="14" rx="7" fill="#F7F6F3" stroke="#ECECEC" stroke-width="2"/>
+  <g stroke="#D93A31" stroke-width="2.5" stroke-linecap="round">
+    <path d="M200 30 l0 14"/><path d="M186 44 l10 6"/><path d="M214 44 l-10 6"/>
+  </g>
+  <circle cx="200" cy="26" r="7" fill="#D93A31"/>
+  <circle cx="60" cy="120" r="22" fill="#ffffff" stroke="#ECECEC" stroke-width="2"/>
+  <path d="M52 120 l6 6 12-13" fill="none" stroke="#1E8449" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="60" y="158" font-family="Inter,Arial" font-size="11" font-weight="700" fill="#767B85" text-anchor="middle">Human</text>
+  <circle cx="340" cy="120" r="22" fill="#15161A"/>
+  <circle cx="333" cy="116" r="3.5" fill="#ffffff"/><circle cx="347" cy="116" r="3.5" fill="#ffffff"/>
+  <path d="M332 128 h16" stroke="#D93A31" stroke-width="3" stroke-linecap="round"/>
+  <text x="340" y="158" font-family="Inter,Arial" font-size="11" font-weight="700" fill="#767B85" text-anchor="middle">Draft</text>
+</svg>

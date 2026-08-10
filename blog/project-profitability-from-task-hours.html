@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Working Out Project Profitability From Your Task Hours</title>
+<meta name="description" content="How to calculate real project profitability using the hours your team already logs — building a loaded hourly cost, allocating overhead, worked examples, and what to do when a favourite client turns out to be unprofitable.">
+<meta name="keywords" content="project profitability, project margin calculation, loaded hourly cost, agency profitability, cost per project, billable utilisation, calculating project cost">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/project-profitability-from-task-hours">
+<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Working out project profitability from your task hours">
+<meta property="og:description" content="Turn the hours your team already logs into a per-project margin you can act on.">
+<meta property="og:url" content="https://www.merik.in/blog/project-profitability-from-task-hours">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/clients.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-09">
+<meta property="article:modified_time" content="2026-08-10">
+<meta property="article:section" content="Clients">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Working out project profitability from your task hours">
+<meta name="twitter:description" content="Turn the hours your team already logs into a per-project margin you can act on.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/project-profitability-from-task-hours#post","headline":"Working Out Project Profitability From Your Task Hours","description":"How to calculate real project profitability using the hours your team already logs — building a loaded hourly cost, allocating overhead, worked examples, and what to do when a favourite client turns out to be unprofitable.","datePublished":"2026-08-09","dateModified":"2026-08-10","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/project-profitability-from-task-hours","image":"https://www.merik.in/assets/images/blog/clients.svg","articleSection":"Clients","keywords":"project profitability, project margin calculation, loaded hourly cost, agency profitability, cost per project, billable utilisation, calculating project cost","wordCount":706,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Project profitability","item":"https://www.merik.in/blog/project-profitability-from-task-hours"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"How do you calculate project profitability?","acceptedAnswer":{"@type":"Answer","text":"Subtract project cost from project revenue, where cost is the sum of each person's hours on the project multiplied by their loaded hourly cost. Loaded cost means salary plus employer statutory contributions plus allocated overhead, divided by the hours that person is genuinely available for client work — not by total calendar hours."}},
+      {"@type":"Question","name":"What is a loaded hourly cost?","acceptedAnswer":{"@type":"Answer","text":"It is the true hourly cost of employing someone: annual salary plus employer contributions plus their share of overhead such as rent, software, hardware and admin, divided by available hours after leave, holidays and non-billable time. For a ₹60,000-a-month employee this typically works out near ₹690 an hour, against a naive salary-only figure of about ₹375."}},
+      {"@type":"Question","name":"How many billable hours are in a year?","acceptedAnswer":{"@type":"Answer","text":"Far fewer than the 2,080 implied by 52 forty-hour weeks. After roughly 18 days of leave, 11 public holidays and about 20% of the remainder spent on internal work, admin, training and business development, around 1,450 to 1,500 hours is realistic. Using 2,080 understates your hourly cost by roughly a third."}},
+      {"@type":"Question","name":"Why does a project look profitable until you use loaded costs?","acceptedAnswer":{"@type":"Answer","text":"Because salary-only rates exclude employer contributions, overhead and the reality that nobody delivers client work every working hour. Those exclusions typically understate cost by 40 to 60%, which is enough to turn a genuine loss into an apparent profit — and to keep you repeating the same underpricing."}},
+      {"@type":"Question","name":"What should I do if a project is unprofitable?","acceptedAnswer":{"@type":"Answer","text":"Diagnose before acting. Compare hours delivered against hours quoted to see whether it was underpriced or overdelivered, check whether your estimates were systematically low, look at whether senior people did work a junior could have done, and then decide whether the project is strategically worth continuing. A deliberate loss-leader is fine; an accidental one is not."}},
+      {"@type":"Question","name":"How often should project profitability be reviewed?","acceptedAnswer":{"@type":"Answer","text":"Monthly for active projects. Annual review is a post-mortem — you learn what happened but can no longer influence it. Monthly review lets you catch a project drifting at 40% completion, while renegotiating scope, reassigning people or adjusting the plan is still possible."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="../app/">Sign In</a>
+        <a class="btn btn-primary" href="../app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Project profitability</nav>
+    <div class="eyebrow">Clients</div>
+    <h1>Project profitability, <span class="accent">from hours you already log</span></h1>
+    <p class="lead">You almost certainly have the data. What's missing is a loaded cost per hour and ten minutes of arithmetic.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="../assets/images/blog/clients.svg" alt="Project profitability calculated from logged hours" width="640" height="384">
+    <p class="post-meta">Published 9 August 2026 · Updated 10 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>Project profitability = revenue for the project − (hours logged × loaded hourly cost).</b> The revenue number you already have. The hours you have too, if your team logs daily work against a project. The piece almost everyone is missing is the <i>loaded</i> hourly cost — salary plus employer costs plus overhead, divided by genuinely available hours — and using salary alone instead makes every project look 40–60% more profitable than it is.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Profit per project = revenue − (hours × <b>loaded</b> hourly cost). The word "loaded" is doing all the work.</li>
+      <li>Loaded cost = (salary + employer costs + allocated overhead) ÷ <b>available</b> hours, not calendar hours.</li>
+      <li>Available hours ≠ 2,080. Subtract leave, holidays and non-billable time or you'll understate cost by a third.</li>
+      <li>Include <b>internal and non-billable time</b> in overhead — otherwise it silently disappears from every project.</li>
+      <li>Expect a surprise: the client everyone likes is often the least profitable, because pleasant clients get extra unbilled effort.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#formula">The formula, and the one term people get wrong</a></li>
+      <li><a href="#loaded">Building a loaded hourly cost</a></li>
+      <li><a href="#worked">A worked example</a></li>
+      <li><a href="#mistakes">The five mistakes that distort the number</a></li>
+      <li><a href="#act">What to do with an unprofitable project</a></li>
+      <li><a href="#cadence">Make it monthly, not annual</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="formula">The formula, and the one term people get wrong</h2>
+
+    <p>The shape is trivial:</p>
+    <blockquote>Project profit = project revenue − project cost<br>Project cost = Σ (hours logged by each person × that person's loaded hourly cost)</blockquote>
+    <p>Everyone computes revenue correctly. Almost everyone computes cost wrong, by using the salary rate: ₹60,000 a month ÷ 160 hours = ₹375 an hour. That number ignores employer statutory contributions, the cost of the desk and the laptop and the software, and — most significantly — the fact that nobody delivers client work for every working hour of the year.</p>
+
+
+    <h2 id="loaded">Building a loaded hourly cost</h2>
+
+    <p>Four steps, per person or per role band:</p>
+    <ol>
+      <li><b>Annual salary cost.</b> Gross annual salary plus employer statutory contributions (provident fund and similar) plus any bonus you actually pay. Call this ₹8,40,000 for a ₹60,000-a-month employee with employer costs added.</li>
+      <li><b>Allocated overhead.</b> Rent, utilities, software, hardware, admin salaries, accounting, insurance — total annual overhead divided by headcount. Say ₹1,80,000 per person.</li>
+      <li><b>Available hours.</b> This is the step that changes the answer most. Start from 52 weeks × 40 hours = 2,080, then subtract:
+        <ul>
+          <li>Leave — 18 days × 8h = 144h</li>
+          <li>Public holidays — 11 days × 8h = 88h</li>
+          <li>Internal and non-billable time — admin, training, business development, internal meetings. Realistically 20% of what remains ≈ 370h</li>
+        </ul>
+        Leaving roughly <b>1,478 available hours</b>, not 2,080.
+      </li>
+      <li><b>Divide.</b> (₹8,40,000 + ₹1,80,000) ÷ 1,478 = <b>₹690 per hour</b>.</li>
+    </ol>
+    <p>Compare that with the naive ₹375. Using the salary rate would have understated the cost of every hour by 45%.</p>
+
+
+    <h2 id="worked">A worked example</h2>
+
+    <p>A website project invoiced at <b>₹2,40,000</b>. From the task log:</p>
+    <table class="facts">
+      <tr><th>Designer — 120h @ ₹690</th><td>₹82,800</td></tr>
+      <tr><th>Developer — 180h @ ₹810</th><td>₹1,45,800</td></tr>
+      <tr><th>Project manager — 40h @ ₹920</th><td>₹36,800</td></tr>
+      <tr><th>Total cost</th><td>₹2,65,400</td></tr>
+      <tr><th>Revenue</th><td>₹2,40,000</td></tr>
+      <tr><th>Result</th><td><b>Loss of ₹25,400</b> — a margin of −10.6%</td></tr>
+    </table>
+    <p>Run the same numbers with unloaded salary rates and the project shows a comfortable profit of about ₹95,000. That gap is the difference between a business that thinks it is doing fine and one that knows where it is losing money. The correction is not to work harder on this project — it is to price the next one from this data.</p>
+
+
+    <h2 id="mistakes">The five mistakes that distort the number</h2>
+
+    <ul>
+      <li><b>Using salary instead of loaded cost.</b> Understates cost by 40–60%.</li>
+      <li><b>Using 2,080 available hours.</b> Nobody delivers client work every working hour; assuming so understates cost by roughly a third.</li>
+      <li><b>Ignoring unlogged work.</b> The quick call, the "small" revision, the weekend fix. If it is not in the log it is free, and free work is exactly what erodes margins invisibly. <a href="/blog/timesheets-vs-daily-task-logs">Daily logging is what prevents this.</a></li>
+      <li><b>Excluding management time.</b> Account management, client calls and internal coordination on a project are project costs. Attribute them.</li>
+      <li><b>Comparing across inconsistent project structures.</b> If one client's work is one project and another's is fifteen, the comparison is meaningless. <a href="/blog/structuring-clients-and-projects">Structure first.</a></li>
+    </ul>
+
+
+    <h2 id="act">What to do with an unprofitable project</h2>
+
+    <p>A negative margin is information, not a verdict. Work through the causes in order:</p>
+    <ol>
+      <li><b>Was it underpriced, or overdelivered?</b> Compare hours logged against hours quoted. If you sold 200 hours and delivered 340, this is a scope problem, not a pricing problem — and the fix is <a href="/blog/quote-to-invoice-workflow">capturing scope changes as billable lines</a>.</li>
+      <li><b>Were the estimates wrong?</b> If your estimate-to-actual ratio is 1.6 and you priced at 1.0, the project was unprofitable before it started. <a href="/blog/time-estimates-vs-actuals">Fix the estimating loop.</a></li>
+      <li><b>Was the wrong person on it?</b> Senior time on work a junior could do is a common and quiet margin leak.</li>
+      <li><b>Is it strategically worth it?</b> Some loss-making projects genuinely earn their place — a reference client, an entry into a sector. That is a legitimate decision, but it should be a decision, not an accident you discover a year later.</li>
+    </ol>
+    <p>And be ready for the uncomfortable finding: the client everybody enjoys working with is often the least profitable, precisely because pleasant clients get extra effort nobody bills for. That is worth knowing before renewal, not after.</p>
+
+
+    <h2 id="cadence">Make it monthly, not annual</h2>
+
+    <p>Profitability computed once a year is a post-mortem. Computed monthly, it is a steering input — you can catch a project drifting at 40% completion, while there is still scope to renegotiate, reassign or reduce.</p>
+    <p>Two numbers reviewed monthly are enough for most small businesses: <b>margin per active project</b>, and <b>hours delivered versus hours sold</b> per retainer. The second is what should set the price at renewal — <a href="/blog/pricing-retainers-from-time-data">the method is here</a>.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Profit formula</th><td>Project revenue − (hours logged × loaded hourly cost)</td></tr>
+      <tr><th>Loaded cost formula</th><td>(Annual salary + employer costs + allocated overhead) ÷ available hours</td></tr>
+      <tr><th>Available hours example</th><td>2,080 − 144 leave − 88 holidays − ~370 non-billable ≈ 1,478</td></tr>
+      <tr><th>Worked loaded rate</th><td>(₹8,40,000 + ₹1,80,000) ÷ 1,478 ≈ ₹690/hour</td></tr>
+      <tr><th>Naive rate error</th><td>Salary-only rate (₹375) understates true cost by about 45%</td></tr>
+      <tr><th>Review cadence</th><td>Monthly, per active project — annual review is a post-mortem</td></tr>
+      <tr><th>Retainer metric</th><td>Hours delivered vs hours sold, per period</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>How do you calculate project profitability?</summary><p>Subtract project cost from project revenue, where cost is the sum of each person's hours on the project multiplied by their loaded hourly cost. Loaded cost means salary plus employer statutory contributions plus allocated overhead, divided by the hours that person is genuinely available for client work — not by total calendar hours.</p></details>
+      <details><summary>What is a loaded hourly cost?</summary><p>It is the true hourly cost of employing someone: annual salary plus employer contributions plus their share of overhead such as rent, software, hardware and admin, divided by available hours after leave, holidays and non-billable time. For a ₹60,000-a-month employee this typically works out near ₹690 an hour, against a naive salary-only figure of about ₹375.</p></details>
+      <details><summary>How many billable hours are in a year?</summary><p>Far fewer than the 2,080 implied by 52 forty-hour weeks. After roughly 18 days of leave, 11 public holidays and about 20% of the remainder spent on internal work, admin, training and business development, around 1,450 to 1,500 hours is realistic. Using 2,080 understates your hourly cost by roughly a third.</p></details>
+      <details><summary>Why does a project look profitable until you use loaded costs?</summary><p>Because salary-only rates exclude employer contributions, overhead and the reality that nobody delivers client work every working hour. Those exclusions typically understate cost by 40 to 60%, which is enough to turn a genuine loss into an apparent profit — and to keep you repeating the same underpricing.</p></details>
+      <details><summary>What should I do if a project is unprofitable?</summary><p>Diagnose before acting. Compare hours delivered against hours quoted to see whether it was underpriced or overdelivered, check whether your estimates were systematically low, look at whether senior people did work a junior could have done, and then decide whether the project is strategically worth continuing. A deliberate loss-leader is fine; an accidental one is not.</p></details>
+      <details><summary>How often should project profitability be reviewed?</summary><p>Monthly for active projects. Annual review is a post-mortem — you learn what happened but can no longer influence it. Monthly review lets you catch a project drifting at 40% completion, while renegotiating scope, reassigning people or adjusting the plan is still possible.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>The hours side of this calculation is a by-product of Merik's daily task log: every entry carries its client and project, time spent and who did it, so per-project hours exist without a separate exercise. Project Intelligence rolls those entries into a per-project view — stage stepper, contributor breakdown, sparklines and drill-down — which is the "hours logged by each person" term in the formula above.</p>
+    <p>Quotes and invoices sit against the same client and project records, so invoiced value and delivered effort can be read side by side rather than reconciled across two systems. Add your loaded hourly rates and the margin calculation is arithmetic on data you already have. See the <a href="/modules">task insights and project modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="../app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Clients" href="/blog/pricing-retainers-from-time-data">
+        <img class="thumb" src="../assets/images/blog/clients.svg" alt="How to price a retainer using your own time data" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Clients</span>
+        <h3>How to price a retainer using your own time data</h3>
+        <p>Stop guessing the monthly number — derive it from logged hours.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Tasks" href="/blog/time-estimates-vs-actuals">
+        <img class="thumb" src="../assets/images/blog/tasks.svg" alt="Why your time estimates are always wrong (and how to fix them)" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Tasks</span>
+        <h3>Why your time estimates are always wrong (and how to fix them)</h3>
+        <p>Close the gap between estimated and actual using your own history.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Clients" href="/blog/structuring-clients-and-projects">
+        <img class="thumb" src="../assets/images/blog/clients.svg" alt="How to structure clients and projects so reporting actually works" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Clients</span>
+        <h3>How to structure clients and projects so reporting actually works</h3>
+        <p>Get the hierarchy right once and every report downstream is free.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/#pricing">Pricing</a><a href="/blog/">Blog</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a></div>
+      <div><h5>Get started</h5><a href="../app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="../app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){
+    addEventListener('scroll',function(){
+      var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+      bar.style.width=(max>0?(y/max)*100:0)+'%';
+    },{passive:true});
+  }
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

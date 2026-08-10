@@ -1,19 +1,92 @@
 # Merik
 
-> Merik is an all-in-one workforce management platform for small and growing businesses — employee management, attendance tracking, leave management, payroll and daily task tracking in one secure company workspace.
+> Merik is an all-in-one workforce management platform for small and growing businesses — employee management, attendance tracking, leave management, payroll, daily task tracking, clients and invoicing, and asset tracking in one secure company workspace.
 
-Merik replaces spreadsheets and disconnected tools with a single company workspace. Employees can self sign-up, mark attendance, request leave, and log daily tasks. Attendance and leave data flow directly into monthly payroll calculations.
+Merik replaces spreadsheets and disconnected tools with a single company workspace. Employees self sign-up, mark their own attendance with geolocated check-in, request leave or work-from-home, log daily tasks and download their own payslips. Attendance and leave data flow directly into monthly payroll, so pay is calculated from the days already recorded rather than re-typed from a spreadsheet.
 
 ## Product
 
-- [Home](https://www.merik.in/): Overview of the Merik workforce suite.
+- [Home](https://www.merik.in/): Overview of the Merik workforce suite, interactive module tour and ROI calculator.
 - [Features](https://www.merik.in/features): Employee management, attendance tracking, leave management, payroll, daily task tracking, company workspaces.
 - [How it works](https://www.merik.in/how-it-works): Three-step setup — create a workspace, invite employees, run daily operations.
-- [Modules](https://www.merik.in/modules): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices.
+- [Modules](https://www.merik.in/modules): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices, assets & software.
+- [Blog](https://www.merik.in/blog/): 40 practical guides on attendance, payroll, leave, tasks, clients, assets and HR.
 
 ## Key facts
 
-- Pricing: free to start, unlimited employee self sign-up.
+- Pricing: free to start, unlimited employee self sign-up, no setup fee, no card required.
 - Setup time: under 5 minutes to create a company workspace.
-- Core modules: HR/Employees, Attendance, Leave, Payroll, Daily Tasks, Clients & Invoicing.
+- Typical customer: small and growing businesses, roughly 5–200 employees.
+- Core modules: Employees, Attendance, Leave & WFH, Payroll & Payslips, Daily Tasks, Task Insights, Clients/Projects/Quotes/Invoices, Assets & Software, Performance.
+- Attendance: geolocated check-in and check-out, reverse-geocoded to a readable place name; late marks and half-days applied by configurable rules.
+- Payroll: computed server-side (never in the browser) from attendance already recorded; payslips generated and emailed individually or in bulk.
+- Task log: daily entries with client, project, time spent, status, blockers and proof links; CSV export; per-project and per-client rollups.
+- Time estimation: `predictTime()` is a local similarity model over the company's own task history — not an LLM — and backtests its own weights leave-one-out to minimise median error.
+- Security: multi-tenant with isolation enforced in Postgres by row-level security, not only in application code. Roles: superadmin, admin, employee.
+- AI: optional and off by default. One server-side function, four fail-closed gates (master switch, per-feature flag, per-tenant grant, monthly call cap). Drafts only — performance summaries and quote drafts, always human-edited. Provider keys stored as AES-GCM ciphertext.
+- Region: built for Indian small businesses (INR, CTC structures, state Shops & Establishments context), usable anywhere.
 - Contact: maresolik@gmail.com
+
+## Guides — Attendance
+
+- [Employee attendance tracking for small business](https://www.merik.in/blog/employee-attendance-tracking-small-business): Recording attendance accurately every day without spreadsheets.
+- [Biometric vs GPS vs manual attendance](https://www.merik.in/blog/biometric-vs-gps-vs-manual-attendance): Comparison of the three capture methods.
+- [Calculating late marks and half-days fairly](https://www.merik.in/blog/calculating-late-marks-half-days-fairly): Consistent rules that remove disputes.
+- [Geolocation attendance for field teams](https://www.merik.in/blog/geolocation-attendance-field-teams): Location-verified check-in, accuracy limits, privacy boundaries.
+- [Attendance policy template](https://www.merik.in/blog/attendance-policy-template-small-business): Seven clauses covering hours, grace periods, half-days, corrections.
+- [Attendance regularisation](https://www.merik.in/blog/attendance-regularisation-corrections): Correcting a wrong day via approved request, not silent edit.
+
+## Guides — Payroll
+
+- [Attendance to payroll automation](https://www.merik.in/blog/attendance-to-payroll-automation): Ending monthly re-keying between systems.
+- [CTC vs in-hand salary](https://www.merik.in/blog/ctc-vs-in-hand-salary-payslip): How CTC becomes monthly net pay.
+- [Payroll compliance checklist (India)](https://www.merik.in/blog/payroll-compliance-checklist-india-small-business): PF, ESI, professional tax, TDS.
+- [Running payroll without an accountant](https://www.merik.in/blog/how-to-run-payroll-without-an-accountant): A monthly process for founders.
+- [Common payroll mistakes](https://www.merik.in/blog/common-payroll-mistakes-small-businesses): Recurring errors and their cost.
+- [Payslip format](https://www.merik.in/blog/payslip-format-what-to-include): The three blocks every payslip needs.
+- [Loss of pay calculation](https://www.merik.in/blog/loss-of-pay-calculation-explained): Calendar vs fixed-30 vs working-day divisors, with worked examples.
+- [Salary hike cycle](https://www.merik.in/blog/salary-hike-revision-cycle): Budgets, effective dates, arrears, CTC history.
+
+## Guides — Leave
+
+- [Paid vs unpaid leave management](https://www.merik.in/blog/leave-management-small-business): Balances, approvals, payroll accuracy.
+- [How many leaves to offer in India](https://www.merik.in/blog/how-many-leaves-small-business-india): Practical benchmarks.
+- [Work from home policy template](https://www.merik.in/blog/work-from-home-policy-template): What to include and how to track it.
+- [Sick leave vs casual leave](https://www.merik.in/blog/sick-leave-vs-casual-leave): The distinction and why it matters.
+- [Leave carry-forward and encashment](https://www.merik.in/blog/leave-encashment-carry-forward): Caps, lapse rules, encashment formula, liability.
+- [Company holiday calendar (India)](https://www.merik.in/blog/company-holiday-calendar-india): Fixed vs restricted holidays, payroll dependency.
+
+## Guides — Tasks & productivity
+
+- [Daily task tracking for small teams](https://www.merik.in/blog/daily-task-tracking-small-teams): Proof, blockers, accountability.
+- [Daily standups without meetings](https://www.merik.in/blog/daily-standups-without-meetings): Async visibility.
+- [Measuring productivity without micromanaging](https://www.merik.in/blog/measuring-productivity-without-micromanaging): Outcomes over screen time.
+- [Timesheets vs daily task logs](https://www.merik.in/blog/timesheets-vs-daily-task-logs): What each captures and which to use.
+- [Time estimates vs actuals](https://www.merik.in/blog/time-estimates-vs-actuals): Measuring and applying a correction factor.
+
+## Guides — Clients, projects & billing
+
+- [Structuring clients and projects](https://www.merik.in/blog/structuring-clients-and-projects): The two-level model and why free-typed names break reporting.
+- [Quote-to-invoice workflow](https://www.merik.in/blog/quote-to-invoice-workflow): One record in two states.
+- [Project profitability from task hours](https://www.merik.in/blog/project-profitability-from-task-hours): Loaded hourly cost and worked margin examples.
+- [Pricing retainers from time data](https://www.merik.in/blog/pricing-retainers-from-time-data): Sizing, models, overage, renewal.
+
+## Guides — Assets & software
+
+- [IT asset management for small business](https://www.merik.in/blog/it-asset-management-small-business): The nine-field register and assignment history.
+- [Software subscription spend](https://www.merik.in/blog/software-subscription-spend-management): Finding unused seats, the monthly routine.
+
+## Guides — HR & people
+
+- [Employee onboarding checklist](https://www.merik.in/blog/employee-onboarding-checklist-small-business): Before day one, week one, first month.
+- [Structuring departments and designations](https://www.merik.in/blog/structuring-departments-designations-as-you-scale): Organising before it gets messy.
+- [Employee self-service explained](https://www.merik.in/blog/employee-self-service-what-it-means): Removing HR as a bottleneck.
+- [Employee exit and full & final settlement](https://www.merik.in/blog/employee-exit-full-and-final-settlement): Closing out cleanly.
+- [Choosing HR software: buyer's checklist](https://www.merik.in/blog/choosing-hr-software-small-business-checklist): What to evaluate.
+- [Monthly performance review process](https://www.merik.in/blog/monthly-performance-review-process): Four questions, twenty minutes, grounded in logged work.
+- [Workforce data security checklist](https://www.merik.in/blog/workforce-data-security-checklist): Eight questions to ask any HR vendor.
+
+## Guides — AI & migration
+
+- [AI in HR software](https://www.merik.in/blog/ai-in-hr-software-what-actually-helps): Where it helps, where statistics beat it, where it must not go.
+- [Spreadsheet to workforce software migration](https://www.merik.in/blog/spreadsheet-to-workforce-software-migration): A 30-day week-by-week plan.
