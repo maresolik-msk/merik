@@ -1698,11 +1698,16 @@ async function task(d){
   if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
   else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
   else{from=to=a;}
-  const [{data:emps},rows,{data:cls},{data:pjs}]=await Promise.all([
-    sb.from('employees').select('id,emp_code,full_name,designation').eq('status','Active').order('emp_code'),
+  // Attendance and holidays are only consulted for the single-day view, which is
+  // the only one that invents rows for people who filed nothing.
+  const daily=st.period==='daily',noRows=Promise.resolve({data:[]});
+  const [{data:emps},rows,{data:cls},{data:pjs},{data:dayAtt},{data:dayHol}]=await Promise.all([
+    sb.from('employees').select('id,emp_code,full_name,designation,doj').eq('status','Active').order('emp_code'),
     fetchAll(()=>sb.from('task_updates').select('*').gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false})),
     sb.from('clients').select('id,name').order('name'),
-    sb.from('projects').select('name,client_id')]);
+    sb.from('projects').select('name,client_id'),
+    daily?sb.from('attendance').select('employee_id,status').eq('att_date',from):noRows,
+    daily?sb.from('holidays').select('name').eq('holiday_date',from):noRows]);
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e);
   const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
   CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
@@ -1711,8 +1716,20 @@ async function task(d){
   if(st.employee)list=list.filter(r=>r.employee_id===st.employee);
   if(st.client){const target=st.client==='internal'?'':st.client;
     list=list.filter(r=>(r.project||'').split(',').map(s=>s.trim()).filter(Boolean).some(n=>(clientOfProject[n]||'')===target));}
-  if(st.period==='daily'&&!st.client){const have=new Set(list.map(r=>r.employee_id));
-    (emps||[]).filter(e=>!st.employee||e.id===st.employee).forEach(e=>{if(!have.has(e.id))list.push({employee_id:e.id,upd_date:from,update_status:'No Update'})});}
+  // Fill in everyone who filed nothing that day — but label what actually happened
+  // rather than calling all of it "No Update". Someone on approved leave, or the
+  // whole company on a Sunday, owed no update, and counting them as delinquent
+  // both slandered them on this page and dragged the completion figure down.
+  // Matches the admin dashboard's rule: only A / OL / UL excuse you, and WFH and
+  // half-days are working days that still owe an update.
+  if(st.period==='daily'&&!st.client){
+    const have=new Set(list.map(r=>r.employee_id));
+    const AS={};(dayAtt||[]).forEach(r=>AS[r.employee_id]=r.status);
+    const wd=new Date(from+'T00:00:00').getDay();
+    const dayOff=(dayHol||[]).length?'Holiday':(wd===0||wd===6)?'Weekend':'';
+    const why=id=>dayOff||({OL:'Leave',UL:'Leave',A:'Absent'}[AS[id]]||'No Update');
+    (emps||[]).filter(e=>(!st.employee||e.id===st.employee)&&(!e.doj||e.doj<=from))
+      .forEach(e=>{if(!have.has(e.id))list.push({employee_id:e.id,upd_date:from,update_status:why(e.id)})});}
   const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
   const pct=(cnt.sh+cnt.nu)?Math.round(cnt.sh/(cnt.sh+cnt.nu)*100):0;
   // Search over the filtered set (name / id / project / text / status).
@@ -1763,7 +1780,7 @@ async function task(d){
   <div class="card" style="overflow:auto;padding:0">
   <table id="tasktbl"><tr><th>Date</th><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
   ${pageRows.map(r=>{const e=empName[r.employee_id]||{};const s=r.update_status||'No Update';
-    const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
+    const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW','Weekend':'stW','Absent':'stA'}[s]||'stA';
     const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
     const rj=JSON.stringify(r.id?r:{}).replace(/'/g,"&#39;");
     return`<tr><td style="white-space:nowrap"><div style="font-weight:600;color:var(--ink)">${fmtDate(r.upd_date)}</div>${tm?`<div class="tl-sub">${tm}</div>`:''}</td>
@@ -3484,7 +3501,7 @@ async function myupd(dstr){
   <div class="card" style="overflow:auto;padding:0">
   <table id="tasktbl"><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
   ${pageRows.map(r=>{const s=r.update_status||'No Update';
-    const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW'}[s]||'stA';
+    const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW','Weekend':'stW','Absent':'stA'}[s]||'stA';
     const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
     const rj=JSON.stringify(r).replace(/'/g,"&#39;");
     const action=r.upd_date===d?`<button class="tl-go" title="Edit today" onclick='taskForm("${ME.employee.id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button>`:'<i class="fa-solid fa-lock tl-dash" title="Locked — past day"></i>';
