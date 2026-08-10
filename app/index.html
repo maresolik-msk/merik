@@ -1768,7 +1768,7 @@ async function task(d){
    <div style="max-width:220px"><label>Client</label><select onchange="setTaskClient(this.value)"><option value="">All clients</option><option value="internal" ${st.client==='internal'?'selected':''}>Internal (no client)</option>${(cls||[]).map(c=>`<option value="${c.id}" ${st.client===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
   </div>
   <div class="kpi" style="margin-bottom:8px">
-   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','var(--red)','No Update',cnt.nu,cnt.nu?'Needs attention':'All clear','var(--red)')}
+   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','var(--red)','No Update',rateErr?'—':cnt.nu,rateErr?'Couldn’t check':(cnt.nu?'Needs attention':'All clear'),rateErr?'var(--muted)':'var(--red)')}
    ${stat('<i class="fa-solid fa-arrow-up"></i>','#E6F7EC','var(--green)','Update Shared',cnt.sh,'On track','var(--green)')}
    ${stat('<i class="fa-solid fa-list-check"></i>','var(--brand-soft)','var(--brand)','Total Entries',total,st.period==='daily'?'Today':'This '+st.period.replace('ly',''))}
    ${donut}
@@ -3446,20 +3446,70 @@ async function myupd(dstr){
   if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
   else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
   else{from=to=a;}
-  const [{data},{data:cls},{data:pjs},{data:todayRows}]=await Promise.all([
+  const [{data},{data:cls},{data:pjs},{data:todayRows},{data:att,error:attErr},{data:hols,error:holErr}]=await Promise.all([
     sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('clients').select('id,name'),
     sb.from('projects').select('name,client_id'),
     // Today's row fetched independently of the viewed period, so the header CTA always
     // reflects today's true state (Edit + prefilled) even while browsing past days.
-    sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).eq('upd_date',d).limit(1)]);
+    sb.from('task_updates').select('*').eq('employee_id',ME.employee.id).eq('upd_date',d).limit(1),
+    // Both bounded by the period for one employee — a month is ~31 rows.
+    sb.from('attendance').select('att_date,status').eq('employee_id',ME.employee.id).gte('att_date',from).lte('att_date',to),
+    sb.from('holidays').select('holiday_date').gte('holiday_date',from).lte('holiday_date',to)]);
   const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
   CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
   const clientOfProject={};(pjs||[]).forEach(p=>putProj(clientOfProject,p.name,p.client_id?(clientNameById[p.client_id]||'Internal'):'Internal',p.client_id||''));
   const t=(data||[]).find(r=>r.upd_date===d)||(todayRows&&todayRows[0])||null;
-  const list=(data||[]);
-  const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
-  const pct=(cnt.sh+cnt.nu)?Math.round(cnt.sh/(cnt.sh+cnt.nu)*100):0;
+  let list=(data||[]);
+  // Completion is measured against the days this employee actually OWED an update,
+  // worked out from the calendar — not against however many rows happen to exist.
+  // The old denominator was (shared + rows explicitly marked No Update), so a month
+  // with days simply missing from the table scored 100%: nothing counted a gap.
+  // Owed = weekdays in the period, minus public holidays, minus days covered by
+  // approved leave or an absence, minus days outside their employment, minus
+  // anything not yet due. WFH and half-days are working days and still count.
+  const AS={};(att||[]).forEach(r=>AS[String(r.att_date).slice(0,10)]=r.status);
+  const HOLS=new Set((hols||[]).map(h=>String(h.holiday_date).slice(0,10)));
+  const EXCUSED=new Set(['A','OL','UL']);
+  // A day the employee themselves filed as Leave / Sick Leave / Holiday from the Day
+  // Status picker creates no attendance row, so it would otherwise read as a miss —
+  // they told us they weren't working. 'WFH' is deliberately not here: it is a
+  // working day that still owes an update, same as on the admin pages.
+  const SELF_OFF=new Set(list.filter(r=>['Leave','Sick Leave','Holiday'].includes(r.update_status))
+    .map(r=>String(r.upd_date).slice(0,10)));
+  const nw=new Date();
+  // Today only counts once the 5:30 deadline has passed — opening this at 9am
+  // should not report you as having already missed today.
+  const cut=(nw.getHours()*60+nw.getMinutes())>=DUE_UPD?d:isoD(new Date(new Date(d+'T00:00:00').getTime()-864e5));
+  const doj=ME.employee.doj?String(ME.employee.doj).slice(0,10):'',lft=ME.employee.left_on?String(ME.employee.left_on).slice(0,10):'';
+  const owedDays=[];
+  for(let x=new Date(from+'T00:00:00'),end=new Date(to+'T00:00:00');x<=end;x.setDate(x.getDate()+1)){
+    const ds=isoD(x);
+    if(ds>cut)break;
+    if(x.getDay()===0||x.getDay()===6)continue;
+    if(HOLS.has(ds)||EXCUSED.has(AS[ds])||SELF_OFF.has(ds))continue;
+    if(doj&&ds<doj)continue;
+    if(lft&&ds>lft)continue;
+    owedDays.push(ds);
+  }
+  const sharedOn=new Set(list.filter(r=>r.update_status==='Update Shared').map(r=>String(r.upd_date).slice(0,10)));
+  const owed=owedDays.length,met=owedDays.filter(ds=>sharedOn.has(ds)).length;
+  // Attendance and holidays only ever SUBTRACT days from what's owed, so a read that
+  // quietly fails doesn't produce an empty page — it produces a higher miss count
+  // aimed at the employee. Show no figure rather than a wrong accusation.
+  const rateErr=attErr||holErr;
+  // "Update Shared" stays the honest count of what they filed, including any day
+  // they filed voluntarily; "No Update" is now days owed and not filed.
+  const cnt={nu:owed-met,sh:list.filter(r=>r.update_status==='Update Shared').length};
+  const pct=(rateErr||!owed)?null:Math.round(met/owed*100);
+  // Every day the "No Update" figure accuses them of has to be visible in the table
+  // underneath it, or the number is one they can't check. Same fill-in the admin
+  // task log does for its daily view.
+  if(!rateErr){
+    const haveRow=new Set(list.map(r=>String(r.upd_date).slice(0,10)));
+    list=list.concat(owedDays.filter(ds=>!haveRow.has(ds)).map(ds=>({upd_date:ds,update_status:'No Update'})))
+      .sort((x,y)=>String(y.upd_date).localeCompare(String(x.upd_date)));
+  }
   let display=list;
   if(st.search){const q=st.search.toLowerCase();display=list.filter(r=>[r.project,r.task_assigned,r.completed,r.next_task,r.blocker,r.not_working,r.update_status].some(x=>(x||'').toLowerCase().includes(q)));}
   const total=display.length,ps=st.pageSize,pages=Math.max(1,Math.ceil(total/ps));
@@ -3473,9 +3523,9 @@ async function myupd(dstr){
   const R=22,C=2*Math.PI*R;
   const donut=`<div class="card" style="margin:0;flex:1;min-width:200px"><div style="display:flex;gap:14px;align-items:center">
     <svg width="62" height="62" viewBox="0 0 60 60" style="flex:none"><circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--line)" stroke-width="7"/>
-    <circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--brand)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct/100)).toFixed(1)}" transform="rotate(-90 30 30)"/>
-    <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="var(--ink)">${pct}%</text></svg>
-    <div><div style="font-size:12.5px;color:var(--muted)">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${cnt.sh} of ${cnt.sh+cnt.nu} logged</div></div></div></div>`;
+    <circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--brand)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-(pct||0)/100)).toFixed(1)}" transform="rotate(-90 30 30)"/>
+    <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="var(--ink)">${pct===null?'—':pct+'%'}</text></svg>
+    <div><div style="font-size:12.5px;color:var(--muted)">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${rateErr?'Rate unavailable — couldn’t load attendance':pct===null?'Nothing due this period':`${met} of ${owed} working day${owed===1?'':'s'} logged`}</div></div></div></div>`;
   const cell=(v)=>v?esc(v):'<span class="tl-dash">—</span>';
   const clientProjCell=(projStr)=>{
     const names=(projStr||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -3490,7 +3540,7 @@ async function myupd(dstr){
    <div style="max-width:180px"><label>${st.period==='monthly'?'Month':'Date'}</label><input type="${st.period==='monthly'?'month':'date'}" value="${st.period==='monthly'?a.slice(0,7):a}" onchange="myupd(this.value+'${st.period==='monthly'?'-01':''}')"></div>
   </div>
   <div class="kpi" style="margin-bottom:8px">
-   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','var(--red)','No Update',cnt.nu,cnt.nu?'Needs attention':'All clear','var(--red)')}
+   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','var(--red)','No Update',rateErr?'—':cnt.nu,rateErr?'Couldn’t check':(cnt.nu?'Needs attention':'All clear'),rateErr?'var(--muted)':'var(--red)')}
    ${stat('<i class="fa-solid fa-arrow-up"></i>','#E6F7EC','var(--green)','Update Shared',cnt.sh,'On track','var(--green)')}
    ${stat('<i class="fa-solid fa-list-check"></i>','var(--brand-soft)','var(--brand)','Total Entries',list.length,st.period==='daily'?'Selected day':'This '+st.period.replace('ly',''))}
    ${donut}
