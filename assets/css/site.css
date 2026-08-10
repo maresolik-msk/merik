@@ -533,3 +533,25 @@ h1 .grad{background:linear-gradient(100deg,var(--brand) 0%,var(--brand-2) 55%,va
 .foot-social a{font-size:14px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
 .foot-social a::before{content:"↗";font-size:12px;color:var(--brand)}
 .foot-social a:hover{color:var(--brand)}
+
+/* ---------- Glossary ---------- */
+.glossary{max-width:820px;margin:0 auto;display:grid;gap:20px}
+.g-term{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:30px 32px;scroll-margin-top:88px}
+.g-term h2{font-size:24px;color:var(--ink);font-weight:800;letter-spacing:-.5px;margin:8px 0 12px}
+.g-short{font-size:17.5px;color:var(--ink);font-weight:600;line-height:1.55;padding-left:16px;border-left:3px solid var(--brand);margin-bottom:16px}
+.g-term p{font-size:16px;color:var(--body);margin-bottom:14px}
+.g-example{background:var(--soft);border-radius:12px;padding:16px 18px;margin:16px 0}
+.g-example p{font-size:15px;margin:0;color:var(--body)}
+.g-rel{font-size:14.5px;color:var(--muted)}
+.g-rel a{color:var(--brand);font-weight:600}
+.g-post{font-size:14.5px;margin:0}
+.g-post a{color:var(--brand);font-weight:600}
+@media(max-width:700px){
+  .g-term{padding:24px 22px}
+  .g-term h2{font-size:21px}
+  .toc ol[style*="columns"]{columns:1!important}
+}
+/* .toc ol is display:grid, so CSS `columns` has no effect there — use an
+   explicit two-column grid for the long glossary index instead. */
+.toc ol.toc-2col{grid-template-columns:1fr 1fr;column-gap:34px}
+@media(max-width:700px){.toc ol.toc-2col{grid-template-columns:1fr}}

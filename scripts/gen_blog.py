@@ -279,7 +279,7 @@ def build_post(p):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css?v=7">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",
@@ -397,7 +397,7 @@ def build_index():
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css?v=7">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",
@@ -510,6 +510,7 @@ def build_sitemap(posts_by_slug):
         url(f"{SITE}/modules", "2026-07-11", "monthly", "0.8"),
         url(f"{SITE}/pricing", newest, "monthly", "0.9"),
         url(f"{SITE}/roi", newest, "monthly", "0.8"),
+        url(f"{SITE}/glossary", newest, "monthly", "0.8"),
         url(f"{SITE}/blog/", newest, "weekly", "0.7"),
     ]
     for slug, _, _, _, _ in CARDS:

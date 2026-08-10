@@ -8,7 +8,7 @@ Exits non-zero on any problem, so it can gate a deploy.
 import json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PAGES = {"/search": "search.html", "/": "index.html", "/features": "features.html", "/how-it-works": "how-it-works.html",
+PAGES = {"/search": "search.html", "/glossary": "glossary.html", "/": "index.html", "/features": "features.html", "/how-it-works": "how-it-works.html",
          "/modules": "modules.html", "/pricing": "pricing.html", "/roi": "roi.html",
          "/blog/": "blog/index.html", "/app/": None}
 
