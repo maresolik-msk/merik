@@ -233,6 +233,7 @@ def build_post(p):
             % (j(p["howto"]["name"]), j(p["howto"].get("desc", p["desc"])), steps)
         )
 
+    graph_ld = ",\n    ".join(graph)
     toc = "\n".join(
         f'      <li><a href="#{sid}">{stitle}</a></li>' for sid, stitle, _ in p["sections"]
     )
@@ -278,12 +279,12 @@ def build_post(p):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css?v=6">
+<link rel="stylesheet" href="/assets/css/site.css?v=7">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",
   "@graph":[
-    {",\n    ".join(graph)}
+    {graph_ld}
   ]
 }}
 </script>
@@ -396,7 +397,7 @@ def build_index():
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css?v=6">
+<link rel="stylesheet" href="/assets/css/site.css?v=7">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",
