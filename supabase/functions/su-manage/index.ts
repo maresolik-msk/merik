@@ -79,8 +79,69 @@ Deno.serve(async (req) => {
       const { user_id } = body;
       if (!user_id) throw new Error('user_id required');
       if (user_id === caller.user.id) throw new Error('You cannot delete your own account');
+      // profiles.id references auth.users; deleting the login should take the
+      // profile with it, but do it explicitly so a missing cascade cannot leave
+      // a profile row pointing at a user that no longer exists.
+      await admin.from('profiles').delete().eq('id', user_id);
       await admin.auth.admin.deleteUser(user_id);
       return json({ ok: true });
+    }
+
+    // Deleting a tenant is the most destructive thing in the product, and the
+    // browser cannot do it correctly: org rows are removed by cascade (see
+    // migration 20260810_org_delete_cascade.sql) but auth.users logins are not
+    // reachable from any foreign key, so a client-side delete leaves every one
+    // of that tenant's people able to sign in to nothing.
+    if (action === 'delete_org') {
+      const { org_id, confirm_name } = body;
+      if (!org_id) throw new Error('org_id required');
+
+      const { data: org, error: oErr } = await admin
+        .from('orgs').select('id, name').eq('id', org_id).single();
+      if (oErr || !org) throw new Error('Tenant not found');
+
+      // Typed-name confirmation. The client also asks, but the client is not
+      // what makes an irreversible delete safe.
+      if ((confirm_name || '').trim() !== org.name) {
+        throw new Error(`Type the tenant name exactly to confirm: "${org.name}"`);
+      }
+
+      // Collect the logins BEFORE the cascade removes their profiles rows.
+      const { data: members } = await admin
+        .from('profiles').select('id, role').eq('org_id', org_id);
+      const memberIds = (members || []).map((m) => m.id);
+      if (memberIds.includes(caller.user.id)) {
+        throw new Error('You belong to this tenant — refusing to delete your own access');
+      }
+      // A superadmin has no org, so this should never match. If it somehow does,
+      // deleting would lock the product owner out of the control plane.
+      if ((members || []).some((m) => m.role === 'superadmin')) {
+        throw new Error('This tenant has a superadmin member — resolve that before deleting');
+      }
+
+      const { error: dErr } = await admin.from('orgs').delete().eq('id', org_id);
+      if (dErr) {
+        // Cascade missing => Postgres reports a foreign key violation here.
+        throw new Error(
+          `Could not delete tenant: ${dErr.message}. ` +
+          'If this mentions a foreign key, migration 20260810_org_delete_cascade.sql has not been applied.',
+        );
+      }
+
+      // Now the logins. Report per-user outcomes rather than failing the whole
+      // operation — the tenant's data is already gone at this point.
+      const failed: string[] = [];
+      for (const id of memberIds) {
+        const { error } = await admin.auth.admin.deleteUser(id);
+        if (error) failed.push(id);
+      }
+
+      return json({
+        ok: true,
+        deleted_org: org.name,
+        logins_removed: memberIds.length - failed.length,
+        logins_failed: failed,
+      });
     }
 
     throw new Error('Unknown action');

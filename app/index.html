@@ -456,6 +456,9 @@ let ME=null; // {user, profile, employee}
 let RECOVERING=/type=recovery/.test(location.hash);
 const $=id=>document.getElementById(id);
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// Interpolating text into a JS string inside an on*="" attribute: use this,
+// not esc(). It emits its own quotes — write ${escArg(x)}, never '${escArg(x)}'.
+const escArg=s=>esc(JSON.stringify(String(s??'')));
 const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2});
 // LOCAL date, not UTC. toISOString() gave the UTC day while the times we stamp
 // (toTimeString) and the dates we print are local — so between midnight and
@@ -911,7 +914,7 @@ function renderShell(){
     const body=items.map(([k,ic,l])=>`<a href="#" id="nav-${k}" data-lbl="${esc(l.toLowerCase())}" onclick="go('${k}');return false"><span class="ic">${ic}</span><span class="lbl">${l}</span></a>`).join('');
     if(!g)return body;
     const open=navGroupOpen(g);
-    return `<button class="grp" aria-expanded="${open}" aria-controls="${gid(g)}" onclick="toggleGroup(this,'${esc(g)}')">${g}<i class="fa-solid fa-chevron-down caret"></i></button>
+    return `<button class="grp" aria-expanded="${open}" aria-controls="${gid(g)}" onclick="toggleGroup(this,${escArg(g)})">${g}<i class="fa-solid fa-chevron-down caret"></i></button>
       <div class="grpitems" id="${gid(g)}" ${open?'':'hidden'}>${body}</div>`;
   }).join('')}
   <div class="navempty" id="navempty" hidden>No menu item matches.</div>
@@ -1201,7 +1204,7 @@ async function empDetail(eid){
   <hr style="margin:16px 0;border:none;border-top:1px solid #eee">
   <h3 style="font-size:15px;margin-bottom:6px">Account &amp; login</h3>
   <p style="font-size:12.5px;color:#667;margin-bottom:8px">${hasLogin?'This employee already has a login — resending sets a new password and emails it to them.':'This employee has no login yet.'}</p>
-  <button class="btn sm" onclick="mkLogin('${eid}','${esc(e.email||'')}',true)"><i class="fa-solid fa-key"></i> ${hasLogin?'Resend':'Email'} login credentials</button>
+  <button class="btn sm" onclick="mkLogin('${eid}',${escArg(e.email||'')},true)"><i class="fa-solid fa-key"></i> ${hasLogin?'Resend':'Email'} login credentials</button>
   <div id="edMsg" style="margin-top:8px;font-size:13px"></div>
   <hr style="margin:16px 0;border:none;border-top:1px solid #eee">
   <h3 style="font-size:15px;margin-bottom:6px">Send a document</h3>
@@ -1209,7 +1212,7 @@ async function empDetail(eid){
   <label>Subject</label><input id="ed_subj" placeholder="e.g. Your offer letter">
   <label>Message (optional)</label><textarea id="ed_msg" rows="3" placeholder="A short note to include in the email…"></textarea>
   <label>PDF file</label><input id="ed_file" type="file" accept="application/pdf,.pdf">
-  <div style="margin-top:10px"><button class="btn sm" onclick="sendEmpDoc('${eid}','${esc(e.email||'')}')"><i class="fa-solid fa-paperclip"></i> Send document</button></div>
+  <div style="margin-top:10px"><button class="btn sm" onclick="sendEmpDoc('${eid}',${escArg(e.email||'')})"><i class="fa-solid fa-paperclip"></i> Send document</button></div>
   <div id="edDocMsg" style="margin-top:8px;font-size:13px"></div>
   <div style="margin-top:16px;text-align:right"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div>
   </div>`;
@@ -1462,7 +1465,7 @@ async function hol(){
   <div><button class="btn" onclick="addHol()">+ Add</button></div></div></div>
   <div class="card"><table><tr><th>Date</th><th>Name</th><th>Type</th><th></th></tr>
   ${(data||[]).map(h=>`<tr><td>${fmtDate(h.holiday_date)}</td><td>${esc(h.name)}</td><td>${esc(h.type)}</td>
-  <td><button class="btn sm warn" onclick="delHol('${h.id}','${esc(h.name).replace(/'/g,"\\'")}','${fmtDate(h.holiday_date)}')">Del</button></td></tr>`).join('')}</table></div>`);
+  <td><button class="btn sm warn" onclick="delHol('${h.id}',${escArg(h.name)},'${fmtDate(h.holiday_date)}')">Del</button></td></tr>`).join('')}</table></div>`);
 }
 async function addHol(){
   if(!$('hd').value)return toast('Choose the holiday date.');
@@ -2004,7 +2007,7 @@ function renderProjint(){
   const stageTab=(s,l)=>`<button class="${st.stage===s?'on':''}" onclick="setPiStage('${s}')">${l}</button>`;
   const grid=st.view==='grid';
   const card=(p)=>{const topCat=Object.entries(p.cats).sort((a,b)=>b[1]-a[1])[0];const depts=Object.entries(p.depts).sort((a,b)=>b[1].tasks-a[1].tasks);
-    return `<div class="card pi-card" onclick="projintDetail('${esc(p.name).replace(/'/g,"&#39;")}')">
+    return `<div class="card pi-card" onclick="projintDetail(${escArg(p.name)})">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div style="font-weight:800;color:var(--ink);font-size:16px">${esc(p.name)}</div><div class="tl-sub">${esc(p.client)}</div></div>
     <span class="badge ${p.currentStage==='Delivery'?'stP':p.currentStage==='Review'?'stL':'stW'}" style="white-space:nowrap">${esc(p.currentStage)}</span></div>
     ${journeyStepper(p.currentStage)}
@@ -4038,7 +4041,7 @@ async function suSaveNewTenant(){
   const email=$('ten_email').value.trim(),pw=$('ten_pw').value;
   if(email&&pw){if(pw.length<6)return toast('Admin password must be at least 6 characters.');
     const{data,error:e2}=await sb.functions.invoke('su-manage',{body:{action:'create_user',email,password:pw,role:'admin',org_id:org.id}});
-    if(e2||data?.error)return toast('Tenant created, but admin login failed: '+(data?.error||e2.message));
+    if(e2||data?.error)return toast('Tenant created, but admin login failed: '+(data?.error||await fnMsg(e2)));
     toast(`✔ Tenant created.\n\nAdmin login:\nEmail: ${email}\nPassword: ${pw}`);}
   document.querySelector('.modal').remove();sutenants();
 }
@@ -4053,7 +4056,7 @@ function suEditTenant(o){
   <div id="ten_modules" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">${MODULES.map(([k,l])=>{const on=!Array.isArray(o.modules)||o.modules.includes(k);return `<label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;margin:0"><input type="checkbox" data-mk="${k}" ${on?'checked':''} style="width:16px;height:16px;margin:0"> ${l}</label>`;}).join('')}</div>
   <p style="font-size:11.5px;color:#889;margin-top:4px">Dashboard &amp; Settings are always available. Unchecking a module hides it from this tenant's admins.</p>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveTenant('${o.id}')">Save</button>
-  <button class="btn warn" onclick="suDelTenant('${o.id}','${esc(o.name)}')">Delete tenant</button>
+  <button class="btn warn" onclick="suDelTenant('${o.id}',${escArg(o.name)})">Delete tenant</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
 }
@@ -4064,9 +4067,19 @@ async function suSaveTenant(id){
   document.querySelector('.modal').remove();sutenants();
 }
 async function suSetTenantStatus(id,status){const{error}=await sb.from('orgs').update({status}).eq('id',id);if(error)return toast(saveErr(error));sutenants();}
+// Deleting a tenant goes through su-manage, not straight to PostgREST. A
+// browser delete cannot remove that tenant's auth logins — no foreign key
+// reaches auth.users — so it used to leave every one of their people able to
+// sign in to a workspace that no longer existed. It also silently failed
+// against the org foreign keys until 20260810_org_delete_cascade.sql.
 async function suDelTenant(id,name){
-  if(!confirm(`Delete tenant "${name}"?\n\nThis removes the org and all its data (employees, attendance, payroll, etc.). This cannot be undone.`))return;
-  const{error}=await sb.from('orgs').delete().eq('id',id);if(error)return toast(saveErr(error));
+  const typed=prompt(`Delete tenant "${name}"?\n\nThis permanently removes the org and all its data — employees, attendance, payroll, tasks, clients, assets — and every login belonging to it. This cannot be undone.\n\nType the tenant name to confirm:`);
+  if(typed===null)return;
+  if(typed.trim()!==name)return toast('Name did not match — nothing was deleted.');
+  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'delete_org',org_id:id,confirm_name:typed.trim()}});
+  if(error||data?.error)return toast('Failed: '+(data?.error||await fnMsg(error)));
+  const failed=(data.logins_failed||[]).length;
+  toast(`Deleted "${data.deleted_org}" — ${data.logins_removed} login(s) removed`+(failed?`, ${failed} could not be removed`:''));
   document.querySelector('.modal')?.remove();sutenants();
 }
 // Tenant drill-down: show all of one tenant's data.
@@ -4101,7 +4114,7 @@ async function suTenant(id){
 let SU_USERS=[];
 async function suusers(){
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'list_users'}});
-  if(error||data?.error)return M(`<h2>Users</h2><div class="warnbar">${esc(data?.error||error.message)}</div>`);
+  if(error||data?.error)return M(`<h2>Users</h2><div class="warnbar">${esc(data?.error||await fnMsg(error))}</div>`);
   SU_USERS=data.users||[];
   const roleBadge=r=>({superadmin:'stW',admin:'stP',employee:'stL'}[r]||'stL');
   M(pgh('Users','Every account across all tenants.','<button class="btn" onclick="suCreateUser()"><i class="fa-solid fa-plus"></i> New User</button>')+
@@ -4113,8 +4126,8 @@ async function suusers(){
   <div class="card" style="overflow:auto;padding:0"><table><tr><th>Email</th><th>Name</th><th>Tenant</th><th>Role</th><th></th></tr>
   ${SU_USERS.map(u=>`<tr><td>${esc(u.email||'—')}</td><td>${esc(u.employee||'—')}</td><td>${esc(u.org_name||'<span style="color:var(--brand);font-weight:700">Merik (product)</span>')}</td>
   <td>${u.org_id?`<select onchange="suSetRole('${u.id}',this.value)" style="width:130px">${['employee','admin'].map(r=>`<option ${u.role===r?'selected':''}>${r}</option>`).join('')}</select>`:'<span class="badge stW">superadmin</span>'}</td>
-  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suResetPw('${u.id}','${esc(u.email)}')">Reset password</button>
-  <button class="btn sm warn" onclick="suDelUser('${u.id}','${esc(u.email)}')">Delete</button></td></tr>`).join('')}</table></div>`);
+  <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suResetPw('${u.id}',${escArg(u.email)})">Reset password</button>
+  <button class="btn sm warn" onclick="suDelUser('${u.id}',${escArg(u.email)})">Delete</button></td></tr>`).join('')}</table></div>`);
 }
 async function suCreateUser(){
   const{data:orgs}=await sb.from('orgs').select('id,name').order('name');
@@ -4135,18 +4148,18 @@ async function suSaveUser(){
   if(org_id&&role==='superadmin')return toast('Super admin is a Merik-only role and cannot belong to a tenant.');
   if(!org_id&&role!=='superadmin')return toast('A tenant account needs a tenant. Pick a tenant, or leave it blank for a super admin.');
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'create_user',email,password:pw,role,org_id}});
-  if(error||data?.error)return toast('Create failed: '+(data?.error||error.message));
+  if(error||data?.error)return toast('Create failed: '+(data?.error||await fnMsg(error)));
   toast(`✔ User created.\n\nEmail: ${email}\nPassword: ${pw}`);document.querySelector('.modal').remove();suusers();
 }
 async function suSetRole(id,role){
   if(role==='superadmin')return toast('A tenant user cannot be made super admin — that role is Merik-only.');
-  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_role',user_id:id,role}});if(error||data?.error)toast('Failed: '+(data?.error||error.message));}
+  const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_role',user_id:id,role}});if(error||data?.error)toast('Failed: '+(data?.error||await fnMsg(error)));}
 async function suResetPw(id,email){const pw=prompt(`Set a new password for ${email} (min 6 chars):`);if(pw===null)return;if(pw.length<6)return toast('Too short.');
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_password',user_id:id,password:pw}});
-  if(error||data?.error)return toast('Failed: '+(data?.error||error.message));toast(`✔ Password updated.\n\nEmail: ${email}\nPassword: ${pw}`);}
+  if(error||data?.error)return toast('Failed: '+(data?.error||await fnMsg(error)));toast(`✔ Password updated.\n\nEmail: ${email}\nPassword: ${pw}`);}
 async function suDelUser(id,email){if(!confirm(`Delete user ${email}? This removes their login permanently.`))return;
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'delete_user',user_id:id}});
-  if(error||data?.error)return toast('Failed: '+(data?.error||error.message));suusers();}
+  if(error||data?.error)return toast('Failed: '+(data?.error||await fnMsg(error)));suusers();}
 // ---- Super admin: platform analytics ----
 function suBars(rows,color){const max=Math.max(1,...rows.map(r=>r.v));
   return `<div style="display:flex;align-items:flex-end;gap:10px;height:160px;padding:8px 4px">${rows.map(r=>`
@@ -4235,14 +4248,14 @@ async function signups(){
   <td>${esc(r.contact_name)}</td><td>${esc(r.email)}</td><td>${esc(r.phone||'—')}</td>
   <td style="max-width:240px;font-size:12px">${esc(r.message||'—')}${r.review_notes?`<br><span style="color:#889">Note: ${esc(r.review_notes)}</span>`:''}</td>
   <td><span class="badge ${badge(r.status)}">${esc(r.status)}</span></td>
-  <td class="noprint" style="white-space:nowrap">${r.status==='Pending'?`<button class="btn sm" style="background:var(--green)" onclick="approveSignup('${r.id}','${esc(r.email)}','${esc(r.company_name)}')">Approve</button> <button class="btn sm warn" onclick="rejectSignup('${r.id}')">Reject</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="color:#889">No signup requests yet.</td></tr>'}</table></div>`);
+  <td class="noprint" style="white-space:nowrap">${r.status==='Pending'?`<button class="btn sm" style="background:var(--green)" onclick="approveSignup('${r.id}',${escArg(r.email)},${escArg(r.company_name)})">Approve</button> <button class="btn sm warn" onclick="rejectSignup('${r.id}')">Reject</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="color:#889">No signup requests yet.</td></tr>'}</table></div>`);
 }
 async function approveSignup(id,email,company){
   const pw=prompt(`Approve "${company}" (${email}).\n\nSet an admin password for this account (min 6 characters):`);
   if(pw===null)return;
   if(pw.length<6)return toast('Password must be at least 6 characters.');
   const{data,error}=await sb.functions.invoke('review-signup',{body:{request_id:id,action:'approve',password:pw}});
-  if(error||data?.error)return toast('Approve failed: '+(data?.error||error.message));
+  if(error||data?.error)return toast('Approve failed: '+(data?.error||await fnMsg(error)));
   toast(`✔ Approved.\n\nShare these credentials with ${company}:\n\nEmail: ${email}\nPassword: ${pw}`);
   signups();
 }
@@ -4250,7 +4263,7 @@ async function rejectSignup(id){
   const notes=prompt('Reject this request?\n\nOptional reason (shown in the log):');
   if(notes===null)return;
   const{data,error}=await sb.functions.invoke('review-signup',{body:{request_id:id,action:'reject',notes:notes||null}});
-  if(error||data?.error)return toast('Reject failed: '+(data?.error||error.message));
+  if(error||data?.error)return toast('Reject failed: '+(data?.error||await fnMsg(error)));
   signups();
 }
 async function fb(){
