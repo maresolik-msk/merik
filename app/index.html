@@ -464,6 +464,12 @@ const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2}
 // real entry_time for that day. Self-contained so it can't depend on load order.
 const today=()=>{const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+// Was this person on the payroll at any point in [a,b]? Joined by the end of the
+// window, and not already gone before the start of it. Daily attendance passes the
+// same date twice; payroll passes the month's first and last day — which is why it
+// takes two dates and not one. Extracted from att() and pay(), which each had their
+// own copy, so the dashboard can't drift from the pages it summarises.
+const employedIn=(e,a,b)=>(!e.doj||e.doj<=b)&&(e.status!=='Inactive'||(e.left_on&&e.left_on>=a));
 const fmtDate=d=>{if(!d)return '—';const p=String(d).slice(0,10).split('-');return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:d;};
 const fmtTime=t=>t?new Date(t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -519,6 +525,17 @@ if(/[?&]selftest\b/.test(location.search))setTimeout(()=>{
   Promise.all([0,37,1000,2500].map(n=>fetchAll(capped(n),1000).then(r=>r.length===n)))
     .then(r=>console[r.every(Boolean)?'log':'error']('fetchAll self-check:',
       r.every(Boolean)?'all 4 pass':'FAILED '+JSON.stringify(r)));
+  // employedIn decides who is on the roster, who gets chased, and who gets paid —
+  // the joiner/leaver boundaries are exactly where it would go wrong quietly.
+  const A2='2026-08-01',B2='2026-08-31',R=[
+    [employedIn({doj:'2026-08-20',status:'Active'},A2,B2),'joins mid-window counts'],
+    [!employedIn({doj:'2026-09-01',status:'Active'},A2,B2),'joins after window'],
+    [employedIn({doj:'2020-01-01',status:'Inactive',left_on:'2026-08-15'},A2,B2),'left mid-window still counts'],
+    [!employedIn({doj:'2020-01-01',status:'Inactive',left_on:'2026-07-31'},A2,B2),'left before window'],
+    [employedIn({doj:null,status:'Active'},A2,B2),'null doj'],
+    [!employedIn({doj:'2020-01-01',status:'Inactive',left_on:null},A2,B2),'inactive with no left_on']];
+  const badR=R.filter(([ok])=>!ok);
+  console[badR.length?'error':'log']('employedIn self-check:',badR.length?badR.map(x=>x[1]):'all '+R.length+' pass');
 },0);
 function toast(msg,type){
   const m=(msg??'').toString();if(!m)return;
@@ -1016,28 +1033,118 @@ function paginateTables(){
 }
 
 /* ---------- ADMIN: DASHBOARD ---------- */
+/* Today's exception list. Three counts against an honest roster denominator, one
+   queue count, and a card naming everyone unaccounted for — with Approve/Reject
+   on the rows where the admin is the blocker.
+
+   It replaced four tiles that could not reach zero and a Quick Links card whose
+   five buttons only navigated. "Present Today" counted attendance ROWS, so the
+   people with no row at all — the ones worth knowing about — were invisible, and
+   there was no denominator to read the number against. */
+const LATE_IN=11*60;      // ponytail: hardcoded; move to orgset when a night-shift tenant asks
+const DUE_UPD=17*60+30;   // the deadline mydash already tells employees (5:30 PM)
 async function dash(){
-  const d=today();
-  const [{count:ne},{data:at},{data:tu},{data:iv}]=await Promise.all([
-    sb.from('employees').select('*',{count:'exact',head:true}).eq('status','Active'),
-    sb.from('attendance').select('status').eq('att_date',d),
-    sb.from('task_updates').select('id').eq('upd_date',d),
-    sb.from('invoices').select('total,status').in('status',['Unpaid','Overdue','Partially Paid'])]);
-  const p=(at||[]).filter(a=>['P','L','W','H'].includes(a.status)).length;
-  const card=(ic,bg,v,l,link,fn)=>`<div class="card" style="margin:0;flex:1;min-width:210px">
-    <div style="display:flex;gap:14px;align-items:center"><div class="kicon" style="background:${bg}">${ic}</div>
-    <div><div style="font-size:24px;font-weight:800;color:var(--ink)">${v}</div><div style="font-size:13px;color:var(--muted)">${l}</div></div></div>
-    <div style="border-top:1px solid #eef1f6;margin-top:12px;padding-top:10px"><a href="#" onclick="go('${fn}');return false" style="color:var(--brand);font-weight:600;font-size:13px;text-decoration:none">${link} ›</a></div></div>`;
-  const ann=await annBanner();
-  M(pgh('Dashboard',"Welcome back! Here's what's happening today.")+ann+
-  `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px">
-  ${card('<i class="fa-solid fa-users"></i>','var(--brand-soft)',ne||0,'Active Employees','View Employees','emp')}
-  ${card('<i class="fa-solid fa-circle" style="color:var(--green)"></i>','#E6F7EC',p,'Present Today','View Attendance','att')}
-  ${card('<i class="fa-solid fa-clipboard-list"></i>','#FFF2E2',(tu||[]).length,'Task Updates Today','View Task Log','task')}
-  ${card('<i class="fa-solid fa-file-invoice"></i>','var(--brand-soft)',inr((iv||[]).reduce((s,i)=>s+ +i.total,0)),'Outstanding Invoices','View Invoices','inv')}</div>
-  <div class="card"><b>Quick Links</b><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
-  ${[['<i class="fa-solid fa-user-plus"></i> Add Employee','emp'],['<i class="fa-solid fa-calendar-check"></i> Mark Attendance','att'],['<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Add Task','task'],['<i class="fa-solid fa-file-invoice"></i> New Invoice','inv'],['<i class="fa-solid fa-chart-column"></i> View Reports','perf']].map(([l,v])=>`<button class="btn sec" style="padding:14px 20px" onclick="go('${v}')">${l}</button>`).join('')}
-  </div></div>`);
+  const d=today(),dt=new Date(d+'T00:00:00'),now=new Date();
+  const mins=now.getHours()*60+now.getMinutes();
+  const y=now.getFullYear(),m=now.getMonth()+1,py=m===1?y-1:y,pm=m===1?12:m-1;
+  const can=v=>!ALLOWED_VIEWS||ALLOWED_VIEWS.has(v);
+  const none=Promise.resolve({data:[]});
+  // Six parallel reads, all RLS-scoped to this org, all bounded by headcount or an
+  // explicit limit — nothing here can cross the row cap, so no fetchAll() is needed.
+  // A module the tenant has switched off is never queried at all.
+  const [{data:emps,error:eErr},{data:at,error:aErr},{data:tu},{data:pend},{data:hols},{data:pr},ann]=await Promise.all([
+    // Every status, not just Active: employedIn needs left_on to judge leavers.
+    sb.from('employees').select('id,emp_code,full_name,department,employment_type,doj,status,left_on').order('emp_code'),
+    can('att')?sb.from('attendance').select('employee_id,status,entry_time').eq('att_date',d):none,
+    can('task')?sb.from('task_updates').select('employee_id,update_status').eq('upd_date',d):none,
+    sb.from('wfh_leave').select('id,employee_id,status,req_date,end_date,reason,employees(full_name)').eq('approved','Pending').order('req_date').limit(50),
+    sb.from('holidays').select('name').eq('holiday_date',d),
+    // This month and last: August's payslips get released in September.
+    can('pay')?sb.from('payroll').select('employee_id,pay_year,pay_month,sent').eq('pay_status','Paid').in('pay_year',[y,py]).in('pay_month',[m,pm]):none,
+    annBanner()]);
+
+  const holiday=(hols||[])[0],wknd=dt.getDay()===0||dt.getDay()===6,dayOff=wknd||holiday;
+  const badge=holiday?`<span class="badge stL"><i class="fa-solid fa-umbrella-beach"></i> ${esc(holiday.name)}</span>`
+    :wknd?'<span class="badge stL">Weekend</span>':'';
+  const head=pgh('Today',`${dt.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} &middot; as of ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} ${badge}`,
+    `<button class="btn sec" onclick="go('dash')"><i class="fa-solid fa-rotate-right"></i> Refresh</button>`)+ann;
+
+  // supabase-js resolves rather than throws on an RLS refusal, so without this the
+  // page would paint a confident "0 of 0" built from nothing.
+  if(eErr||aErr)return M(head+`<div class="card"><div class="empty">
+    <i class="fa-solid fa-triangle-exclamation ill" style="color:var(--red)"></i>
+    <h3>Couldn't load today</h3><p>${esc(saveErr(eErr||aErr))}</p>
+    <button class="btn sec" onclick="go('dash')"><i class="fa-solid fa-rotate-right"></i> Try again</button>
+    </div></div>`);
+
+  const roster=(emps||[]).filter(e=>employedIn(e,d,d));
+  if(!roster.length)return M(head+`<div class="card"><div class="empty">
+    <i class="fa-solid fa-users ill"></i><h3>No one on the roster yet</h3>
+    <p>Add your team to start tracking attendance, updates and payroll.</p>
+    ${can('emp')?`<button class="btn" onclick="empForm()"><i class="fa-solid fa-user-plus"></i> Add Employee</button>`:''}
+    </div></div>`);
+
+  const A={};(at||[]).forEach(r=>A[r.employee_id]=r);
+  const U={};(tu||[]).forEach(r=>U[r.employee_id]=r);
+  // Nobody on approved leave or marked absent is chased, or counted in the
+  // denominator — one false positive makes the whole list untrustworthy.
+  const OFF=new Set(['A','OL','UL']);
+  const expected=roster.filter(e=>!OFF.has((A[e.id]||{}).status));
+  const onLeave=roster.length-expected.length;
+  const isIn=e=>{const r=A[e.id]||{};return !!(r.entry_time||r.status)};
+  const notIn=expected.filter(e=>!isIn(e));
+  const noUpd=expected.filter(e=>(U[e.id]||{}).update_status!=='Update Shared');
+
+  const tiles=[];
+  if(can('att'))tiles.push(
+    ['<i class="fa-solid fa-user-check"></i>','var(--brand-soft)','In today',
+      `${expected.length-notIn.length} <span style="font-size:14px;color:var(--muted)">of ${expected.length}</span>`,
+      onLeave?`${onLeave} on approved leave`:'Everyone expected'],
+    ['<i class="fa-solid fa-user-clock"></i>','var(--brand-soft)','Not in yet',notIn.length,
+      mins>=LATE_IN?'No check-in, no leave':'Check-ins still coming in']);
+  if(can('task'))tiles.push(['<i class="fa-solid fa-clipboard-list"></i>','var(--brand-soft)','No update yet',
+    `${noUpd.length} <span style="font-size:14px;color:var(--muted)">of ${expected.length}</span>`,'Due 5:30 PM']);
+  tiles.push(['<i class="fa-solid fa-hourglass-half"></i>','var(--brand-soft)','Waiting on you',(pend||[]).length,'WFH &amp; leave requests']);
+  // On a day nobody is rostered there is no honest denominator, so show no counts.
+  const strip=dayOff?'':kpis(tiles);
+
+  const who=id=>{const e=roster.find(x=>x.id===id);return e?e.full_name:'An employee'};
+  const row=(name,sub,what,action)=>`<tr><td style="white-space:nowrap">${av(name)}${esc(name)}
+    ${sub?`<div class="tl-sub">${esc(sub)}</div>`:''}</td><td>${what}</td>
+    <td class="noprint" style="text-align:right">${action||''}</td></tr>`;
+  let rows=(pend||[]).map(r=>row(r.employees?.full_name||who(r.employee_id),r.reason||'',
+    `<span class="badge stL">${esc(r.status)}</span> ${fmtDate(r.req_date)}${r.end_date&&r.end_date!==r.req_date?' → '+fmtDate(r.end_date):''}`,
+    `<button class="btn sm" onclick="apprWfh('${r.id}','Yes')">Approve</button>
+     <button class="btn sm warn" onclick="apprWfh('${r.id}','No')">Reject</button>`));
+  // Only chase once the moment has actually passed — before then these are just
+  // people whose day hasn't started, and naming them is noise.
+  if(!dayOff&&mins>=LATE_IN)rows=rows.concat(notIn.map(e=>row(e.full_name,e.department||'',
+    '<span class="badge stA">Not in yet</span>',can('att')?`<button class="btn sm sec" onclick="go('att')">Mark</button>`:'')));
+  if(!dayOff&&mins>=DUE_UPD)rows=rows.concat(noUpd.filter(e=>isIn(e)).map(e=>row(e.full_name,e.department||'',
+    '<span class="badge stL">No update yet</span>',can('task')?`<button class="btn sm sec" onclick="go('task')">Open log</button>`:'')));
+
+  const CAP=12,more=rows.length-CAP;
+  const body=rows.length?`<table class="nopg"><tr><th>Who</th><th>What</th><th></th></tr>
+    ${rows.slice(0,CAP).join('')}</table>
+    ${more>0?`<div class="tl-sub" style="margin-top:10px">+${more} more — <a href="#" onclick="go('${(pend||[]).length>CAP?'wfh':'att'}');return false">see the full list ›</a></div>`:''}`
+    :`<div class="empty"><i class="fa-solid fa-circle-check ill" style="color:var(--green)"></i>
+      <h3>${dayOff?'No one is expected in today':'Everyone is in and reported'}</h3>
+      ${dayOff?'':`<p>${expected.length} on the roster today. Nothing needs you.</p>`}</div>`;
+
+  // Payslips computed and marked Paid but never released. Invisible on both ends:
+  // RLS hides an unsent row from the employee, so their Payslips page is just empty.
+  // sent is NULL until sendSlip writes it, so this has to be filtered here, not in SQL.
+  const FT=new Set(roster.filter(e=>e.employment_type==='Full-time').map(e=>e.id));
+  const unsent=(pr||[]).filter(r=>!r.sent&&FT.has(r.employee_id)
+    &&((r.pay_year===y&&r.pay_month===m)||(r.pay_year===py&&r.pay_month===pm)))
+    .sort((a,b)=>(a.pay_year-b.pay_year)||(a.pay_month-b.pay_month));
+  const oldest=unsent[0],nUnsent=oldest?unsent.filter(r=>r.pay_year===oldest.pay_year&&r.pay_month===oldest.pay_month).length:0;
+  const warns=nUnsent&&can('pay')?`<div class="warnbar"><i class="fa-solid fa-file-invoice-dollar"></i>
+    <b>${nUnsent}</b> ${MONTHS[oldest.pay_month-1]} payslip${nUnsent>1?'s':''} marked Paid but not released —
+    the employee's Payslips page stays empty until you send.
+    <a href="#" onclick="go('pay');return false">Open Payroll ›</a></div>`:'';
+
+  M(head+strip+`<div class="card">${body}</div>`+warns);
 }
 
 /* ---------- EMPLOYEES ---------- */
@@ -1277,7 +1384,7 @@ async function att(d){
   // Only people employed on this date: joined by then, and not already past their
   // last working day. So former employees still show on their historical dates,
   // but attendance stops the day after they left.
-  const emps=(allEmps||[]).filter(e=>(!e.doj||e.doj<=d)&&(e.status!=='Inactive'||(e.left_on&&e.left_on>=d)));
+  const emps=(allEmps||[]).filter(e=>employedIn(e,d,d));
   const map={};(rows||[]).forEach(r=>map[r.employee_id]=r);
   const dt=new Date(d+'T00:00:00');const wk=dt.getDay()===0||dt.getDay()===6;
   M(pgh('Daily Attendance','Track and manage daily attendance for your team.',`<button class="btn" onclick="saveAtt('${d}')"><i class="fa-solid fa-floppy-disk"></i> Save All</button>`)+
@@ -2191,7 +2298,9 @@ async function apprWfh(id,v){
       const{error:e2}=await sb.from('attendance').upsert(ups,{onConflict:'employee_id,att_date'});
       if(e2)toast('Approved, but attendance auto-update failed: '+e2.message);}
   }
-  wfh();
+  // Re-render whichever page the approval came from, and drop the item from the
+  // bell straight away instead of leaving it listed for up to three minutes.
+  go(VIEW);loadNotifs();
 }
 
 /* ---------- PAYROLL ---------- */
@@ -2215,7 +2324,7 @@ async function pay(ym){
   // whose last working day falls in or after it. Anyone who left before the month
   // (or joins after it) is excluded — so a leaver still gets their final month's
   // pay and past months keep showing them, but months after leaving don't.
-  const emps=(allEmps||[]).filter(e=>(!e.doj||e.doj<=mEnd)&&(e.status!=='Inactive'||(e.left_on&&e.left_on>=mStart)));
+  const emps=(allEmps||[]).filter(e=>employedIn(e,mStart,mEnd));
   const map={};(rows||[]).forEach(r=>map[r.employee_id]=r);
   // Effective CTC per employee for THIS month, plus a flag if a hike took effect this month.
   const HIST={};(hist||[]).forEach(h=>{(HIST[h.employee_id]=HIST[h.employee_id]||[]).push(h);});
