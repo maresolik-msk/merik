@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>HR &amp; Payroll ROI Calculator — What Month-End Admin Costs You | Merik</title>
+<meta name="description" content="Work out what attendance, leave and payroll admin costs your business each year. Move four sliders for a live estimate in rupees and hours — with the assumptions shown, not hidden.">
+<meta name="keywords" content="HR ROI calculator, payroll admin cost, HR software ROI, cost of manual payroll, attendance admin time, HR automation savings calculator">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/roi">
+<link rel="icon" type="image/png" href="/assets/images/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="ROI calculator — what is month-end admin costing you?">
+<meta property="og:description" content="Four sliders, a live estimate in rupees and hours, and every assumption stated in the open.">
+<meta property="og:url" content="https://www.merik.in/roi">
+<meta property="og:image" content="https://www.merik.in/assets/images/logo.png">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Merik ROI calculator">
+<meta name="twitter:description" content="What does your month-end admin actually cost? Four sliders, live answer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=5">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"WebApplication","@id":"https://www.merik.in/roi#calculator","name":"Merik workforce admin ROI calculator","url":"https://www.merik.in/roi","applicationCategory":"BusinessApplication","operatingSystem":"Web browser","browserRequirements":"Requires JavaScript","description":"An interactive calculator that estimates the annual cost of manual attendance, leave and payroll administration from four inputs: headcount, monthly admin hours, the hourly cost of that time, and the number of payslip corrections made each month.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},"publisher":{"@id":"https://www.merik.in/#org"}},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"ROI calculator","item":"https://www.merik.in/roi"}]}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"How do you calculate the cost of manual payroll admin?","acceptedAnswer":{"@type":"Answer","text":"Multiply the hours spent each month on attendance, leave and payroll administration by the hourly cost of the person doing it, then multiply by twelve. Add the time spent correcting payslips after the run, which is usually underestimated because each correction also involves a conversation with the employee affected."}},
+    {"@type":"Question","name":"How many hours does small business payroll admin take each month?","acceptedAnswer":{"@type":"Answer","text":"It varies with headcount and how disconnected the tools are, but the pattern is consistent: chasing timesheets and attendance takes the largest share, followed by reconciling leave against the register, then the payroll run itself, then corrections after payslips go out. Businesses running on spreadsheets are usually surprised when they add the four together honestly."}},
+    {"@type":"Question","name":"Why does connecting attendance to payroll save time?","acceptedAnswer":{"@type":"Answer","text":"Because most month-end effort is not calculation, it is transcription and reconciliation — moving numbers between a register, a leave tracker and a salary sheet, then checking they agree. When attendance, leave and payroll read from one dataset, that work disappears rather than getting faster, and the errors it produced disappear with it."}},
+    {"@type":"Question","name":"What assumptions does this ROI calculator make?","acceptedAnswer":{"@type":"Answer","text":"One: that roughly 75% of the stated manual admin is removable when attendance, leave and payroll share a dataset, since re-keying and reconciliation go away while judgement and approvals remain. Two: that each payslip correction costs about half an hour at the same hourly rate. Both are stated on the page rather than hidden, and every figure shown comes from the visitor's own four inputs."}},
+    {"@type":"Question","name":"Is the calculator a quote or a guarantee of savings?","acceptedAnswer":{"@type":"Answer","text":"Neither. It is an estimate built from your own inputs and two clearly stated assumptions. Its purpose is to make a cost visible that most businesses never total up, not to predict your outcome. If your inputs are guesses, the output is a guess with better arithmetic."}}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi" aria-current="page">ROI</a>
+      <a class="link" href="/blog/">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> ROI calculator</nav>
+    <div class="eyebrow">ROI calculator</div>
+    <h1>What is month-end admin <span class="accent">costing you?</span></h1>
+    <p class="lead">Four sliders, a live answer, and every assumption stated in the open. Your inputs — not our marketing numbers.</p>
+  </div>
+</div>
+
+<section style="padding-top:56px;padding-bottom:40px">
+  <div class="wrap">
+    <div class="calc reveal">
+      <div>
+        <div class="calc-field">
+          <label for="cEmp">How many employees? <output id="oEmp">25</output></label>
+          <input type="range" id="cEmp" min="5" max="300" step="1" value="25">
+        </div>
+        <div class="calc-field">
+          <label for="cHours">Hours spent on attendance, leave &amp; payroll admin per month <output id="oHours">14</output></label>
+          <input type="range" id="cHours" min="2" max="80" step="1" value="14">
+        </div>
+        <div class="calc-field">
+          <label for="cRate">Cost of that admin time, per hour (₹) <output id="oRate">500</output></label>
+          <input type="range" id="cRate" min="100" max="3000" step="50" value="500">
+        </div>
+        <div class="calc-field" style="margin-bottom:0">
+          <label for="cErr">Payslip corrections you make in a typical month <output id="oErr">3</output></label>
+          <input type="range" id="cErr" min="0" max="30" step="1" value="3">
+        </div>
+      </div>
+
+      <div class="calc-out">
+        <div class="cap">Admin cost per year</div>
+        <div class="big" id="oYear">₹72,000</div>
+        <hr>
+        <div class="sub">Hours back per year<b id="oHrsYear">144 hours</b></div>
+        <div style="height:16px"></div>
+        <div class="sub">Payslip corrections avoided per year<b id="oErrYear">36 corrections</b></div>
+        <hr>
+        <a class="btn btn-primary" href="/app/" style="width:100%">Get those hours back →</a>
+        <p class="calc-note">Assumes Merik removes about 75% of the manual admin (re-keying, chasing timesheets, rebuilding sheets) because attendance, leave and payroll share one dataset, and that a payslip correction costs about half an hour. Every number above comes from your own four inputs.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METHOD -->
+<section>
+  <div class="wrap prose">
+    <h2 id="method">How this is calculated</h2>
+    <p>There are only two assumptions, and both are on the page rather than buried in a footnote:</p>
+    <ol>
+      <li><b>About 75% of stated manual admin is removable.</b> Not 100% — approving leave, checking an odd entry and reviewing the run before it goes out are judgement, and judgement does not disappear. What disappears is transcription: copying a register into a salary sheet, reconciling a leave tracker against attendance, rebuilding last month's file for this month.</li>
+      <li><b>A payslip correction costs about half an hour</b> at the same hourly rate. This is usually the conservative end, because a correction is rarely just arithmetic — it involves finding the source of the discrepancy and a conversation with the employee whose pay was wrong.</li>
+    </ol>
+    <p>So the arithmetic is:</p>
+    <blockquote>Annual cost = ((monthly admin hours × 0.75) + (corrections × 0.5)) × 12 × hourly rate</blockquote>
+    <p><b>Worked example.</b> 14 hours of admin a month, 3 corrections, at ₹500 an hour: (14 × 0.75) + (3 × 0.5) = 10.5 + 1.5 = <b>12 hours a month</b>. Over a year that is 144 hours, or <b>₹72,000</b> — which is the figure the calculator shows on its default settings.</p>
+    <p>Headcount is collected because it changes how you read the result, not because it multiplies it. Twelve hours a month across 8 people is a very different situation from twelve hours across 200 — the first is a process that has not been set up yet, the second is a process that is quietly heroic and about to break.</p>
+  </div>
+</section>
+
+<!-- WHERE THE TIME GOES -->
+<section class="soft">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Be honest with the inputs</div>
+      <h2>Where the hours actually go</h2>
+      <p>Most people underestimate the middle slider, because the work is scattered across the month rather than sitting in one block.</p>
+    </div>
+    <table class="facts reveal" style="max-width:900px;margin:0 auto">
+      <tr><th>Chasing attendance</th><td>Following up missing entries, asking who was in on the 14th, reconstructing a week from chat messages</td></tr>
+      <tr><th>Reconciling leave</th><td>Checking approved leave actually reached the register, and that approved days were not marked absent</td></tr>
+      <tr><th>Rebuilding the sheet</th><td>Copying last month's file, updating formulas, fixing what broke in the copy</td></tr>
+      <tr><th>The payroll run itself</th><td>Re-keying payable days, computing LOP, checking totals against last month</td></tr>
+      <tr><th>Generating &amp; sending payslips</th><td>Producing each slip, attaching it to the right person, emailing them out</td></tr>
+      <tr><th>Corrections afterwards</th><td>Finding the source of a wrong figure, explaining it, reissuing the slip</td></tr>
+      <tr><th>Answering "what's my balance?"</th><td>Looking up leave balances and past payslips on behalf of employees who cannot see their own</td></tr>
+    </table>
+    <p style="text-align:center;color:var(--muted);font-size:15px;margin-top:24px;max-width:700px;margin-left:auto;margin-right:auto" class="reveal">Add those seven up for a real month before you move the slider. The number is almost always higher than the one people guess first.</p>
+  </div>
+</section>
+
+<!-- WHAT CHANGES -->
+<section>
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Why the work disappears</div>
+      <h2>It's not that the admin gets faster</h2>
+      <p>It stops existing. Those are different things, and only one of them compounds.</p>
+    </div>
+    <div class="grid">
+      <article class="card reveal"><div class="ficon">🕒</div><h3>Captured once, at the source</h3><p>The employee marks their own attendance on the day, with location. Nobody transcribes it later, so there is no later.</p></article>
+      <article class="card reveal d1"><div class="ficon">🌴</div><h3>Approvals write to the record</h3><p>Approved leave and WFH update the attendance register directly — removing the single most common cause of a wrong payslip.</p></article>
+      <article class="card reveal d2"><div class="ficon">💳</div><h3>Payroll reads what's there</h3><p>Payable days come from the register the month already produced. There is nothing to re-key, so there is nothing to mistype.</p></article>
+      <article class="card reveal"><div class="ficon">📄</div><h3>Payslips ship with the run</h3><p>Generated by the same run that computed the pay, and emailed in bulk — so the slip and the payment cannot disagree.</p></article>
+      <article class="card reveal d1"><div class="ficon">👤</div><h3>Employees answer their own questions</h3><p>Balances, attendance history and past payslips are on their own dashboard, which quietly removes a whole category of interruption.</p></article>
+      <article class="card reveal d2"><div class="ficon">🔎</div><h3>Disputes take minutes</h3><p>Every payslip line traces back to dated entries you can show the person questioning it, instead of two people's recollections.</p></article>
+    </div>
+    <div style="text-align:center;margin-top:40px" class="reveal"><a class="btn btn-outline" href="/blog/attendance-to-payroll-automation">Read how attendance reaches payroll →</a></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="soft">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Answers</div>
+      <h2>About this calculator</h2>
+    </div>
+    <div class="faq">
+      <details open><summary>How do you calculate the cost of manual payroll admin?</summary><p>Multiply the hours spent each month on attendance, leave and payroll administration by the hourly cost of the person doing it, then multiply by twelve. Add the time spent correcting payslips after the run, which is usually underestimated because each correction also involves a conversation with the employee affected.</p></details>
+      <details><summary>How many hours does small business payroll admin take each month?</summary><p>It varies with headcount and how disconnected the tools are, but the pattern is consistent: chasing timesheets and attendance takes the largest share, followed by reconciling leave against the register, then the payroll run itself, then corrections after payslips go out. Businesses running on spreadsheets are usually surprised when they add the four together honestly.</p></details>
+      <details><summary>Why does connecting attendance to payroll save time?</summary><p>Because most month-end effort is not calculation, it is transcription and reconciliation — moving numbers between a register, a leave tracker and a salary sheet, then checking they agree. When attendance, leave and payroll read from one dataset, that work disappears rather than getting faster, and the errors it produced disappear with it. <a href="/blog/attendance-to-payroll-automation">The full explanation →</a></p></details>
+      <details><summary>What assumptions does this calculator make?</summary><p>Two, both stated above: that roughly 75% of the stated manual admin is removable when attendance, leave and payroll share a dataset, and that each payslip correction costs about half an hour at the same hourly rate. Every figure shown comes from your own four inputs.</p></details>
+      <details><summary>Is this a quote or a guarantee of savings?</summary><p>Neither. It is an estimate built from your inputs and two clearly stated assumptions. Its purpose is to make a cost visible that most businesses never total up — not to predict your outcome. If your inputs are guesses, the output is a guess with better arithmetic.</p></details>
+      <details><summary>What does it cost to actually do this?</summary><p>Nothing to start. Creating a workspace is free with unlimited employee self sign-up and no setup fee — <a href="/pricing">the pricing page has the detail</a>. The honest test is to run one full month and compare.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section>
+  <div class="wrap">
+    <div class="cta-wrap reveal">
+      <h2>Stop paying for work that doesn't need doing</h2>
+      <p>Create your company workspace and let attendance, leave and payroll share one dataset.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/app/">Create your workspace →</a>
+        <a class="btn btn-ghost" href="/#talk-to-us">Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/blog/">Blog</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+
+  /* ROI calculator — same model as the landing page. 75% of stated admin is
+     treated as removable; a payslip correction costs 0.5h at the same rate. */
+  (function(){
+    var emp=document.getElementById('cEmp'),hrs=document.getElementById('cHours'),
+        rate=document.getElementById('cRate'),err=document.getElementById('cErr');
+    if(!emp)return;
+    var inr=new Intl.NumberFormat('en-IN');
+    function calc(){
+      document.getElementById('oEmp').textContent=emp.value;
+      document.getElementById('oHours').textContent=hrs.value;
+      document.getElementById('oRate').textContent=inr.format(rate.value);
+      document.getElementById('oErr').textContent=err.value;
+      var savedHrsMonth=+hrs.value*0.75 + (+err.value*0.5);
+      document.getElementById('oYear').textContent='₹'+inr.format(Math.round(savedHrsMonth*12*(+rate.value)));
+      document.getElementById('oHrsYear').textContent=Math.round(savedHrsMonth*12)+' hours';
+      document.getElementById('oErrYear').textContent=(+err.value*12)+' corrections';
+    }
+    [emp,hrs,rate,err].forEach(function(i){i.addEventListener('input',calc);});
+    var fired=false;
+    [emp,hrs,rate,err].forEach(function(i){i.addEventListener('change',function(){
+      if(fired||typeof gtag!=='function')return;fired=true;
+      gtag('event','roi_calculator_used',{employees:emp.value,page:'roi'});
+    });});
+    calc();
+  })();
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

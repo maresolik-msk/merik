@@ -16,6 +16,7 @@ import pathlib
 import re
 
 from blog_posts import POSTS
+from site_chrome import CHROME_JS, footer, header
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BLOG = ROOT / "blog"
@@ -169,65 +170,8 @@ HEAD_COMMON = """<script async src="https://www.googletagmanager.com/gtag/js?id=
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>document.documentElement.className+=' js';</script>"""
 
-NAV = """<header>
-  <div class="wrap nav">
-    <a href="/" class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></a>
-    <nav class="nav-links" id="navLinks">
-      <a class="link" href="/features">Features</a>
-      <a class="link" href="/how-it-works">How it works</a>
-      <a class="link" href="/modules">Modules</a>
-      <a class="link" href="/blog/"{blogcur}>Blog</a>
-      <div class="nav-cta">
-        <a class="btn btn-outline" href="../app/">Sign In</a>
-        <a class="btn btn-primary" href="../app/">Get Started</a>
-      </div>
-    </nav>
-    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
-  </div>
-</header>"""
 
-FOOTER = """<footer>
-  <div class="wrap">
-    <div class="foot">
-      <div>
-        <div class="brand"><img src="../assets/images/logo.png" alt="Merik logo"><span>Merik</span></div>
-        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
-      </div>
-      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/#pricing">Pricing</a><a href="/blog/">Blog</a></div>
-      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a></div>
-      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a></div>
-      <div><h5>Get started</h5><a href="../app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="../app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
-    </div>
-    <div class="foot-bottom">
-      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
-      <span>Built for growing teams.</span>
-    </div>
-  </div>
-</footer>"""
 
-BASE_JS = """<script>
-  document.getElementById('yr').textContent=new Date().getFullYear();
-  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
-  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
-  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
-  var bar=document.getElementById('progress');
-  if(bar){
-    addEventListener('scroll',function(){
-      var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
-      bar.style.width=(max>0?(y/max)*100:0)+'%';
-    },{passive:true});
-  }
-  var reveals=document.querySelectorAll('.reveal');
-  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
-  if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
-    reveals.forEach(function(el){io.observe(el);});
-    setTimeout(revealAll,3000);
-  }else{revealAll();}
-</script>
-<script>
-  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
-</script>"""
 
 
 def j(s):
@@ -248,7 +192,7 @@ def read_time(post):
     return max(3, round(words / 220))
 
 
-def card_html(slug, prefix="../"):
+def card_html(slug, prefix="/"):
     slug_, cat, img, title, blurb = CARD_BY_SLUG[slug]
     return f"""      <a class="blog-card" data-cat="{cat}" href="/blog/{slug}">
         <img class="thumb" src="{prefix}assets/images/blog/{img}.svg" alt="{html.escape(strip_tags(title).strip())}" width="400" height="240" loading="lazy">
@@ -316,7 +260,7 @@ def build_post(p):
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#D93A31">
 <link rel="canonical" href="{url}">
-<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<link rel="icon" type="image/png" href="/assets/images/logo.png">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Merik">
 <meta property="og:title" content="{p["og_title"]}">
@@ -333,7 +277,7 @@ def build_post(p):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<link rel="stylesheet" href="/assets/css/site.css?v=5">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",
@@ -347,7 +291,7 @@ def build_post(p):
 
 <div class="progress" id="progress" aria-hidden="true"></div>
 
-{NAV.format(blogcur=' aria-current="page"')}
+{header("blog")}
 
 <div class="page-hero">
   <div class="wrap">
@@ -360,7 +304,7 @@ def build_post(p):
 
 <section>
   <div class="wrap prose">
-    <img class="article-hero-img" src="../assets/images/blog/{img}.svg" alt="{html.escape(p["img_alt"])}" width="640" height="384">
+    <img class="article-hero-img" src="/assets/images/blog/{img}.svg" alt="{html.escape(p["img_alt"])}" width="640" height="384">
     <p class="post-meta">Published {p["published_h"]} · Updated {p["modified_h"]} · Merik team · {mins} min read</p>
     <p class="lede">{p["lede"]}</p>
 
@@ -393,7 +337,7 @@ def build_post(p):
     <h2 id="merik">How Merik handles it</h2>
 {p["merik"]}
 
-    <p><a class="btn btn-primary" href="../app/">Create your workspace →</a></p>
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
     <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
   </div>
 </section>
@@ -407,9 +351,9 @@ def build_post(p):
   </div>
 </section>
 
-{FOOTER}
+{footer()}
 
-{BASE_JS}
+{CHROME_JS}
 </body>
 </html>
 """
@@ -436,7 +380,7 @@ def build_index():
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#D93A31">
 <link rel="canonical" href="{SITE}/blog/">
-<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<link rel="icon" type="image/png" href="/assets/images/logo.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Merik">
 <meta property="og:title" content="Merik Blog — Workforce, Attendance, Payroll &amp; HR Guides">
@@ -450,7 +394,7 @@ def build_index():
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/site.css?v=3">
+<link rel="stylesheet" href="/assets/css/site.css?v=5">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",
@@ -469,7 +413,7 @@ def build_index():
 
 <div class="progress" id="progress" aria-hidden="true"></div>
 
-{NAV.format(blogcur=' aria-current="page"')}
+{header("blog")}
 
 <div class="page-hero">
   <div class="wrap">
@@ -504,16 +448,16 @@ def build_index():
       <h2>Run your workforce the simple way</h2>
       <p>Create your company workspace and bring employees, attendance, leave, payroll and tasks together.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="../app/">Create your workspace →</a>
+        <a class="btn btn-primary" href="/app/">Create your workspace →</a>
         <a class="btn btn-ghost" href="/features">Explore features</a>
       </div>
     </div>
   </div>
 </section>
 
-{FOOTER}
+{footer()}
 
-{BASE_JS}
+{CHROME_JS}
 <script>
   /* Category filter + free-text search, applied together. */
   var filterBtns=document.querySelectorAll('#blogFilters button');
@@ -561,6 +505,8 @@ def build_sitemap(posts_by_slug):
         url(f"{SITE}/features", "2026-07-11", "monthly", "0.9"),
         url(f"{SITE}/how-it-works", "2026-07-11", "monthly", "0.8"),
         url(f"{SITE}/modules", "2026-07-11", "monthly", "0.8"),
+        url(f"{SITE}/pricing", newest, "monthly", "0.9"),
+        url(f"{SITE}/roi", newest, "monthly", "0.8"),
         url(f"{SITE}/blog/", newest, "weekly", "0.7"),
     ]
     for slug, _, _, _, _ in CARDS:

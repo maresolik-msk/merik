@@ -10,6 +10,8 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Features](https://www.merik.in/features): Employee management, attendance tracking, leave management, payroll, daily task tracking, company workspaces.
 - [How it works](https://www.merik.in/how-it-works): Three-step setup — create a workspace, invite employees, run daily operations.
 - [Modules](https://www.merik.in/modules): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices, assets & software.
+- [Pricing](https://www.merik.in/pricing): Free workspace with unlimited employee self sign-up; guided setup available on request.
+- [ROI calculator](https://www.merik.in/roi): Interactive estimate of what manual attendance, leave and payroll admin costs per year.
 - [Blog](https://www.merik.in/blog/): 40 practical guides on attendance, payroll, leave, tasks, clients, assets and HR.
 
 ## Key facts
