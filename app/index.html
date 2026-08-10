@@ -1698,16 +1698,16 @@ async function task(d){
   if(st.period==='weekly'){const dt=new Date(a+'T00:00:00');const mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const sun=new Date(mon);sun.setDate(mon.getDate()+6);from=isoD(mon);to=isoD(sun);}
   else if(st.period==='monthly'){const [y,m]=a.split('-').map(Number);from=`${a.slice(0,7)}-01`;to=`${a.slice(0,7)}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
   else{from=to=a;}
-  // Attendance and holidays are only consulted for the single-day view, which is
-  // the only one that invents rows for people who filed nothing.
-  const daily=st.period==='daily',noRows=Promise.resolve({data:[]});
-  const [{data:emps},rows,{data:cls},{data:pjs},{data:dayAtt},{data:dayHol}]=await Promise.all([
+  const daily=st.period==='daily';
+  const [{data:emps},rows,{data:cls},{data:pjs},att,{data:hols,error:holErr}]=await Promise.all([
     sb.from('employees').select('id,emp_code,full_name,designation,doj').eq('status','Active').order('emp_code'),
     fetchAll(()=>sb.from('task_updates').select('*').gte('upd_date',from).lte('upd_date',to).order('upd_date',{ascending:false}).order('created_at',{ascending:false})),
     sb.from('clients').select('id,name').order('name'),
     sb.from('projects').select('name,client_id'),
-    daily?sb.from('attendance').select('employee_id,status').eq('att_date',from):noRows,
-    daily?sb.from('holidays').select('name').eq('holiday_date',from):noRows]);
+    // Whole team over the period: 40 staff across a month is past the row cap.
+    fetchAll(()=>sb.from('attendance').select('employee_id,att_date,status').gte('att_date',from).lte('att_date',to).order('att_date')).then(d=>({data:d}),e=>({data:null,error:e})),
+    sb.from('holidays').select('name,holiday_date').gte('holiday_date',from).lte('holiday_date',to)]);
+  const attRows=att.data,attErr=att.error;
   const empName={};(emps||[]).forEach(e=>empName[e.id]=e);
   const clientNameById={};(cls||[]).forEach(c=>clientNameById[c.id]=c.name);
   CLIENT_CODES=buildClientCodes((cls||[]).map(c=>c.name));
@@ -1722,16 +1722,50 @@ async function task(d){
   // both slandered them on this page and dragged the completion figure down.
   // Matches the admin dashboard's rule: only A / OL / UL excuse you, and WFH and
   // half-days are working days that still owe an update.
+  // Attendance and day-status by employee, then by date — used both to label the
+  // day view's invented rows and to work out who owed an update at all.
+  const HOL=new Set((hols||[]).map(h=>String(h.holiday_date).slice(0,10)));
+  const AS={};(attRows||[]).forEach(r=>{(AS[r.employee_id]=AS[r.employee_id]||{})[String(r.att_date).slice(0,10)]=r.status});
+  const EXCUSED=new Set(['A','OL','UL']);
+  const byDate=(o,r,k)=>{(o[r.employee_id]=o[r.employee_id]||new Set()).add(k)};
+  // A day filed as Leave / Sick Leave / Holiday creates no attendance row, but the
+  // person still told us they weren't working. 'WFH' is a working day and stays owed.
+  const SELF={},SHARED={};
+  (rows||[]).forEach(r=>{const k=String(r.upd_date).slice(0,10);
+    if(['Leave','Sick Leave','Holiday'].includes(r.update_status))byDate(SELF,r,k);
+    if(r.update_status==='Update Shared')byDate(SHARED,r,k);});
   if(st.period==='daily'&&!st.client){
     const have=new Set(list.map(r=>r.employee_id));
-    const AS={};(dayAtt||[]).forEach(r=>AS[r.employee_id]=r.status);
     const wd=new Date(from+'T00:00:00').getDay();
-    const dayOff=(dayHol||[]).length?'Holiday':(wd===0||wd===6)?'Weekend':'';
-    const why=id=>dayOff||({OL:'Leave',UL:'Leave',A:'Absent'}[AS[id]]||'No Update');
+    const dayOff=HOL.has(from)?'Holiday':(wd===0||wd===6)?'Weekend':'';
+    const why=id=>dayOff||({OL:'Leave',UL:'Leave',A:'Absent'}[(AS[id]||{})[from]]||'No Update');
     (emps||[]).filter(e=>(!st.employee||e.id===st.employee)&&(!e.doj||e.doj<=from))
       .forEach(e=>{if(!have.has(e.id))list.push({employee_id:e.id,upd_date:from,update_status:why(e.id)})});}
-  const cnt={nu:list.filter(r=>r.update_status==='No Update').length,sh:list.filter(r=>r.update_status==='Update Shared').length};
-  const pct=(cnt.sh+cnt.nu)?Math.round(cnt.sh/(cnt.sh+cnt.nu)*100):0;
+  // Completion over ANY period is now measured the same way: count the days each
+  // person on the roster actually owed an update, then how many of those they filed.
+  // The weekly and monthly views used to divide by whatever rows happened to exist,
+  // so a month where most people simply filed nothing still reported a high rate —
+  // and it disagreed with the employee's own page, which counts the calendar.
+  const nw=new Date(),td=today();
+  const cut=(nw.getHours()*60+nw.getMinutes())>=DUE_UPD?td:isoD(new Date(new Date(td+'T00:00:00').getTime()-864e5));
+  const team=(emps||[]).filter(e=>!st.employee||e.id===st.employee);
+  let owed=0,met=0;
+  for(let x=new Date(from+'T00:00:00'),end=new Date(to+'T00:00:00');x<=end;x.setDate(x.getDate()+1)){
+    const ds=isoD(x);
+    if(ds>cut)break;
+    if(x.getDay()===0||x.getDay()===6||HOL.has(ds))continue;
+    team.forEach(e=>{
+      if(e.doj&&ds<String(e.doj).slice(0,10))return;
+      if(EXCUSED.has((AS[e.id]||{})[ds]))return;
+      if(SELF[e.id]&&SELF[e.id].has(ds))return;
+      owed++;if(SHARED[e.id]&&SHARED[e.id].has(ds))met++;});
+  }
+  // Those two reads only ever subtract days from what's owed, so a failed one
+  // inflates the miss count instead of showing an error. And "completion" means
+  // nothing once filtered to a client — you don't owe an update to a client.
+  const rateErr=attErr||holErr,noRate=!!(rateErr||st.client);
+  const cnt={nu:Math.max(0,owed-met),sh:list.filter(r=>r.update_status==='Update Shared').length};
+  const pct=(noRate||!owed)?null:Math.round(met/owed*100);
   // Search over the filtered set (name / id / project / text / status).
   let display=list;
   if(st.search){const q=st.search.toLowerCase();display=list.filter(r=>{const e=empName[r.employee_id]||{};
@@ -1748,9 +1782,9 @@ async function task(d){
   const R=22,C=2*Math.PI*R;
   const donut=`<div class="card" style="margin:0;flex:1;min-width:210px"><div style="display:flex;gap:14px;align-items:center">
     <svg width="62" height="62" viewBox="0 0 60 60" style="flex:none"><circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--line)" stroke-width="7"/>
-    <circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--brand)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct/100)).toFixed(1)}" transform="rotate(-90 30 30)"/>
-    <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="var(--ink)">${pct}%</text></svg>
-    <div><div style="font-size:12.5px;color:var(--muted)">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${cnt.sh} of ${cnt.sh+cnt.nu} logged</div></div></div></div>`;
+    <circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--brand)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-(pct||0)/100)).toFixed(1)}" transform="rotate(-90 30 30)"/>
+    <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="800" fill="var(--ink)">${pct===null?'—':pct+'%'}</text></svg>
+    <div><div style="font-size:12.5px;color:var(--muted)">Completion Rate</div><div class="tl-sub" style="margin-top:4px">${rateErr?'Rate unavailable — couldn’t load attendance':st.client?'Not measured when filtered by client':pct===null?'Nothing due this period':`${met} of ${owed} owed update${owed===1?'':'s'} filed`}</div></div></div></div>`;
   const cell=(v)=>v?esc(v):'<span class="tl-dash">—</span>';
   // Show each project on the update with its client name (or "Internal" if it has none).
   const clientProjCell=(projStr)=>{
@@ -1768,7 +1802,7 @@ async function task(d){
    <div style="max-width:220px"><label>Client</label><select onchange="setTaskClient(this.value)"><option value="">All clients</option><option value="internal" ${st.client==='internal'?'selected':''}>Internal (no client)</option>${(cls||[]).map(c=>`<option value="${c.id}" ${st.client===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
   </div>
   <div class="kpi" style="margin-bottom:8px">
-   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','var(--red)','No Update',rateErr?'—':cnt.nu,rateErr?'Couldn’t check':(cnt.nu?'Needs attention':'All clear'),rateErr?'var(--muted)':'var(--red)')}
+   ${stat('<i class="fa-solid fa-circle-exclamation"></i>','#FDECEA','var(--red)','No Update',noRate?'—':cnt.nu,noRate?(rateErr?'Couldn’t check':'Not measured when filtered'):(cnt.nu?'Needs attention':'All clear'),noRate?'var(--muted)':'var(--red)')}
    ${stat('<i class="fa-solid fa-arrow-up"></i>','#E6F7EC','var(--green)','Update Shared',cnt.sh,'On track','var(--green)')}
    ${stat('<i class="fa-solid fa-list-check"></i>','var(--brand-soft)','var(--brand)','Total Entries',total,st.period==='daily'?'Today':'This '+st.period.replace('ly',''))}
    ${donut}
