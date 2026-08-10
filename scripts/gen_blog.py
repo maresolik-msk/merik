@@ -260,7 +260,8 @@ def build_post(p):
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#D93A31">
 <link rel="canonical" href="{url}">
-<link rel="icon" type="image/png" href="/assets/images/logo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Merik">
 <meta property="og:title" content="{p["og_title"]}">
@@ -277,7 +278,7 @@ def build_post(p):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css?v=5">
+<link rel="stylesheet" href="/assets/css/site.css?v=6">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",
@@ -380,7 +381,8 @@ def build_index():
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#D93A31">
 <link rel="canonical" href="{SITE}/blog/">
-<link rel="icon" type="image/png" href="/assets/images/logo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Merik">
 <meta property="og:title" content="Merik Blog — Workforce, Attendance, Payroll &amp; HR Guides">
@@ -394,7 +396,7 @@ def build_index():
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css?v=5">
+<link rel="stylesheet" href="/assets/css/site.css?v=6">
 <script type="application/ld+json">
 {{
   "@context":"https://schema.org",

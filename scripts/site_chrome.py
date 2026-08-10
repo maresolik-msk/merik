@@ -31,6 +31,7 @@ STATIC_PAGES = {
     "modules.html": "modules",
     "pricing.html": "pricing",
     "roi.html": "roi",
+    "404.html": "",   # noindex, but its nav must still match
 }
 
 
@@ -44,7 +45,7 @@ def header(current=""):
     )
     return f"""<header>
   <div class="wrap nav">
-    <a href="/" class="brand"{' aria-current="page"' if current == "home" else ''}><img src="/assets/images/logo.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <a href="/" class="brand"{' aria-current="page"' if current == "home" else ''}><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
     <nav class="nav-links" id="navLinks" aria-label="Main">
 {links}
       <div class="nav-cta">
@@ -62,7 +63,7 @@ def footer():
   <div class="wrap">
     <div class="foot">
       <div>
-        <div class="brand"><img src="/assets/images/logo.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
         <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
       </div>
       <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/blog/">Blog</a></div>

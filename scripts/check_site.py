@@ -15,11 +15,14 @@ PAGES = {"/": "index.html", "/features": "features.html", "/how-it-works": "how-
 
 def main():
     files = sorted(list(ROOT.glob("*.html")) + list((ROOT / "blog").glob("*.html")))
+    indexable = [f for f in files if f.name != "404.html"]
     bad = 0
     titles, descs = {}, {}
     for f in files:
         t = f.read_text(encoding="utf-8")
         rel = f.relative_to(ROOT)
+        if f.name == "404.html" and "noindex" not in t:
+            print("404 page must be noindex"); bad += 1
 
         for m in re.finditer(r'<script type="application/ld\+json">(.*?)</script>', t, re.S):
             try:
@@ -86,10 +89,10 @@ def main():
             print(f"SITEMAP DEAD {l}"); bad += 1
     if len(locs) != len(set(locs)):
         print("SITEMAP has duplicate <loc> entries"); bad += 1
-    if len(locs) != len(files):
-        print(f"SITEMAP covers {len(locs)} urls but there are {len(files)} pages"); bad += 1
+    if len(locs) != len(indexable):
+        print(f"SITEMAP covers {len(locs)} urls but there are {len(indexable)} indexable pages"); bad += 1
 
-    print(f"\n{len(files)} pages · {len(locs)} sitemap urls · 1 nav variant · {bad} problem(s)")
+    print(f"\n{len(files)} pages ({len(indexable)} indexable) · {len(locs)} sitemap urls · 1 nav variant · {bad} problem(s)")
     return 1 if bad else 0
 
 
