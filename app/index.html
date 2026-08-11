@@ -548,13 +548,14 @@ if(/[?&]selftest\b/.test(location.search))setTimeout(()=>{
     [leaveDays(L('WFH','2026-08-03','2026-08-07'))===0,'WFH costs nothing'],
     [leaveDays(L('Half Day','2026-08-03'))===0.5,'half day costs 0.5'],
     [leaveDays(L('Leave','2026-08-08','2026-08-09'))===0,'a weekend-only request costs nothing'],
-    [B([],null).accrued===8,'Jan→Aug accrues 8'],
-    [B([],'2026-06-15').accrued===3,'joined June accrues 3'],
-    [B([],'2026-12-01').accrued===0,'joins later this year accrues 0'],
-    [B([],'2019-04-01').accrued===8,'joined in an earlier year accrues from January'],
-    [B([L('Leave','2025-03-02','2025-03-06')],null).used===0,'last year does not eat this year'],
-    [B([L('Leave','2026-02-02','2026-02-03'),{status:'Leave',req_date:'2026-07-01',end_date:'2026-07-01',approved:'Pending'}],null).available===5,
-      'roll-over: 8 earned − 2 taken − 1 pending'],
+    [B([],'2019-04-01').accrued===1,'starts at 1 in the epoch month, never back-dated to January'],
+    [B([],'2026-06-15').accrued===1,'joined before the epoch still starts at 1'],
+    [B([],'2026-12-01').accrued===0,'joins after this month has earned nothing yet'],
+    [leaveBal([],'2019-04-01','2026-11-11').accrued===4,'roll-over: Aug→Nov is 4 unused days'],
+    [leaveBal([],'2027-01-01','2027-01-15').accrued===1,'resets to 1 in January'],
+    [B([L('Leave','2025-03-02','2025-03-06')],'2019-04-01').used===0,'last year does not eat this year'],
+    [leaveBal([L('Leave','2026-09-01','2026-09-02'),{status:'Leave',req_date:'2026-10-01',end_date:'2026-10-01',approved:'Pending'}],
+      '2019-04-01','2026-11-11').available===1,'4 earned − 2 taken − 1 pending'],
   ];
   const badC=C.filter(([ok])=>!ok);
   console[badC.length?'error':'log']('leave ledger self-check:',badC.length?badC.map(x=>x[1]):'all '+C.length+' pass');
@@ -2357,9 +2358,24 @@ async function wfh(){
   <td>${r.status}</td><td>${esc(r.reason)}</td>
   <td style="white-space:nowrap"><span style="color:var(--${b.available<0?'red':'ink'});font-weight:600">${leaveNum(b.available)}</span> left <span class="tl-sub">of ${leaveNum(b.accrued)} earned</span></td>
   <td><span class="badge ${ap==='Yes'?'stP':ap==='No'?'stA':'stL'}">${ap}</span></td>
-  <td class="noprint">${ap==='Pending'?`<button class="btn sm" onclick="apprWfh('${r.id}','Yes')">Approve</button>
-  <button class="btn sm warn" onclick="apprWfh('${r.id}','No')">Reject</button>`:''}</td></tr>`}).join('')}</table></div>`);
+  <td class="noprint" style="white-space:nowrap">${ap==='Pending'?`<button class="btn sm" onclick="apprWfh('${r.id}','Yes')">Approve</button>
+  <button class="btn sm warn" onclick="apprWfh('${r.id}','No')">Reject</button> `:''}
+  <button class="btn sm sec" title="Remove this request" onclick="delWfh('${r.id}',${ap==='Yes'},'${esc(r.employees?.full_name)}')"><i class="fa-solid fa-trash"></i></button></td></tr>`}).join('')}</table></div>`);
 }
+// Take a request off the books entirely. Rejecting records a decision; this erases
+// the row, which is what you want for one raised in error — and it is also the only
+// way to hand a day back, since the balance is computed from these rows.
+// ponytail: an approved request already stamped the attendance log, and those marks
+// are NOT rolled back here — say so plainly rather than guess which of them the
+// admin has since edited by hand.
+async function delWfh(id,approved,who){
+  if(!confirm(`Remove this request${who?` for ${who}`:''}?\n\n`+
+    (approved?'It was approved, so the day goes back into their leave balance. The attendance already marked for those dates stays — correct it from Daily Attendance if needed.'
+             :'It disappears from the log and from their balance.')))return;
+  const{error,data}=await sb.from('wfh_leave').delete().eq('id',id).select();
+  if(error)return toast(saveErr(error));
+  if(!data||!data.length)return toast('Nothing was removed — you may not have permission to delete this request.');
+  toast('Request removed');wfh();}
 // Approved WFH/Leave → attendance code. WFH→W, Half Day→H, all leave kinds→OL (Paid Leave).
 const LEAVE_TO_ATT={'WFH':'W','Half Day':'H','Leave':'OL','Sick Leave':'OL','Emergency Leave':'OL'};
 // The employee portal has no status legend, so never show a bare letter code there.
@@ -2372,8 +2388,14 @@ function leaveDates(a,b){const out=[];const d=new Date(a+'T00:00:00'),end=new Da
    Everyone earns one leave a month; whatever is unused rolls forward and the
    balance resets on 1 January. There is no balances table and no monthly job:
    the entitlement is a function of the date, and the roll-over IS the running
-   year-to-date total. Nothing to accrue nightly, nothing to drift out of sync. */
+   month-by-month total. Nothing to accrue nightly, nothing to drift out of sync. */
 const LEAVE_COST={'WFH':0,'Half Day':.5};// everything else costs a full day
+// Accrual starts here, NOT in January. The attendance record only begins mid-2026,
+// so crediting January through July would hand everyone months of leave they never
+// earned and that nothing in the data can account for. Everybody starts at one day
+// in this month and builds up from there. Bump this only to correct a wrong start —
+// moving it forward wipes balances people have already been shown.
+const LEAVE_EPOCH='2026-08';
 // Weekends don't come out of the balance — Fri→Mon costs two days, not four.
 // ponytail: public holidays are NOT netted out; employees can't reliably read the
 // holidays table. Filter them here too once that read is granted org-wide.
@@ -2382,17 +2404,21 @@ function leaveDays(r){
   if(!w)return 0;
   return leaveDates(r.req_date,r.end_date).filter(d=>{const g=new Date(d+'T00:00:00').getDay();return g&&g!==6}).length*w;
 }
-// Balance for the calendar year of `when` (today by default). Accrues one day per
-// month from January, or from the joining month for anyone who joined this year.
-// A request is counted in the year of its start date.
+// Balance for the calendar year of `when` (today by default). One day per month,
+// counted from whichever is latest: the start of the year, LEAVE_EPOCH, or the
+// month the person joined. A request is counted in the year of its start date.
 function leaveBal(rows,doj,when){
   const now=when?new Date(when+'T00:00:00'):new Date(),y=now.getFullYear();
-  const j=doj?new Date(String(doj).slice(0,10)+'T00:00:00'):null;
-  const accrued=Math.max(0,now.getMonth()-(j&&j.getFullYear()===y?j.getMonth():j&&j.getFullYear()>y?12:0)+1);
+  // Month index of a YYYY-MM within year y: 0 if it is already past, 12 if still to come.
+  const monthIn=m=>{const d=new Date(String(m).slice(0,7)+'-01T00:00:00');
+    return d.getFullYear()===y?d.getMonth():d.getFullYear()>y?12:0};
+  const from=Math.max(monthIn(LEAVE_EPOCH),doj?monthIn(doj):0);
+  const accrued=Math.max(0,now.getMonth()-from+1);
   const mine=(rows||[]).filter(r=>String(r.req_date).slice(0,4)===String(y));
   const sum=f=>mine.filter(f).reduce((n,r)=>n+leaveDays(r),0);
   const used=sum(r=>r.approved==='Yes'),pending=sum(r=>(r.approved||'Pending')==='Pending');
-  return{year:y,accrued,used,pending,available:accrued-used-pending};
+  return{year:y,accrued,used,pending,available:accrued-used-pending,
+    since:from<12?`${MONTHS[from]} ${y}`:''};
 }
 const leaveNum=n=>Number.isInteger(n)?n:n.toFixed(1);
 async function apprWfh(id,v){
@@ -3680,14 +3706,14 @@ async function mywfh(){
   const b=leaveBal(MY_LEAVE,ME.employee.doj);
   M(`<h2>WFH / Leave Requests</h2>
   <div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand)"></i> Intimate before 8:00 AM. Only approved requests are valid.</div>
-  <div class="card"><div class="tl-sub" style="margin-bottom:8px">Leave balance ${b.year}</div>
+  <div class="card"><div class="tl-sub" style="margin-bottom:8px">Your leave — 1 day earned every month</div>
    <div class="row">
-    <div><div style="font-size:26px;font-weight:700;color:var(--${b.available<0?'red':'green'})">${leaveNum(b.available)}</div><div class="tl-sub">days available</div></div>
-    <div><div style="font-size:26px;font-weight:700;color:var(--ink)">${leaveNum(b.accrued)}</div><div class="tl-sub">earned so far (1 per month)</div></div>
+    <div><div style="font-size:26px;font-weight:700;color:var(--${b.available<0?'red':'green'})">${leaveNum(b.available)}</div><div class="tl-sub">day${b.available===1?'':'s'} you can take now</div></div>
+    <div><div style="font-size:26px;font-weight:700;color:var(--ink)">${leaveNum(b.accrued)}</div><div class="tl-sub">earned${b.since?` since ${b.since}`:''}</div></div>
     <div><div style="font-size:26px;font-weight:700;color:var(--ink)">${leaveNum(b.used)}</div><div class="tl-sub">taken</div></div>
     <div><div style="font-size:26px;font-weight:700;color:var(--ink)">${leaveNum(b.pending)}</div><div class="tl-sub">awaiting approval</div></div>
    </div>
-   <div class="tl-sub" style="margin-top:10px">Unused days roll over month to month and reset on 1 January ${b.year+1}. WFH doesn't use your balance; a half day uses 0.5.</div></div>
+   <div class="tl-sub" style="margin-top:10px">You get <b>one leave a month</b>. Don't use it and it carries into the next month, up to 31 December ${b.year} — the count starts again in January ${b.year+1}. WFH doesn't use your balance; a half day uses 0.5.</div></div>
   <div class="card"><div class="row"><div><label>From</label><input id="w_date" type="date" value="${today()}" onchange="if($('w_end').value<this.value)$('w_end').value=this.value;wfhEstimate()"></div>
   <div><label>To</label><input id="w_end" type="date" value="${today()}" onchange="wfhEstimate()"></div>
   <div><label>Type</label><select id="w_status" onchange="wfhEstimate()">${['WFH','Leave','Sick Leave','Emergency Leave','Half Day'].map(s=>`<option>${s}</option>`).join('')}</select></div>
