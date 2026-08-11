@@ -539,6 +539,25 @@ if(/[?&]selftest\b/.test(location.search))setTimeout(()=>{
     [!employedIn({doj:'2020-01-01',status:'Inactive',left_on:null},A2,B2),'inactive with no left_on']];
   const badR=R.filter(([ok])=>!ok);
   console[badR.length?'error':'log']('employedIn self-check:',badR.length?badR.map(x=>x[1]):'all '+R.length+' pass');
+  // The leave ledger decides what people are told they have left. Weekends, the
+  // WFH/half-day weights and the mid-year joiner are where it would quietly drift.
+  const L=(s,a,b)=>({status:s,req_date:a,end_date:b||a,approved:'Yes'});
+  const B=(rows,doj)=>leaveBal(rows,doj,'2026-08-11');
+  const C=[
+    [leaveDays(L('Leave','2026-08-07','2026-08-10'))===2,'Fri→Mon costs 2, not 4'],
+    [leaveDays(L('WFH','2026-08-03','2026-08-07'))===0,'WFH costs nothing'],
+    [leaveDays(L('Half Day','2026-08-03'))===0.5,'half day costs 0.5'],
+    [leaveDays(L('Leave','2026-08-08','2026-08-09'))===0,'a weekend-only request costs nothing'],
+    [B([],null).accrued===8,'Jan→Aug accrues 8'],
+    [B([],'2026-06-15').accrued===3,'joined June accrues 3'],
+    [B([],'2026-12-01').accrued===0,'joins later this year accrues 0'],
+    [B([],'2019-04-01').accrued===8,'joined in an earlier year accrues from January'],
+    [B([L('Leave','2025-03-02','2025-03-06')],null).used===0,'last year does not eat this year'],
+    [B([L('Leave','2026-02-02','2026-02-03'),{status:'Leave',req_date:'2026-07-01',end_date:'2026-07-01',approved:'Pending'}],null).available===5,
+      'roll-over: 8 earned − 2 taken − 1 pending'],
+  ];
+  const badC=C.filter(([ok])=>!ok);
+  console[badC.length?'error':'log']('leave ledger self-check:',badC.length?badC.map(x=>x[1]):'all '+C.length+' pass');
 },0);
 function toast(msg,type){
   const m=(msg??'').toString();if(!m)return;
@@ -2321,15 +2340,24 @@ function perfDraftText(d){const L=[];if(d.summary)L.push(d.summary,'');
 
 /* ---------- WFH & LEAVE ---------- */
 async function wfh(){
-  const{data}=await sb.from('wfh_leave').select('*,employees(full_name,emp_code)').order('req_date',{ascending:false}).limit(200);
+  const y=new Date().getFullYear();
+  // Second read, not a bigger first one: the balance must be built from EVERY request
+  // of the year, and the log itself is capped at 200 rows.
+  const[{data},yearRows]=await Promise.all([
+    sb.from('wfh_leave').select('*,employees(full_name,emp_code,doj)').order('req_date',{ascending:false}).limit(200),
+    fetchAll(()=>sb.from('wfh_leave').select('employee_id,status,req_date,end_date,approved').gte('req_date',`${y}-01-01`)).catch(()=>[])]);
+  const byEmp={};yearRows.forEach(r=>(byEmp[r.employee_id]=byEmp[r.employee_id]||[]).push(r));
   M(pgh('WFH & Leave Log','View and manage work from home and leave requests')+
   `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand)"></i> Only management-approved WFH/Leave is valid. Late intimation is NOT accepted (due before 8:00 AM).</div>
-  <div class="card"><table><tr><th>Dates</th><th>Days</th><th>Employee</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
-  ${(data||[]).map(r=>{const e=r.end_date||r.req_date;const days=Math.round((new Date(e)-new Date(r.req_date))/864e5)+1;
-  return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td><td>${days}</td><td>${esc(r.employees?.full_name)} (${r.employees?.emp_code})</td>
+  <div class="card"><table><tr><th>Dates</th><th>Leave used</th><th>Employee</th><th>Type</th><th>Reason</th><th>Balance ${y}</th><th>Approved</th><th></th></tr>
+  ${(data||[]).map(r=>{const e=r.end_date||r.req_date,cost=leaveDays(r),ap=r.approved||'Pending';
+  const b=leaveBal(byEmp[r.employee_id],r.employees?.doj);
+  return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td>
+  <td>${cost?leaveNum(cost)+' day'+(cost===1?'':'s'):'—'}</td><td>${esc(r.employees?.full_name)} (${r.employees?.emp_code})</td>
   <td>${r.status}</td><td>${esc(r.reason)}</td>
-  <td><span class="badge ${r.approved==='Yes'?'stP':r.approved==='No'?'stA':'stL'}">${r.approved}</span></td>
-  <td class="noprint">${r.approved==='Pending'?`<button class="btn sm" onclick="apprWfh('${r.id}','Yes')">Approve</button>
+  <td style="white-space:nowrap"><span style="color:var(--${b.available<0?'red':'ink'});font-weight:600">${leaveNum(b.available)}</span> left <span class="tl-sub">of ${leaveNum(b.accrued)} earned</span></td>
+  <td><span class="badge ${ap==='Yes'?'stP':ap==='No'?'stA':'stL'}">${ap}</span></td>
+  <td class="noprint">${ap==='Pending'?`<button class="btn sm" onclick="apprWfh('${r.id}','Yes')">Approve</button>
   <button class="btn sm warn" onclick="apprWfh('${r.id}','No')">Reject</button>`:''}</td></tr>`}).join('')}</table></div>`);
 }
 // Approved WFH/Leave → attendance code. WFH→W, Half Day→H, all leave kinds→OL (Paid Leave).
@@ -2339,6 +2367,34 @@ const ATT_LABEL={P:'Present',A:'Absent',L:'Late',H:'Half Day',W:'WFH',OL:'Paid L
 // Inclusive list of YYYY-MM-DD dates from a to b (b defaults to a).
 function leaveDates(a,b){const out=[];const d=new Date(a+'T00:00:00'),end=new Date((b||a)+'T00:00:00');
   while(d<=end){out.push(isoD(d));d.setDate(d.getDate()+1);}return out;}
+
+/* ----- leave ledger -----
+   Everyone earns one leave a month; whatever is unused rolls forward and the
+   balance resets on 1 January. There is no balances table and no monthly job:
+   the entitlement is a function of the date, and the roll-over IS the running
+   year-to-date total. Nothing to accrue nightly, nothing to drift out of sync. */
+const LEAVE_COST={'WFH':0,'Half Day':.5};// everything else costs a full day
+// Weekends don't come out of the balance — Fri→Mon costs two days, not four.
+// ponytail: public holidays are NOT netted out; employees can't reliably read the
+// holidays table. Filter them here too once that read is granted org-wide.
+function leaveDays(r){
+  const w=LEAVE_COST[r.status]!==undefined?LEAVE_COST[r.status]:1;
+  if(!w)return 0;
+  return leaveDates(r.req_date,r.end_date).filter(d=>{const g=new Date(d+'T00:00:00').getDay();return g&&g!==6}).length*w;
+}
+// Balance for the calendar year of `when` (today by default). Accrues one day per
+// month from January, or from the joining month for anyone who joined this year.
+// A request is counted in the year of its start date.
+function leaveBal(rows,doj,when){
+  const now=when?new Date(when+'T00:00:00'):new Date(),y=now.getFullYear();
+  const j=doj?new Date(String(doj).slice(0,10)+'T00:00:00'):null;
+  const accrued=Math.max(0,now.getMonth()-(j&&j.getFullYear()===y?j.getMonth():j&&j.getFullYear()>y?12:0)+1);
+  const mine=(rows||[]).filter(r=>String(r.req_date).slice(0,4)===String(y));
+  const sum=f=>mine.filter(f).reduce((n,r)=>n+leaveDays(r),0);
+  const used=sum(r=>r.approved==='Yes'),pending=sum(r=>(r.approved||'Pending')==='Pending');
+  return{year:y,accrued,used,pending,available:accrued-used-pending};
+}
+const leaveNum=n=>Number.isInteger(n)?n:n.toFixed(1);
 async function apprWfh(id,v){
   const{error}=await sb.from('wfh_leave').update({approved:v}).eq('id',id);
   if(error)return toast(saveErr(error));
@@ -3616,36 +3672,69 @@ async function myatt(ym){
   ${(data||[]).map(r=>`<tr><td>${fmtDate(r.att_date)}</td><td><span class="badge st${r.status}">${ATT_LABEL[r.status]||r.status||''}</span></td>
   <td>${r.entry_time||''}</td><td>${r.exit_time||''}</td><td>${esc(r.remarks)}</td></tr>`).join('')}</table></div>`);
 }
+let MY_LEAVE=[];// this employee's requests, for the live cost estimate on the form
 async function mywfh(){
   if(!ME.employee)return mydash();
   const{data}=await sb.from('wfh_leave').select('*').eq('employee_id',ME.employee.id).order('req_date',{ascending:false});
+  MY_LEAVE=data||[];
+  const b=leaveBal(MY_LEAVE,ME.employee.doj);
   M(`<h2>WFH / Leave Requests</h2>
   <div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand)"></i> Intimate before 8:00 AM. Only approved requests are valid.</div>
-  <div class="card"><div class="row"><div><label>From</label><input id="w_date" type="date" value="${today()}" onchange="if($('w_end').value<this.value)$('w_end').value=this.value"></div>
-  <div><label>To</label><input id="w_end" type="date" value="${today()}"></div>
-  <div><label>Type</label><select id="w_status">${['WFH','Leave','Sick Leave','Emergency Leave','Half Day'].map(s=>`<option>${s}</option>`).join('')}</select></div>
-  <div><label>Reason</label><input id="w_reason"></div><div><button class="btn" onclick="reqWfh()">Submit</button></div></div></div>
-  <div class="card"><table><tr><th>Dates</th><th>Days</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
-  ${(data||[]).map(r=>{const e=r.end_date||r.req_date;const days=Math.round((new Date(e)-new Date(r.req_date))/864e5)+1;
-  return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td><td>${days}</td><td>${r.status}</td><td>${esc(r.reason)}</td>
-  <td><span class="badge ${r.approved==='Yes'?'stP':r.approved==='No'?'stA':'stL'}">${r.approved}</span></td>
-  <td class="noprint">${r.approved==='Pending'?`<button class="btn sm sec" onclick="withdrawWfh('${r.id}')"><i class="fa-solid fa-xmark"></i> Withdraw</button>`:''}</td></tr>`}).join('')}</table></div>`);
+  <div class="card"><div class="tl-sub" style="margin-bottom:8px">Leave balance ${b.year}</div>
+   <div class="row">
+    <div><div style="font-size:26px;font-weight:700;color:var(--${b.available<0?'red':'green'})">${leaveNum(b.available)}</div><div class="tl-sub">days available</div></div>
+    <div><div style="font-size:26px;font-weight:700;color:var(--ink)">${leaveNum(b.accrued)}</div><div class="tl-sub">earned so far (1 per month)</div></div>
+    <div><div style="font-size:26px;font-weight:700;color:var(--ink)">${leaveNum(b.used)}</div><div class="tl-sub">taken</div></div>
+    <div><div style="font-size:26px;font-weight:700;color:var(--ink)">${leaveNum(b.pending)}</div><div class="tl-sub">awaiting approval</div></div>
+   </div>
+   <div class="tl-sub" style="margin-top:10px">Unused days roll over month to month and reset on 1 January ${b.year+1}. WFH doesn't use your balance; a half day uses 0.5.</div></div>
+  <div class="card"><div class="row"><div><label>From</label><input id="w_date" type="date" value="${today()}" onchange="if($('w_end').value<this.value)$('w_end').value=this.value;wfhEstimate()"></div>
+  <div><label>To</label><input id="w_end" type="date" value="${today()}" onchange="wfhEstimate()"></div>
+  <div><label>Type</label><select id="w_status" onchange="wfhEstimate()">${['WFH','Leave','Sick Leave','Emergency Leave','Half Day'].map(s=>`<option>${s}</option>`).join('')}</select></div>
+  <div><label>Reason</label><input id="w_reason"></div><div><button class="btn" onclick="reqWfh()">Submit</button></div></div>
+  <div id="w_est" class="tl-sub" style="margin-top:10px"></div></div>
+  <div class="card"><table><tr><th>Dates</th><th>Leave used</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
+  ${MY_LEAVE.map(r=>{const e=r.end_date||r.req_date,cost=leaveDays(r),ap=r.approved||'Pending';
+  return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td>
+  <td>${cost?leaveNum(cost)+' day'+(cost===1?'':'s'):'—'}</td><td>${r.status}</td><td>${esc(r.reason)}</td>
+  <td><span class="badge ${ap==='Yes'?'stP':ap==='No'?'stA':'stL'}">${ap}</span></td>
+  <td class="noprint">${ap==='Pending'?`<button class="btn sm sec" onclick="withdrawWfh('${r.id}')"><i class="fa-solid fa-xmark"></i> Withdraw</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="6" style="text-align:center;color:#889;padding:30px">No requests yet.</td></tr>'}</table></div>`);
+  wfhEstimate();
+}
+// What this request will actually cost, before it is sent — the part people were
+// guessing at. Recomputed on every change to the dates or the type.
+function wfhEstimate(){
+  const box=$('w_est');if(!box)return;
+  const from=$('w_date').value,to=$('w_end').value||from,type=$('w_status').value;
+  if(!from||to<from)return box.innerHTML=to<from?'<span style="color:var(--red)">The “To” date is before the “From” date.</span>':'';
+  const cost=leaveDays({status:type,req_date:from,end_date:to});
+  const b=leaveBal(MY_LEAVE,ME.employee.doj,from);
+  if(!cost)return box.innerHTML=`Work from home doesn't use your leave balance.`;
+  const after=b.available-cost;
+  box.innerHTML=`Uses <b>${leaveNum(cost)}</b> leave day${cost===1?'':'s'} (weekends don't count) — <b>${leaveNum(after)}</b> would be left`+
+    (after<0?` <span style="color:var(--red)">· that is ${leaveNum(-after)} more than you have earned; your admin may treat the excess as unpaid.</span>`:'.');
 }
 async function reqWfh(){
   const from=$('w_date').value,to=$('w_end').value||from;
   if(!from)return toast('Please choose a start date.');
   if(to<from)return toast('The "To" date cannot be before the "From" date.');
-  const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:from,end_date:to,status:$('w_status').value,reason:$('w_reason').value||null});
+  const type=$('w_status').value,cost=leaveDays({status:type,req_date:from,end_date:to});
+  // Over balance is allowed — emergencies happen and the admin decides — but never silently.
+  const left=leaveBal(MY_LEAVE,ME.employee.doj,from).available-cost;
+  if(left<0&&!confirm(`This is ${leaveNum(-left)} day(s) more leave than you have earned. Your admin may treat the excess as unpaid. Send it anyway?`))return;
+  const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:from,end_date:to,status:type,reason:$('w_reason').value||null});
   error?toast(saveErr(error)):(toast('Request submitted for approval'),mywfh())}
 // A mistyped request could only be fixed by asking an admin to reject it, which
 // left a permanent "rejected" mark against the employee for their own typo.
 // Only ever touches a still-Pending row of the caller's own; RLS enforces the rest.
 async function withdrawWfh(id){
   if(!confirm('Withdraw this request? Your admin will no longer see it.'))return;
+  // approved is 'Pending' on new rows but null on older ones — filtering on the
+  // literal alone silently matched nothing and looked exactly like a permission failure.
   const{error,data}=await sb.from('wfh_leave').delete()
-    .eq('id',id).eq('employee_id',ME.employee.id).eq('approved','Pending').select();
+    .eq('id',id).eq('employee_id',ME.employee.id).or('approved.eq.Pending,approved.is.null').select();
   if(error)return toast(saveErr(error));
-  if(!data||!data.length)return toast('That request was already actioned by your admin.');
+  if(!data||!data.length)return toast('Couldn’t withdraw it — either your admin has already actioned it, or your workspace is missing the withdraw permission. Refresh, and tell your admin if it persists.');
   toast('Request withdrawn');mywfh()}
 /* ----- task sheet: draft tasks once, push them to the daily Task Log ----- */
 let SHEET=[];
