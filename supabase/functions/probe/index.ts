@@ -33,6 +33,31 @@ const json = (body: unknown, status = 200) =>
 // ponytail: swap for multi-window burn rate once slos/slo_budget land.
 const SEVERITY: Record<string, number> = { critical: 1, high: 2, normal: 3, low: 4 };
 
+// The service-role client is created without a generated Database type, so
+// supabase-js cannot resolve a select string against a schema it doesn't know
+// and types every row as GenericStringError. These shapes are what the two
+// queries below actually return; `.returns<T>()` is the supported way to say so.
+interface AssetRow {
+  name: string;
+  criticality: string;
+  owner_employee_id: string | null;
+  maintenance_until: string | null;
+  status: string;
+}
+
+interface DueMonitor {
+  id: string;
+  org_id: string;
+  asset_id: string;
+  type: string;
+  target: string;
+  config: Record<string, unknown> | null;
+  interval_seconds: number;
+  // PostgREST returns an embed as an object or an array depending on the
+  // relationship it infers; handled at the use site rather than assumed here.
+  digital_assets: AssetRow | AssetRow[];
+}
+
 interface CheckOutcome {
   ok: boolean;
   status_code: number | null;
@@ -126,7 +151,8 @@ Deno.serve(async (req) => {
     .lte('next_run_at', now.toISOString())
     .is('digital_assets.archived_at', null)
     .order('next_run_at')
-    .limit(BATCH);
+    .limit(BATCH)
+    .returns<DueMonitor[]>();
 
   if (dueErr) return json({ ok: false, error: dueErr.message }, 500);
   if (!due?.length) return json({ ok: true, checked: 0 });
@@ -142,7 +168,8 @@ Deno.serve(async (req) => {
   const { data: states } = await admin
     .from('monitor_state')
     .select('monitor_id, state, consecutive_failures, consecutive_successes, open_incident_id')
-    .in('monitor_id', due.map((m) => m.id));
+    .in('monitor_id', due.map((m) => m.id))
+    .returns<Array<StateRow & { monitor_id: string }>>();
   const stateByMonitor = new Map(states?.map((s) => [s.monitor_id, s]) ?? []);
 
   const results: Record<string, unknown>[] = [];
@@ -151,14 +178,7 @@ Deno.serve(async (req) => {
   let resolved = 0;
 
   await pooled(due, CONCURRENCY, async (m) => {
-    // supabase-js types an !inner embed as an array; it is one row here.
-    const asset = (Array.isArray(m.digital_assets) ? m.digital_assets[0] : m.digital_assets) as {
-      name: string;
-      criticality: string;
-      owner_employee_id: string | null;
-      maintenance_until: string | null;
-      status: string;
-    };
+    const asset = Array.isArray(m.digital_assets) ? m.digital_assets[0] : m.digital_assets;
     const outcome = await runHttpCheck(m.target, (m.config ?? {}) as Record<string, unknown>);
     const ts = new Date().toISOString();
 
