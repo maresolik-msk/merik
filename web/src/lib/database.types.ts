@@ -184,6 +184,89 @@ export type Database = {
           },
         ]
       }
+      digital_assets: {
+        Row: {
+          archived_at: string | null
+          client_id: string | null
+          created_at: string
+          criticality: string
+          environment: string
+          id: string
+          kind: string
+          maintenance_until: string | null
+          name: string
+          org_id: string | null
+          owner_employee_id: string | null
+          primary_url: string | null
+          project_id: string | null
+          sla_tier: string
+          status: string
+        }
+        Insert: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          criticality?: string
+          environment?: string
+          id?: string
+          kind?: string
+          maintenance_until?: string | null
+          name: string
+          org_id?: string | null
+          owner_employee_id?: string | null
+          primary_url?: string | null
+          project_id?: string | null
+          sla_tier?: string
+          status?: string
+        }
+        Update: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          criticality?: string
+          environment?: string
+          id?: string
+          kind?: string
+          maintenance_until?: string | null
+          name?: string
+          org_id?: string | null
+          owner_employee_id?: string | null
+          primary_url?: string | null
+          project_id?: string | null
+          sla_tier?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_assets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_assets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_assets_owner_employee_id_fkey"
+            columns: ["owner_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emp_notes: {
         Row: {
           content: string | null
@@ -363,6 +446,85 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "holidays_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidents: {
+        Row: {
+          acknowledged_at: string | null
+          asset_id: string
+          assigned_employee_id: string | null
+          cause_category: string | null
+          client_summary: string | null
+          client_visible: boolean
+          created_at: string
+          detected_by_monitor_id: string | null
+          id: string
+          org_id: string | null
+          resolved_at: string | null
+          severity: number
+          started_at: string
+          state: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          asset_id: string
+          assigned_employee_id?: string | null
+          cause_category?: string | null
+          client_summary?: string | null
+          client_visible?: boolean
+          created_at?: string
+          detected_by_monitor_id?: string | null
+          id?: string
+          org_id?: string | null
+          resolved_at?: string | null
+          severity?: number
+          started_at?: string
+          state?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          asset_id?: string
+          assigned_employee_id?: string | null
+          cause_category?: string | null
+          client_summary?: string | null
+          client_visible?: boolean
+          created_at?: string
+          detected_by_monitor_id?: string | null
+          id?: string
+          org_id?: string | null
+          resolved_at?: string | null
+          severity?: number
+          started_at?: string
+          state?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidents_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "digital_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_assigned_employee_id_fkey"
+            columns: ["assigned_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"

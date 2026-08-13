@@ -31,6 +31,10 @@ const NAV: NavGroup[] = [
       { href: "/feedback", label: "Feedback", ready: true },
     ],
   },
+  {
+    title: "Operations",
+    items: [{ href: "/operations", label: "Digital Assets", ready: true }],
+  },
 ];
 
 export function Sidebar({ orgName, email, role }: { orgName: string; email: string; role: string }) {
