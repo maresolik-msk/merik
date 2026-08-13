@@ -7,28 +7,17 @@ on:
     branches: [main]
 
 jobs:
-  web:
-    name: web — lint, typecheck, unit tests
+  functions:
+    name: supabase functions — unit tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: denoland/setup-deno@v2
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
+          deno-version: v2.x
 
-      - run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Type-check
-        run: npm run typecheck
-
+      # The probe's state machine decides whether a monitor failure wakes
+      # someone up, so it is the piece that must not regress silently.
       - name: Unit tests
-        run: npm test
+        run: deno test supabase/functions/

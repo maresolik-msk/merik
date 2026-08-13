@@ -146,10 +146,9 @@ See [docs/AI.md](AI.md).
 - **Apps**
   - `index.html`, `features.html`, `modules.html`, `how-it-works.html`, `blog/` —
     the static marketing site and content blog.
-  - `app/index.html` — the current production application (single-file SPA).
-  - `web/` — the in-progress Next.js 16 / React 19 / TypeScript rebuild
-    (Tailwind v4, typed Supabase client, TanStack Query, Zod), with views
-    scaffolded for dashboard, employees, attendance, leave, payroll, tasks,
-    clients, projects, quotes, invoices and feedback. Tested with Vitest +
-    Playwright, CI via GitHub Actions.
+  - `app/index.html` — the production application (single-file SPA), and the
+    only place user-facing features are built.
+  - `supabase/` — schema migrations and Edge Functions (payroll, email, the
+    Digital Operations uptime probe). Unit-tested with `deno test`, CI via
+    GitHub Actions.
 - **Deployment** — Vercel; marketing site at `/`, application at `/app/`.
