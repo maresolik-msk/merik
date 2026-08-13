@@ -896,6 +896,7 @@ const ADMIN_GROUPS=[
  ['Task Management',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check"></i>','Task Log'],['insights','<i class="fa-solid fa-brain"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project"></i>','Project Intelligence']]],
  ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['prjfix','<i class="fa-solid fa-wrench"></i>','Fix Project Names'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Asset Management',[['asset','<i class="fa-solid fa-laptop"></i>','Assets'],['soft','<i class="fa-solid fa-cubes"></i>','Software']]],
+ ['Digital Operations',[['dops','<i class="fa-solid fa-globe"></i>','Digital Assets']]],
  ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings'],['adminfb','<i class="fa-solid fa-comment-dots"></i>','Feedback']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
@@ -905,8 +906,8 @@ const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots"></i>','Feedback']]]];
 // Tenant-enablable admin modules (map a nav group to a module key).
-const MODULES=[['employee','Employee Management'],['team','Team Management'],['task','Task Management'],['client','Client Management'],['asset','Asset Management']];
-const GROUP_MODULE={'Employee Management':'employee','Team Management':'team','Task Management':'task','Client Management':'client','Asset Management':'asset'};
+const MODULES=[['employee','Employee Management'],['team','Team Management'],['task','Task Management'],['client','Client Management'],['asset','Asset Management'],['digitalops','Digital Operations']];
+const GROUP_MODULE={'Employee Management':'employee','Team Management':'team','Task Management':'task','Client Management':'client','Asset Management':'asset','Digital Operations':'digitalops'};
 let ALLOWED_VIEWS=null;
 function renderShell(){
   const role=ME.profile?.role;
@@ -987,7 +988,7 @@ function filterNav(q){
 }
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
-const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
+const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();
   document.querySelectorAll('#side a').forEach(a=>{a.classList.remove('act');a.removeAttribute('aria-current')});
   const el=$('nav-'+v);
@@ -2901,6 +2902,147 @@ async function delSeat(seatId,id){
   if(!confirm('Remove this seat? The employee loses access to the tool.'))return;
   const{error}=await sb.from('software_seats').delete().eq('id',seatId);
   if(error)return toast(saveErr(error));toast('Seat removed');seatForm(id);
+}
+
+/* ---------- DIGITAL OPERATIONS (client sites & APIs, uptime, incidents) ------
+   The hardware `assets` table is company kit; `digital_assets` is the websites
+   and APIs we built for clients. Different things, hence the separate module.
+
+   Nothing on this page performs a check. A probe Edge Function runs every
+   minute from pg_cron, writes the results and opens or resolves incidents on
+   its own; this view reads what it decided. So an asset's status can change
+   without anyone touching the UI, which is why the page re-reads on a timer.
+----------------------------------------------------------------------------- */
+const DA_KINDS=['website','webapp','api','mobile_backend','internal'];
+const DA_ENVS=['production','staging'];
+const DA_CRIT=['critical','high','normal','low'];
+const DA_SLA=['99.99','99.9','99.5','99.0','best_effort'];
+const DA_BADGE={operational:'stP',degraded:'stL',down:'stA',maintenance:'stH',unknown:'stW'};
+const DA_MUTE_MIN=30;
+const slaTxt=t=>t==='best_effort'?'Best effort':t+'%';
+// Rough elapsed time. Incidents are read in minutes and hours, never seconds.
+function agoTxt(ts){
+  const m=Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/60000));
+  if(m<1)return 'just now';
+  if(m<60)return m+'m ago';
+  const h=Math.round(m/60);return h<24?h+'h ago':Math.round(h/24)+'d ago';
+}
+let DOPS_TIMER=null;
+async function dops(){
+  const [{data:rows},{data:incs},{data:cls},{data:prjs},{data:emps}]=await Promise.all([
+    sb.from('digital_assets').select('*').is('archived_at',null).order('name'),
+    sb.from('incidents').select('*').neq('state','resolved').order('started_at',{ascending:false}),
+    sb.from('clients').select('id,name').order('name'),
+    sb.from('projects').select('id,name').order('name'),
+    sb.from('employees').select('id,full_name,emp_code').eq('status','Active').order('full_name')]);
+  const list=rows||[],open=incs||[];
+  DOPS_CLIENTS=cls||[];DOPS_PROJECTS=prjs||[];DOPS_EMPS=emps||[];
+  const cn={},pn={},en={};DOPS_CLIENTS.forEach(c=>cn[c.id]=c.name);DOPS_PROJECTS.forEach(p=>pn[p.id]=p.name);
+  DOPS_EMPS.forEach(e=>en[e.id]=e.full_name);
+  const an={};list.forEach(a=>an[a.id]=a.name);
+  const c=k=>list.filter(a=>a.status===k).length;
+
+  M(pgh('Digital Operations','Every site and API you look after — who owns it, and whether it is up right now.',
+      '<button class="btn" onclick="dopsForm()">＋ Add Asset</button>')+
+  kpis([['<i class="fa-solid fa-globe"></i>','var(--brand-soft)','Assets',list.length],
+    ['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Operational',c('operational')],
+    ['<i class="fa-solid fa-circle-exclamation"></i>','#FADBD8','Down',c('down')],
+    ['<i class="fa-solid fa-bell"></i>','#FFE9DC','Open Incidents',open.length]])+
+  (open.length?`<div class="card"><h3 style="margin:0 0 10px">Open incidents</h3>
+  <table><tr><th>Severity</th><th>What happened</th><th>Asset</th><th>Owner</th><th>Started</th><th></th></tr>
+  ${open.map(i=>`<tr>
+    <td><span class="badge ${i.severity<=2?'stA':'stL'}">Sev${i.severity}</span></td>
+    <td><b>${esc(i.title)}</b>${i.cause_category?`<div class="tl-sub">failed at ${esc(i.cause_category)}</div>`:''}</td>
+    <td>${esc(an[i.asset_id]||'—')}</td>
+    <td>${i.assigned_employee_id?esc(en[i.assigned_employee_id]||'—'):'<span class="tl-dash">Unassigned</span>'}</td>
+    <td style="white-space:nowrap">${agoTxt(i.started_at)}${i.state!=='detected'?`<div class="tl-sub">${esc(i.state)}</div>`:''}</td>
+    <td class="noprint" style="white-space:nowrap">
+      ${i.state==='detected'?`<button class="btn sm sec" onclick="ackIncident('${i.id}')">Acknowledge</button>`:''}
+      <button class="btn sm" onclick="resolveIncident('${i.id}')">Resolve</button></td></tr>`).join('')}</table></div>`:'')+
+  `<div class="card" style="overflow:auto"><table><tr><th>Asset</th><th>Client</th><th>Project</th><th>Owner</th><th>SLA</th><th>Status</th><th></th></tr>
+  ${list.map(a=>{const rj=JSON.stringify(a).replace(/'/g,"&#39;");
+    const muted=a.maintenance_until&&new Date(a.maintenance_until)>new Date();
+    return `<tr><td style="white-space:nowrap">${av(a.name)}<b>${esc(a.name)}</b>
+      <div class="tl-sub">${a.primary_url?esc(a.primary_url):'no URL — not monitored'}${a.environment==='staging'?' · staging':''}</div></td>
+    <td>${a.client_id?esc(cn[a.client_id]||'—'):'<span class="tl-dash">—</span>'}</td>
+    <td>${a.project_id?esc(pn[a.project_id]||'—'):'<span class="tl-dash">—</span>'}</td>
+    <td>${a.owner_employee_id?esc(en[a.owner_employee_id]||'—'):'<span class="tl-dash">—</span>'}</td>
+    <td style="white-space:nowrap">${slaTxt(a.sla_tier)}</td>
+    <td><span class="badge ${DA_BADGE[a.status]||'stW'}">${esc(a.status)}</span>
+      ${muted?`<div class="tl-sub">quiet till ${fmtTime(a.maintenance_until)}</div>`:''}</td>
+    <td class="noprint" style="white-space:nowrap">
+      ${a.primary_url?`<button class="btn sm sec" onclick="muteAsset('${a.id}')" title="Deploying? Stop incidents for ${DA_MUTE_MIN} minutes">Mute ${DA_MUTE_MIN}m</button>`:''}
+      <button class="btn sm sec" onclick='dopsForm(${rj})'>Edit</button>
+      <button class="btn sm warn" onclick="delDops('${a.id}')">Del</button></td></tr>`}).join('')
+    ||'<tr><td colspan="7" style="text-align:center;color:#889;padding:30px">No digital assets yet — add a client site or API to start watching it.</td></tr>'}</table></div>`);
+
+  // The probe writes status from Postgres, so the page has to re-read to notice.
+  // A stale "operational" is the one value on this page that must not linger.
+  // Hold off while a modal is open or the table is being filtered — a refresh
+  // rebuilds the whole view, and losing what you were typing is worse than
+  // seeing a status a minute late.
+  clearInterval(DOPS_TIMER);
+  DOPS_TIMER=setInterval(()=>{
+    if(VIEW!=='dops'||!ME)return clearInterval(DOPS_TIMER);
+    if(document.querySelector('.modal'))return;
+    if([...document.querySelectorAll('.tfilter input')].some(i=>i.value.trim()))return;
+    dops();
+  },60000);
+}
+let DOPS_CLIENTS=[],DOPS_PROJECTS=[],DOPS_EMPS=[];
+function dopsForm(a={}){
+  const sel=(k,opts,cur,txt)=>`<select id="d_${k}">${opts.map(o=>`<option value="${o}" ${cur===o?'selected':''}>${txt?txt(o):o.replace('_',' ')}</option>`).join('')}</select>`;
+  const pick=(k,rows,cur,lbl)=>`<select id="d_${k}"><option value="">—</option>${rows.map(r=>`<option value="${r.id}" ${cur===r.id?'selected':''}>${esc(lbl(r))}</option>`).join('')}</select>`;
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>${a.id?'Edit':'Add'} digital asset</h2>
+  <label>Name</label><input id="d_name" placeholder="e.g. Acme Corp website" value="${esc(a.name||'')}">
+  <label>URL</label><input id="d_primary_url" placeholder="https://example.com" value="${esc(a.primary_url||'')}">
+  <div style="font-size:11.5px;color:#889;margin-top:4px">Give it a URL and we start checking it within five minutes. Leave it blank to register the asset without monitoring.</div>
+  <div class="row"><div><label>Type</label>${sel('kind',DA_KINDS,a.kind||'website')}</div>
+  <div><label>Environment</label>${sel('environment',DA_ENVS,a.environment||'production')}</div></div>
+  <div class="row"><div><label>Client</label>${pick('client_id',DOPS_CLIENTS,a.client_id,r=>r.name)}</div>
+  <div><label>Project</label>${pick('project_id',DOPS_PROJECTS,a.project_id,r=>r.name)}</div></div>
+  <label>Owner</label>${pick('owner_employee_id',DOPS_EMPS,a.owner_employee_id,r=>`${r.full_name} (${r.emp_code})`)}
+  <div style="font-size:11.5px;color:#889;margin-top:4px">Incidents on this asset are assigned to this person automatically.</div>
+  <div class="row"><div><label>Criticality</label>${sel('criticality',DA_CRIT,a.criticality||'normal')}</div>
+  <div><label>SLA tier</label>${sel('sla_tier',DA_SLA,a.sla_tier||'99.9',slaTxt)}</div></div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveDops('${a.id||''}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveDops(id){
+  const o={};['name','primary_url','kind','environment','client_id','project_id','owner_employee_id','criticality','sla_tier']
+    .forEach(k=>o[k]=$('d_'+k).value||null);
+  if(!o.name)return toast('Name is required.');
+  // A typo'd host looks exactly like an outage. Catch it here, not at 3am.
+  if(o.primary_url){
+    let u;try{u=new URL(o.primary_url)}catch(e){return toast('Enter a full URL, e.g. https://example.com')}
+    if(!/^https?:$/.test(u.protocol))return toast('The URL must start with http:// or https://');
+  }
+  const q=id?sb.from('digital_assets').update(o).eq('id',id):sb.from('digital_assets').insert(o);
+  const{error}=await q;if(error)return toast(saveErr(error));
+  document.querySelector('.modal').remove();dops();
+}
+async function delDops(id){
+  if(!confirm('Delete this asset? Its checks and incident history go with it.'))return;
+  const{error}=await sb.from('digital_assets').delete().eq('id',id);if(error)return toast(saveErr(error));dops();
+}
+// "We're deploying, shut up for 30 minutes." The probe keeps checking and still
+// records the truth; it just stops opening incidents for the window.
+async function muteAsset(id){
+  const until=new Date(Date.now()+DA_MUTE_MIN*60000).toISOString();
+  const{error}=await sb.from('digital_assets').update({maintenance_until:until}).eq('id',id);
+  if(error)return toast(saveErr(error));toast(`Quiet for ${DA_MUTE_MIN} minutes`);dops();
+}
+async function ackIncident(id){
+  const{error}=await sb.from('incidents').update({state:'acknowledged',acknowledged_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
+  if(error)return toast(saveErr(error));dops();
+}
+async function resolveIncident(id){
+  if(!confirm('Mark this incident resolved?'))return;
+  const now=new Date().toISOString();
+  const{error}=await sb.from('incidents').update({state:'resolved',resolved_at:now,updated_at:now}).eq('id',id);
+  if(error)return toast(saveErr(error));dops();
 }
 
 /* ---------- QUOTES & INVOICES (shared doc engine) ---------- */
