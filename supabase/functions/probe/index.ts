@@ -25,6 +25,13 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { connect as tlsConnect } from 'node:tls';
 import { nextState, type MonitorState, type StateRow } from './state.ts';
 import {
+  type ChangeEvent,
+  correlateChanges,
+  describeChange,
+  isVendorOutage,
+  parseStatuspage,
+} from './correlate.ts';
+import {
   type AlertIncident,
   alertHtml,
   alertSubject,
@@ -249,6 +256,121 @@ async function runSslCheck(target: string): Promise<CheckOutcome> {
   }
 }
 
+/**
+ * Refresh every vendor's status feed.
+ *
+ * Global, not per-tenant: Stripe being down is the same fact for everyone, so
+ * this is eight requests regardless of how many customers depend on them.
+ *
+ * A feed that fails to answer is recorded as `unknown`, never as `none`. The
+ * difference matters: `none` would silently switch off dependency suppression
+ * and turn one vendor outage back into forty pages.
+ */
+async function pollVendorStatus(admin: Admin): Promise<number> {
+  const { data: vendors } = await admin
+    .from('vendor_status')
+    .select('provider, status_url, format')
+    .returns<Array<{ provider: string; status_url: string; format: string }>>();
+
+  if (!vendors?.length) return 0;
+  const now = new Date().toISOString();
+  let updated = 0;
+
+  await pooled(vendors, CONCURRENCY, async (v) => {
+    let indicator = 'unknown';
+    let description: string | null = null;
+    try {
+      const res = await fetch(v.status_url, { signal: AbortSignal.timeout(8_000) });
+      if (res.ok) {
+        const parsed = parseStatuspage(await res.json());
+        indicator = parsed.indicator;
+        description = parsed.description;
+      } else {
+        await res.body?.cancel();
+      }
+    } catch (e) {
+      console.warn('vendor status fetch failed', v.provider, (e as Error)?.message);
+    }
+
+    await admin.from('vendor_status')
+      .update({ indicator, description, checked_at: now, updated_at: now })
+      .eq('provider', v.provider);
+    updated++;
+  });
+
+  return updated;
+}
+
+/**
+ * Is this asset's own outage explained by a vendor's?
+ *
+ * Returns the provider when a *hard* dependency is in a major or critical
+ * outage. A soft dependency degrading is not an excuse to stay quiet — that is
+ * the difference the `criticality` column exists to record.
+ */
+async function dependencyOutage(admin: Admin, assetId: string): Promise<string | null> {
+  const { data } = await admin
+    .from('asset_dependencies')
+    .select('provider, criticality, vendor_status!inner(indicator)')
+    .eq('asset_id', assetId)
+    .eq('criticality', 'hard')
+    .returns<Array<{
+      provider: string;
+      criticality: string;
+      vendor_status: { indicator: string } | { indicator: string }[];
+    }>>();
+
+  for (const dep of data ?? []) {
+    const vs = Array.isArray(dep.vendor_status) ? dep.vendor_status[0] : dep.vendor_status;
+    if (isVendorOutage(vs?.indicator)) return dep.provider;
+  }
+  return null;
+}
+
+/**
+ * What changed just before this. Attaches the closest change as a timeline
+ * entry — evidence for whoever picks the incident up, never a verdict.
+ */
+async function attachCorrelatedChange(
+  admin: Admin,
+  incidentId: string,
+  orgId: string,
+  assetId: string,
+  startedAt: string,
+): Promise<void> {
+  const since = new Date(new Date(startedAt).getTime() - 60 * 60_000).toISOString();
+  const { data } = await admin
+    .from('change_events')
+    .select('id, ts, source, kind, ref, title, url, actor')
+    .eq('asset_id', assetId)
+    .gte('ts', since)
+    .lte('ts', startedAt)
+    .order('ts', { ascending: false })
+    .limit(20)
+    .returns<ChangeEvent[]>();
+
+  const ranked = correlateChanges(data ?? [], startedAt);
+  if (!ranked.length) return;
+
+  const closest = ranked[0];
+  await admin.from('incident_events').insert({
+    org_id: orgId,
+    incident_id: incidentId,
+    ts: startedAt,
+    kind: closest.kind === 'deployment' ? 'deploy_detected' : 'commit_linked',
+    payload: {
+      summary: describeChange(closest),
+      ref: closest.ref,
+      url: closest.url,
+      actor: closest.actor,
+      minutes_before: closest.minutesBefore,
+      // How many others were in the window, so nobody assumes this was the only
+      // change simply because it is the one shown.
+      other_changes_in_window: ranked.length - 1,
+    },
+  });
+}
+
 async function pooled<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
   const queue = [...items];
   const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
@@ -263,6 +385,13 @@ Deno.serve(async (req) => {
   if (req.headers.get('x-probe-secret') !== secret) return json({ ok: false }, 401);
 
   const admin = serviceClient();
+
+  // pg_cron calls this with ?job=vendors on its own schedule. Same secret, same
+  // function, different work — a second Edge Function for eight HTTP GETs would
+  // be a second thing to deploy and keep in step.
+  if (new URL(req.url).searchParams.get('job') === 'vendors') {
+    return json({ ok: true, vendors: await pollVendorStatus(admin) });
+  }
 
   const now = new Date();
   const { data: due, error: dueErr } = await admin
@@ -346,6 +475,11 @@ Deno.serve(async (req) => {
         .maybeSingle()
         .returns<BurnRates>();
 
+      // Is this even ours? A hard dependency in a major outage explains the
+      // failure, and forty clients on the same vendor must produce one story
+      // rather than forty pages.
+      const vendorDown = await dependencyOutage(admin, m.asset_id);
+
       const { data: incident } = await admin.from('incidents').insert({
         org_id: m.org_id,
         asset_id: m.asset_id,
@@ -354,11 +488,17 @@ Deno.serve(async (req) => {
         // before anyone has looked at it.
         assigned_employee_id: asset.owner_employee_id,
         severity: severityFromBurn(slo, SEVERITY[asset.criticality] ?? 3),
-        title: m.type === 'ssl'
+        title: vendorDown
+          ? `${asset.name} affected by ${vendorDown} outage`
+          : m.type === 'ssl'
           ? `${asset.name} — TLS certificate problem`
           : `${asset.name} is not responding`,
-        cause_category: outcome.failure_stage,
+        cause_category: vendorDown ? 'dependency' : outcome.failure_stage,
         started_at: ts,
+        // Recorded, still visible, but it will not wake anyone: the vendor is
+        // the one who has to fix it.
+        suppressed_reason: vendorDown ? 'dependency_outage' : null,
+        suppressed_provider: vendorDown,
       }).select('id').single();
 
       if (incident) {
@@ -374,6 +514,20 @@ Deno.serve(async (req) => {
           },
         });
         usage.push({ org_id: m.org_id, asset_id: m.asset_id, ts, meter: 'incident_stored' });
+
+        if (vendorDown) {
+          await admin.from('incident_events').insert({
+            org_id: m.org_id, incident_id: incident.id, ts, kind: 'dependency_down',
+            payload: { provider: vendorDown },
+          });
+        }
+        // What shipped just before this. Best effort: a correlation failure must
+        // not stop the incident being recorded.
+        try {
+          await attachCorrelatedChange(admin, incident.id, m.org_id, m.asset_id, ts);
+        } catch (e) {
+          console.error('correlation failed', (e as Error)?.message);
+        }
       }
     }
 
@@ -453,6 +607,7 @@ async function flushAlerts(
       'digital_assets!inner(name, primary_url)',
     )
     .is('alerted_at', null)
+    .is('suppressed_reason', null)   // a suppressed incident is on record, not on call
     .neq('state', 'resolved')
     .order('started_at')
     .limit(ALERT_BATCH)

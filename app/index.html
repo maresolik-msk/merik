@@ -2960,17 +2960,31 @@ function agoTxt(ts){
 }
 let DOPS_TIMER=null;
 async function dops(){
-  const [{data:rows},{data:incs},{data:cls},{data:prjs},{data:emps},{data:pages},{data:slo}]=await Promise.all([
+  const [{data:rows},{data:incs},{data:cls},{data:prjs},{data:emps},{data:pages},{data:slo},
+         {data:vendors},{data:deps},{data:corr}]=await Promise.all([
     sb.from('digital_assets').select('*').is('archived_at',null).order('name'),
     sb.from('incidents').select('*').neq('state','resolved').order('started_at',{ascending:false}),
     sb.from('clients').select('id,name').order('name'),
     sb.from('projects').select('id,name').order('name'),
     sb.from('employees').select('id,full_name,emp_code').eq('status','Active').order('full_name'),
     sb.from('status_pages').select('*').order('title'),
-    sb.from('asset_slo').select('asset_id,health,budget_consumed_ratio,sla_tier')]);
+    sb.from('asset_slo').select('asset_id,health,budget_consumed_ratio,sla_tier'),
+    sb.from('vendor_status').select('*').order('label'),
+    sb.from('asset_dependencies').select('*'),
+    sb.from('incident_events').select('incident_id,kind,payload')
+      .in('kind',['deploy_detected','commit_linked'])]);
   const list=rows||[],open=incs||[];
   DOPS_PAGES=pages||[];
   const hb={};(slo||[]).forEach(r=>hb[r.asset_id]=r);
+  DOPS_VENDORS=vendors||[];DOPS_DEPS=deps||[];
+  const vByP={};DOPS_VENDORS.forEach(v=>vByP[v.provider]=v);
+  const depsByAsset={};DOPS_DEPS.forEach(d=>(depsByAsset[d.asset_id]=depsByAsset[d.asset_id]||[]).push(d));
+  // Vendors currently in a major outage, for the banner. `minor` is excluded on
+  // purpose — it covers a slow dashboard, and shouting about it is noise.
+  const vendorsDown=DOPS_VENDORS.filter(v=>v.indicator==='major'||v.indicator==='critical');
+  // What shipped just before each incident. Evidence, not a verdict — the
+  // wording comes from the probe and deliberately never claims causation.
+  const corrBy={};(corr||[]).forEach(e=>{if(!corrBy[e.incident_id])corrBy[e.incident_id]=e});
   DOPS_CLIENTS=cls||[];DOPS_PROJECTS=prjs||[];DOPS_EMPS=emps||[];
   const cn={},pn={},en={};DOPS_CLIENTS.forEach(c=>cn[c.id]=c.name);DOPS_PROJECTS.forEach(p=>pn[p.id]=p.name);
   DOPS_EMPS.forEach(e=>en[e.id]=e.full_name);
@@ -2983,11 +2997,24 @@ async function dops(){
     ['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Operational',c('operational')],
     ['<i class="fa-solid fa-circle-exclamation"></i>','#FADBD8','Down',c('down')],
     ['<i class="fa-solid fa-bell"></i>','#FFE9DC','Open Incidents',open.length]])+
+  (vendorsDown.length?`<div class="card" style="border-left:4px solid var(--amber)">
+    <h3 style="margin:0 0 6px"><i class="fa-solid fa-plug-circle-exclamation"></i> Third-party outage</h3>
+    <div style="font-size:13px">${vendorsDown.map(v=>
+      `<b>${esc(v.label)}</b> — ${esc(v.description||v.indicator)}`).join(' · ')}</div>
+    <div style="font-size:12px;color:#889;margin-top:6px">Assets that hard-depend on these raise an incident for the record, but do not page anyone. The vendor has to fix it.</div>
+  </div>`:'')+
   (open.length?`<div class="card"><h3 style="margin:0 0 10px">Open incidents</h3>
   <table><tr><th>Severity</th><th>What happened</th><th>Asset</th><th>Owner</th><th>Started</th><th></th></tr>
   ${open.map(i=>`<tr>
     <td><span class="badge ${i.severity<=2?'stA':'stL'}">Sev${i.severity}</span></td>
-    <td><b>${esc(i.title)}</b>${i.cause_category?`<div class="tl-sub">failed at ${esc(i.cause_category)}</div>`:''}</td>
+    <td><b>${esc(i.title)}</b>${i.suppressed_reason==='dependency_outage'
+        ? `<div class="tl-sub"><span class="badge stH">${esc(i.suppressed_provider||'dependency')} outage</span> not paged</div>`
+        : i.cause_category?`<div class="tl-sub">failed at ${esc(i.cause_category)}</div>`:''}
+      ${corrBy[i.id]?`<div class="tl-sub" style="color:var(--amber)">
+        <i class="fa-solid fa-code-commit"></i> ${esc(corrBy[i.id].payload?.summary||'')}
+        ${corrBy[i.id].payload?.other_changes_in_window
+          ? `<span style="color:#889">(+${corrBy[i.id].payload.other_changes_in_window} more in the window)</span>`:''}
+      </div>`:''}</td>
     <td>${esc(an[i.asset_id]||'—')}</td>
     <td>${i.assigned_employee_id?esc(en[i.assigned_employee_id]||'—'):'<span class="tl-dash">Unassigned</span>'}</td>
     <td style="white-space:nowrap">${agoTxt(i.started_at)}${i.state!=='detected'?`<div class="tl-sub">${esc(i.state)}</div>`:''}</td>
@@ -2996,7 +3023,7 @@ async function dops(){
       <button class="btn sm sec" onclick='clientUpdateForm(${JSON.stringify(i).replace(/'/g,"&#39;")})'
         title="Write what the client sees">${i.client_visible?'Client update ✓':'Client update'}</button>
       <button class="btn sm" onclick="resolveIncident('${i.id}')">Resolve</button></td></tr>`).join('')}</table></div>`:'')+
-  `<div class="card" style="overflow:auto"><table><tr><th>Asset</th><th>Client</th><th>Project</th><th>Owner</th><th>SLA</th><th>Health</th><th>Status</th><th></th></tr>
+  `<div class="card" style="overflow:auto"><table><tr><th>Asset</th><th>Client</th><th>Project</th><th>Owner</th><th>SLA</th><th>Health</th><th>Depends on</th><th>Status</th><th></th></tr>
   ${list.map(a=>{const rj=JSON.stringify(a).replace(/'/g,"&#39;");
     const muted=a.maintenance_until&&new Date(a.maintenance_until)>new Date();
     return `<tr><td style="white-space:nowrap">${av(a.name)}<b>${esc(a.name)}</b>
@@ -3006,13 +3033,15 @@ async function dops(){
     <td>${a.owner_employee_id?esc(en[a.owner_employee_id]||'—'):'<span class="tl-dash">—</span>'}</td>
     <td style="white-space:nowrap">${slaTxt(a.sla_tier)}</td>
     <td style="white-space:nowrap">${healthCell(hb[a.id])}</td>
+    <td style="white-space:nowrap">${depCell(depsByAsset[a.id],vByP)}
+      <button class="btn sm sec noprint" onclick="depForm('${a.id}',${escArg(a.name)})" title="Third-party dependencies">Edit</button></td>
     <td><span class="badge ${DA_BADGE[a.status]||'stW'}">${esc(a.status)}</span>
       ${muted?`<div class="tl-sub">quiet till ${fmtTime(a.maintenance_until)}</div>`:''}</td>
     <td class="noprint" style="white-space:nowrap">
       ${a.primary_url?`<button class="btn sm sec" onclick="muteAsset('${a.id}')" title="Deploying? Stop incidents for ${DA_MUTE_MIN} minutes">Mute ${DA_MUTE_MIN}m</button>`:''}
       <button class="btn sm sec" onclick='dopsForm(${rj})'>Edit</button>
       <button class="btn sm warn" onclick="delDops('${a.id}')">Del</button></td></tr>`}).join('')
-    ||'<tr><td colspan="8" style="text-align:center;color:#889;padding:30px">No digital assets yet — add a client site or API to start watching it.</td></tr>'}</table></div>
+    ||'<tr><td colspan="9" style="text-align:center;color:#889;padding:30px">No digital assets yet — add a client site or API to start watching it.</td></tr>'}</table></div>
 
   <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
     <div><h3 style="margin:0">Status pages</h3>
@@ -3042,7 +3071,53 @@ async function dops(){
     dops();
   },60000);
 }
-let DOPS_CLIENTS=[],DOPS_PROJECTS=[],DOPS_EMPS=[],DOPS_PAGES=[];
+let DOPS_CLIENTS=[],DOPS_PROJECTS=[],DOPS_EMPS=[],DOPS_PAGES=[],DOPS_VENDORS=[],DOPS_DEPS=[];
+// Statuspage's vocabulary, translated. `minor` is amber rather than red because
+// it routinely means a slow dashboard, and colouring it red teaches people to
+// ignore red.
+const VEND_BADGE={none:'stP',minor:'stL',major:'stA',critical:'stA',unknown:'stW'};
+const VEND_LABEL={none:'ok',minor:'minor',major:'outage',critical:'outage',unknown:'?'};
+function depCell(deps,vByP){
+  if(!deps||!deps.length)return '<span class="tl-dash">—</span>';
+  return deps.map(d=>{const v=vByP[d.provider]||{indicator:'unknown'};
+    return `<span class="badge ${VEND_BADGE[v.indicator]||'stW'}" title="${esc(v.description||'')}">`+
+           `${esc(v.label||d.provider)}${d.criticality==='soft'?'*':''} ${VEND_LABEL[v.indicator]||''}</span>`;
+  }).join(' ');
+}
+function depForm(assetId,assetName){
+  const mine={};DOPS_DEPS.filter(d=>d.asset_id===assetId).forEach(d=>mine[d.provider]=d.criticality);
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>What ${esc(assetName)} depends on</h2>
+  <div style="font-size:12.5px;color:#889;margin-bottom:10px">A <b>hard</b> dependency means the asset cannot work without it — when that vendor reports a major outage, this asset's incidents are recorded but nobody is paged. <b>Soft</b> dependencies never suppress.</div>
+  <table><tr><th>Vendor</th><th>Status now</th><th>Depends</th></tr>
+  ${DOPS_VENDORS.map(v=>`<tr>
+    <td><b>${esc(v.label)}</b></td>
+    <td><span class="badge ${VEND_BADGE[v.indicator]||'stW'}">${esc(v.description||v.indicator)}</span>
+      <div class="tl-sub">${v.checked_at?fmtTime(v.checked_at):'not checked yet'}</div></td>
+    <td><select id="dep_${v.provider}">
+      <option value="" ${!mine[v.provider]?'selected':''}>no</option>
+      <option value="hard" ${mine[v.provider]==='hard'?'selected':''}>hard</option>
+      <option value="soft" ${mine[v.provider]==='soft'?'selected':''}>soft</option></select></td></tr>`).join('')}
+  </table>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveDeps('${assetId}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveDeps(assetId){
+  const want={};DOPS_VENDORS.forEach(v=>{const c=$('dep_'+v.provider).value;if(c)want[v.provider]=c});
+  const have={};DOPS_DEPS.filter(d=>d.asset_id===assetId).forEach(d=>have[d.provider]=d);
+  const del=Object.keys(have).filter(p=>!want[p]);
+  if(del.length){const{error}=await sb.from('asset_dependencies').delete().eq('asset_id',assetId).in('provider',del);
+    if(error)return toast(saveErr(error))}
+  for(const p of Object.keys(want)){
+    const row={asset_id:assetId,provider:p,criticality:want[p]};
+    const{error}=have[p]
+      ? await sb.from('asset_dependencies').update({criticality:want[p]}).eq('id',have[p].id)
+      : await sb.from('asset_dependencies').insert(row);
+    if(error)return toast(saveErr(error));
+  }
+  document.querySelector('.modal').remove();dops();
+}
 // Served from the Merik site, not from the app and not from Supabase. Supabase
 // forces text/plain plus a sandbox CSP on everything from its functions domain,
 // so a page served there arrives as source text; /status/ fetches the JSON and
@@ -3241,6 +3316,25 @@ async function dopsrep(){
     ${assets.some(a=>a.uptime_pct===null)?`<div style="font-size:11.5px;color:#889;margin-top:8px">
       “No data” means no checks were recorded that month — the asset was added later, or monitoring was not yet running.</div>`:''}
   </div>
+
+  ${(()=>{
+    // MTTA / MTTR for the month. Averaged over incidents that actually reached
+    // each milestone — an unacknowledged incident has no acknowledgement time,
+    // and counting it as zero would flatter the number badly.
+    const acked=incidents.filter(i=>i.acknowledged_at),res=incidents.filter(i=>i.resolved_at);
+    const mins=(a,b)=>Math.round((new Date(b)-new Date(a))/60000);
+    const avg=xs=>xs.length?Math.round(xs.reduce((s,x)=>s+x,0)/xs.length):null;
+    const mtta=avg(acked.map(i=>mins(i.started_at,i.acknowledged_at)));
+    const mttr=avg(res.map(i=>mins(i.started_at,i.resolved_at)));
+    const fmt=m=>m===null?'—':m<60?`${m} min`:`${Math.floor(m/60)}h ${m%60}m`;
+    const supp=incidents.filter(i=>i.suppressed_reason==='dependency_outage').length;
+    if(!incidents.length)return '';
+    return `<div class="card"><h3 style="margin:0 0 10px">Response — ${MONTHS[REP_M-1]} ${REP_Y}</h3>
+    ${kpis([['<i class="fa-solid fa-bell"></i>','var(--brand-soft)','Incidents',incidents.length],
+      ['<i class="fa-solid fa-hand"></i>','#E6F7EC','MTTA',fmt(mtta),`${acked.length} of ${incidents.length} acknowledged`],
+      ['<i class="fa-solid fa-wrench"></i>','#FFE9DC','MTTR',fmt(mttr),`${res.length} of ${incidents.length} resolved`],
+      ['<i class="fa-solid fa-plug"></i>','#FDEBD0','Third-party',supp,'not our outage']])}</div>`;
+  })()}
 
   <div class="card">
     <h3 style="margin:0 0 10px">Incidents — ${MONTHS[REP_M-1]} ${REP_Y}</h3>
