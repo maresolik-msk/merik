@@ -133,7 +133,9 @@ declare
 begin
   insert into public.check_rollup_1h (monitor_id, org_id, hour, checks, failures, avg_latency, max_latency)
   select c.monitor_id,
-         max(c.org_id),
+         -- Grouped, not aggregated: every check_results row for a monitor carries
+         -- the same org_id, and there is no max() for uuid to fall back on.
+         c.org_id,
          date_trunc('hour', c.ts),
          count(*),
          count(*) filter (where not c.ok),
@@ -142,7 +144,7 @@ begin
     from public.check_results c
    where c.ts < date_trunc('hour', now())     -- never fold the hour in progress
      and c.ts > now() - interval '35 days'    -- bounded: raw is dropped at 30
-   group by c.monitor_id, date_trunc('hour', c.ts)
+   group by c.monitor_id, c.org_id, date_trunc('hour', c.ts)
       on conflict (monitor_id, hour) do update
          set checks      = excluded.checks,
              failures    = excluded.failures,
