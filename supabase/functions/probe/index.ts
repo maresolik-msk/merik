@@ -10,12 +10,17 @@
 // secret is the only thing standing between the open internet and an endpoint
 // that makes outbound requests, so it is checked before anything else happens.
 //
-// Only `http` monitors run here. The other monitor types are accepted by the
-// schema and skipped by this loop:
-//   * ssl expiry — Deno's TLS API exposes no peer certificate, so this needs a
-//     hand-rolled handshake parse. Real work, not a checkbox; deliberately not
-//     faked with a third-party "is my cert ok" API.
-//   * dns / tcp / synthetic_flow / integration — Phase 2.
+// Runs `http` and `ssl` monitors. dns / tcp / synthetic_flow / integration are
+// accepted by the schema and are Phase 2.
+//
+// Caveat on ssl, as deployed today: the Supabase Edge Runtime's node:tls returns
+// an empty object from getPeerCertificate(), so the certificate cannot be read
+// there — the Deno CLI implements it, which is why this passed local testing and
+// failed in production. Those checks come back `inconclusive` and are dropped
+// rather than recorded, so the feature is inert instead of wrong. Making it work
+// needs either that runtime gaining the API or a hand-rolled ClientHello and
+// Certificate-message parse (and TLS 1.3 encrypts that message, so it would have
+// to negotiate 1.2).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { connect as tlsConnect } from 'node:tls';
 import { nextState, type MonitorState, type StateRow } from './state.ts';
@@ -51,11 +56,9 @@ type Admin = ReturnType<typeof serviceClient>;
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-// Severity from the asset's declared criticality. Deterministic and boring on
-// purpose. The blueprint's burn-rate model is the better answer, but it needs
-// SLO error budgets to burn against and those don't exist yet — this is the
-// placeholder, not the destination.
-// ponytail: swap for multi-window burn rate once slos/slo_budget land.
+// Fallback severity only. Severity normally comes from the error-budget burn
+// rate (see severityFromBurn in alerts.ts); this is what a best_effort asset
+// gets, having no contracted target and therefore no budget to measure.
 const SEVERITY: Record<string, number> = { critical: 1, high: 2, normal: 3, low: 4 };
 
 // The service-role client is created without a generated Database type, so
@@ -89,6 +92,12 @@ interface CheckOutcome {
   latency_ms: number;
   failure_stage: string | null;
   error: string | null;
+  /**
+   * The probe could not determine an answer — as opposed to determining a bad
+   * one. Nothing is recorded and the state machine does not move: a limitation
+   * of the prober must never be reported as the client's site being broken.
+   */
+  inconclusive?: boolean;
 }
 
 async function runHttpCheck(target: string, config: Record<string, unknown>): Promise<CheckOutcome> {
@@ -174,12 +183,27 @@ async function runSslCheck(target: string): Promise<CheckOutcome> {
   }
 
   try {
-    const validTo = await new Promise<string>((resolve, reject) => {
+    const validTo = await new Promise<string | null>((resolve, reject) => {
       const socket = tlsConnect({ host, port, servername: host }, () => {
-        const cert = socket.getPeerCertificate();
+        // Two APIs because runtimes disagree about which they implement. The
+        // Deno CLI has both; the Supabase Edge Runtime returned an empty object
+        // from getPeerCertificate(), which is why this tries the X509 form too
+        // and then gives up honestly rather than guessing.
+        let out: string | null = null;
+        try {
+          const x509 = (socket as unknown as {
+            getPeerX509Certificate?: () => { validTo?: string } | null;
+          }).getPeerX509Certificate?.();
+          if (x509?.validTo) out = x509.validTo;
+        } catch { /* not implemented here */ }
+        if (!out) {
+          try {
+            const cert = socket.getPeerCertificate();
+            if (cert?.valid_to) out = cert.valid_to;
+          } catch { /* not implemented here */ }
+        }
         socket.destroy();
-        if (!cert || !cert.valid_to) reject(new Error('no certificate presented'));
-        else resolve(cert.valid_to);
+        resolve(out);
       });
       socket.on('error', reject);
       socket.setTimeout(SSL_TIMEOUT_MS, () => {
@@ -189,6 +213,17 @@ async function runSslCheck(target: string): Promise<CheckOutcome> {
     });
 
     const latency_ms = Math.round(performance.now() - started);
+
+    // Connected fine, but this runtime will not hand over the certificate. That
+    // says nothing about the certificate, so it must not be recorded as a
+    // failure — a false "TLS certificate problem" on a healthy site is exactly
+    // the alert noise that gets a monitoring tool switched off.
+    if (validTo === null) {
+      return {
+        ok: false, status_code: null, latency_ms, failure_stage: 'tls',
+        error: 'certificate unreadable in this runtime', inconclusive: true,
+      };
+    }
     const days = Math.floor((new Date(validTo).getTime() - Date.now()) / 86_400_000);
 
     if (days < 0) {
@@ -266,6 +301,7 @@ Deno.serve(async (req) => {
   const usage: Record<string, unknown>[] = [];
   let opened = 0;
   let resolved = 0;
+  let inconclusive = 0;
 
   await pooled(due, CONCURRENCY, async (m) => {
     const asset = Array.isArray(m.digital_assets) ? m.digital_assets[0] : m.digital_assets;
@@ -273,6 +309,16 @@ Deno.serve(async (req) => {
       ? await runSslCheck(m.target)
       : await runHttpCheck(m.target, (m.config ?? {}) as Record<string, unknown>);
     const ts = new Date().toISOString();
+
+    // An inconclusive check is not a result. Recording it would poison the
+    // uptime ratio and move the state machine on no evidence, so it is counted
+    // for visibility and otherwise dropped. next_run_at was already advanced, so
+    // this monitor simply tries again next interval.
+    if (outcome.inconclusive) {
+      inconclusive++;
+      console.warn('inconclusive check', m.type, m.target, outcome.error);
+      return;
+    }
 
     results.push({
       org_id: m.org_id, monitor_id: m.id, ts, region: 'default',
@@ -374,7 +420,7 @@ Deno.serve(async (req) => {
   // picked up by a later one, with no queue to drain.
   const alerted = await flushAlerts(admin, now);
 
-  return json({ ok: true, checked: results.length, opened, resolved, alerted });
+  return json({ ok: true, checked: results.length, opened, resolved, alerted, inconclusive });
 });
 
 interface PendingIncident {
