@@ -3256,6 +3256,92 @@ async function resolveIncident(id){
    more commits and not more software. It is here so you can see whether work is
    flowing, and so an outage can be read next to the deploy that preceded it.
 ---------------------------------------------------------------------------- */
+/* ----- connected repositories -------------------------------------------------
+   A repo is connected here, not in Supabase. Merik generates the URL and the
+   signing secret; the user pastes them into GitHub once, and every event after
+   that already knows its client, project and asset.
+
+   The one-time GitHub step is unavoidable without a GitHub App, which would mean
+   holding a token that can read the client's source — §11.1 wants envelope
+   encryption with a managed KMS before any of those are stored. Nothing here is
+   a credential of the client's.
+---------------------------------------------------------------------------- */
+const hookUrl=t=>`${SB_URL}/functions/v1/hooks?t=${encodeURIComponent(t)}`;
+function repoRows(links,cn,pn,an){
+  if(!links.length)return '<tr><td colspan="5" style="text-align:center;color:#889;padding:24px">No repositories connected yet.</td></tr>';
+  return links.map(l=>{
+    // "Connected but silent" and "connected and working" look identical without
+    // this, and the usual cause of silence is a webhook that was never saved.
+    const seen=l.last_event_at?`last event ${agoTxt(l.last_event_at)}`:'nothing received yet';
+    return `<tr>
+    <td><b>${esc(l.repo)}</b><div class="tl-sub">${esc(l.provider)} · ${esc(seen)}</div></td>
+    <td>${l.client_id?esc(cn[l.client_id]||'—'):'<span class="tl-dash">—</span>'}</td>
+    <td>${l.project_id?esc(pn[l.project_id]||'—'):'<span class="tl-dash">—</span>'}</td>
+    <td>${l.asset_id?esc(an[l.asset_id]||'—'):'<span class="tl-dash">—</span>'}</td>
+    <td class="noprint" style="white-space:nowrap">
+      <button class="btn sm" onclick='repoSetup(${JSON.stringify(l).replace(/'/g,"&#39;")})'>Setup</button>
+      <button class="btn sm warn" onclick="delRepoLink('${l.id}')">Del</button></td></tr>`}).join('');
+}
+function repoForm(clients,projects,assets){
+  const opts=(rows,lbl)=>rows.map(r=>`<option value="${r.id}">${esc(lbl(r))}</option>`).join('');
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Connect a repository</h2>
+  <label>Repository <span style="color:#889;font-weight:400">— owner/name, exactly as on GitHub</span></label>
+  <input id="rl_repo" placeholder="acme-agency/acme-website">
+  <div class="row"><div><label>Client</label><select id="rl_client"><option value="">—</option>${opts(clients,r=>r.name)}</select></div>
+  <div><label>Project</label><select id="rl_project"><option value="">—</option>${opts(projects,r=>r.name)}</select></div></div>
+  <label>Digital asset <span style="color:#889;font-weight:400">— optional; links deploys to an incident timeline</span></label>
+  <select id="rl_asset"><option value="">—</option>${opts(assets,r=>r.name)}</select>
+  <div style="font-size:11.5px;color:#889;margin-top:8px">Merik generates the webhook URL and secret. You paste them into GitHub once — nothing of the client's is stored here.</div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveRepoLink()">Create</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveRepoLink(){
+  const repo=$('rl_repo').value.trim();
+  // owner/name. A pasted browser URL is the obvious wrong input, so name it.
+  if(!/^[\w.-]+\/[\w.-]+$/.test(repo))
+    return toast('Use owner/name — e.g. acme-agency/acme-website, not the full URL.');
+  const{data,error}=await sb.from('repo_links').insert({repo,
+    client_id:$('rl_client').value||null,project_id:$('rl_project').value||null,
+    asset_id:$('rl_asset').value||null}).select('*').single();
+  if(error)return toast(/duplicate|unique/i.test(error.message)
+    ? 'That repository is already connected.' : saveErr(error));
+  document.querySelector('.modal').remove();repoSetup(data);
+}
+async function delRepoLink(id){
+  if(!confirm('Disconnect this repository? Its webhook stops working immediately. Past activity is kept.'))return;
+  const{error}=await sb.from('repo_links').delete().eq('id',id);
+  if(error)return toast(saveErr(error));devact();
+}
+// The whole point: the exact two values to paste, and nothing to substitute.
+function repoSetup(l){
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>Connect ${esc(l.repo)} in GitHub</h2>
+  <div style="font-size:12.5px;color:#889;margin-bottom:10px">One-time, in the repository's own settings. Anyone with admin on the repo can do it — no Merik access needed.</div>
+  <ol style="font-size:13.5px;line-height:1.9;padding-left:20px;margin:0 0 12px">
+    <li>GitHub → the repository → <b>Settings</b> → <b>Webhooks</b> → <b>Add webhook</b></li>
+    <li><b>Payload URL</b> — paste this:
+      <div style="display:flex;gap:6px;margin:4px 0">
+        <input id="rl_url" readonly value="${esc(hookUrl(l.token))}" style="font-size:12px">
+        <button class="btn sm sec" onclick="copyVal('rl_url')">Copy</button></div></li>
+    <li><b>Content type</b> — <code>application/json</code></li>
+    <li><b>Secret</b> — paste this:
+      <div style="display:flex;gap:6px;margin:4px 0">
+        <input id="rl_secret" readonly value="${esc(l.webhook_secret)}" style="font-size:12px">
+        <button class="btn sm sec" onclick="copyVal('rl_secret')">Copy</button></div></li>
+    <li><b>Which events?</b> → “Let me select individual events” → tick <b>Pushes</b> and <b>Pull requests</b></li>
+    <li><b>Add webhook</b>. GitHub sends a ping straight away; it should answer <code>200</code>.</li>
+  </ol>
+  <div style="font-size:11.5px;color:#889">Activity appears on this page within seconds of the next push. If nothing arrives, GitHub's <b>Recent Deliveries</b> tab shows the reason — <code>401</code> means the secret does not match.</div>
+  <div style="margin-top:12px;display:flex;gap:8px">
+    <button class="btn" onclick="this.closest('.modal').remove();devact()">Done</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function copyVal(id){const el=$(id);
+  try{await navigator.clipboard.writeText(el.value);toast('Copied')}
+  catch(e){el.select();toast('Press ⌘C to copy','warn')}}
+
 const DEV_KIND={commit:['fa-code-commit','stW','pushed'],deployment:['fa-rocket','stP','deployed'],
   pr_opened:['fa-code-pull-request','stH','opened PR'],pr_merged:['fa-code-merge','stP','merged PR'],
   config_change:['fa-sliders','stL','changed config'],vendor_incident:['fa-plug','stA','vendor incident']};
@@ -3264,9 +3350,14 @@ async function devact(){
   const since=new Date(Date.now()-DEV_DAYS*864e5).toISOString();
   let q=sb.from('change_events').select('*').gte('ts',since).order('ts',{ascending:false}).limit(500);
   if(DEV_ASSET)q=q.eq('asset_id',DEV_ASSET);
-  const [{data:evs},{data:assets}]=await Promise.all([q,
-    sb.from('digital_assets').select('id,name').is('archived_at',null).order('name')]);
+  const [{data:evs},{data:assets},{data:links},{data:cls},{data:prjs}]=await Promise.all([q,
+    sb.from('digital_assets').select('id,name').is('archived_at',null).order('name'),
+    sb.from('repo_links').select('*').order('repo'),
+    sb.from('clients').select('id,name').order('name'),
+    sb.from('projects').select('id,name').order('name')]);
   const list=evs||[],an={};(assets||[]).forEach(a=>an[a.id]=a.name);
+  const cn={};(cls||[]).forEach(c=>cn[c.id]=c.name);
+  const pn={};(prjs||[]).forEach(p=>pn[p.id]=p.name);
 
   const commits=list.filter(e=>e.kind==='commit');
   const deploys=list.filter(e=>e.kind==='deployment');
@@ -3293,6 +3384,12 @@ async function devact(){
     ['<i class="fa-solid fa-rocket"></i>','#FFE9DC','Deployments',deploys.length],
     ['<i class="fa-solid fa-users"></i>','#FDEBD0','Contributors',people.size,
       repos.size?`${repos.size} repo${repos.size===1?'':'s'}`:'']])+
+  `<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
+    <div><h3 style="margin:0">Connected repositories</h3>
+    <div style="font-size:12px;color:#889">Merik gives you the URL and secret; you add the webhook in GitHub once.</div></div>
+    <button class="btn sm" onclick='repoForm(${JSON.stringify(cls||[]).replace(/'/g,"&#39;")},${JSON.stringify(prjs||[]).replace(/'/g,"&#39;")},${JSON.stringify(assets||[]).replace(/'/g,"&#39;")})'>＋ Connect repository</button></div>
+    <table><tr><th>Repository</th><th>Client</th><th>Project</th><th>Asset</th><th></th></tr>
+    ${repoRows(links||[],cn,pn,an)}</table></div>`+
   (list.length?Object.keys(byDay).sort().reverse().map(d=>`<div class="card">
     <h3 style="margin:0 0 10px">${fmtDate(d)} <span style="font-weight:400;color:var(--muted);font-size:13px">— ${byDay[d].length} event${byDay[d].length===1?'':'s'}</span></h3>
     <table><tr><th>What</th><th>Detail</th><th>Who</th><th>Where</th><th>Time</th></tr>
@@ -3312,8 +3409,8 @@ async function devact(){
     </table></div>`).join('')
   :`<div class="card"><div class="empty"><i class="fa-solid fa-code-branch ill"></i>
     <h3>Nothing recorded yet</h3>
-    <p>Development activity appears here once GitHub or Vercel is sending webhooks to Merik.
-       Until then this page stays empty — it never guesses.</p></div></div>`));
+    <p>Connect a repository above and add the webhook it gives you. Activity appears
+       here from the next push — this page never guesses.</p></div></div>`));
 }
 
 /* ----- monthly SLA report: the artifact that justifies the retainer ----------
