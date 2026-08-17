@@ -1,8 +1,16 @@
-// Merik — public status page (Deno).
+// Merik — public status page data (Deno).
 //
-// Serves a branded, client-safe status page at /functions/v1/status?t=<token>.
+// Returns the sanitised JSON a status page is allowed to show, for a token.
 // Deploy with verify_jwt = false: the audience is a client's staff and their
 // customers, who have no Merik login and never will.
+//
+// It returns JSON and not a page on purpose. Supabase forces
+// `content-type: text/plain` and injects `content-security-policy:
+// default-src 'none'; sandbox` on every response from the shared
+// *.supabase.co/functions/v1/ host, so HTML served from here arrives as source
+// text no matter what headers this function sets. The page itself is therefore
+// static, on merik.in, at /status/ — which is where a client-facing page wanted
+// to live anyway.
 //
 // The token is the credential. It is 32 hex characters from gen_random_bytes,
 // it is the only thing the caller supplies, and every query below is scoped by
@@ -12,43 +20,42 @@
 // This runs as the service role, which sounds alarming for a public endpoint.
 // It is the safer of the two options: the alternative is an anonymous SELECT
 // policy on the underlying tables, which would expose the raw rows (internal
-// incident titles, check errors, the token list itself) and rely on the client
-// asking nicely for a subset. Here the projection is the security boundary and
-// it lives in render.ts, which is tested.
+// incident titles, check errors, the token list itself) and rely on the caller
+// asking nicely for a subset. Here the projection IS the boundary, and what
+// leaves this function is built field by field, never spread from a row.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import {
-  type PublicAsset,
-  type PublicIncident,
-  renderStatusPage,
-} from './render.ts';
 
 const MAX_INCIDENTS = 10;
 
-const html = (body: string, status = 200) =>
-  new Response(body, {
+// The page is served from merik.in and fetches this cross-origin. Read-only and
+// token-scoped, so there is nothing here that a restricted origin list would
+// protect — a client may also want to embed their own page elsewhere.
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'accept, content-type',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
     status,
     headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      // Cheap protection against someone refreshing a status page during an
-      // outage: serve a slightly stale page rather than a query per visitor.
+      ...cors,
+      'Content-Type': 'application/json',
+      // Cheap protection against everyone refreshing during an outage: serve a
+      // slightly stale page rather than a query per visitor.
       'Cache-Control': 'public, max-age=30',
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'no-referrer',
     },
   });
 
-const notFound = () =>
-  html(
-    `<!doctype html><meta charset="utf-8"><title>Not found</title>
-     <body style="font:15px system-ui;padding:40px;text-align:center;color:#666">
-     <p>This status page is not available.</p></body>`,
-    404,
-  );
+// One shape for malformed, unknown and disabled. A response that distinguishes
+// them is a response that confirms which tokens are real.
+const notFound = () => json({ error: 'not_found' }, 404);
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+
   const token = new URL(req.url).searchParams.get('t')?.trim();
-  // Same response for malformed, unknown and disabled. A status page that says
-  // "wrong token" is a status page that confirms which tokens are real.
   if (!token || !/^[a-f0-9]{16,64}$/.test(token)) return notFound();
 
   const admin = createClient(
@@ -68,8 +75,8 @@ Deno.serve(async (req) => {
   if (!page || !page.enabled) return notFound();
 
   // Assets for this page: one client's, or the whole tenant's when the page has
-  // no client. Staging is never shown — a client does not need to know that a
-  // staging box is down, and it would read as an outage.
+  // no client. Staging is never shown — a client does not need to know a staging
+  // box is down, and it would read as an outage.
   let assetQuery = admin
     .from('digital_assets')
     .select('id, name, status, sla_tier')
@@ -108,24 +115,21 @@ Deno.serve(async (req) => {
       .returns<Array<{ started_at: string; resolved_at: string | null; client_summary: string }>>()
     : { data: [] };
 
-  const publicAssets: PublicAsset[] = assets.map((a) => ({
-    name: a.name,
-    status: a.status,
-    uptime_pct: uptimeBy.get(a.id) ?? null,
-    sla_tier: a.sla_tier,
-  }));
-
-  const publicIncidents: PublicIncident[] = (incidentRows ?? []).map((i) => ({
-    started_at: i.started_at,
-    resolved_at: i.resolved_at,
-    summary: i.client_summary,
-  }));
-
-  return html(renderStatusPage({
+  // Built field by field. Nothing from a row reaches the client except these.
+  return json({
     title: page.title,
     intro: page.intro,
-    assets: publicAssets,
-    incidents: publicIncidents,
+    assets: assets.map((a) => ({
+      name: a.name,
+      status: a.status,
+      uptime_pct: uptimeBy.get(a.id) ?? null,
+      sla_tier: a.sla_tier,
+    })),
+    incidents: (incidentRows ?? []).map((i) => ({
+      started_at: i.started_at,
+      resolved_at: i.resolved_at,
+      summary: i.client_summary,
+    })),
     generatedAt: new Date().toISOString(),
-  }));
+  });
 });

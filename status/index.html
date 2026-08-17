@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Not indexed: a client's status page is theirs to share, not ours to publish. -->
+<meta name="robots" content="noindex">
+<title>Status — Merik</title>
+<!--
+  Served from merik.in, not from the Supabase functions domain.
+
+  The `status` Edge Function returns JSON and cannot return a rendered page:
+  Supabase forces `content-type: text/plain` and injects
+  `content-security-policy: default-src 'none'; sandbox` on every response from
+  the shared *.supabase.co/functions/v1/ host, so HTML served from there is
+  displayed as source. That is intentional on their side — a shared domain that
+  can host arbitrary HTML is a phishing vector — and no response header set in
+  the function can override it.
+
+  So the shell lives here and the data is fetched. It also puts the page on your
+  own domain, which is what a client-facing status page wanted anyway.
+-->
+<style>
+:root{color-scheme:light dark;--bg:#f7f8fa;--card:#fff;--ink:#12141a;--muted:#666e7d;--line:#e6e8ec;
+--ok:#1e8e5a;--warn:#b7791f;--bad:#c0392b;--info:#1f618d;--idle:#8a919e}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--card:#161b22;--ink:#e6edf3;--muted:#8b949e;--line:#272d36}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:40px 20px 64px}
+h1{font-size:24px;margin:0 0 4px}
+.intro{color:var(--muted);margin:0 0 28px}
+.head{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+.overall{font-size:19px;font-weight:700;display:flex;align-items:center;gap:10px}
+.dot{width:11px;height:11px;border-radius:50%;flex:none}
+.ok .dot,.dot.ok{background:var(--ok)}.warn .dot,.dot.warn{background:var(--warn)}
+.bad .dot,.dot.bad{background:var(--bad)}.info .dot,.dot.info{background:var(--info)}
+.idle .dot,.dot.idle{background:var(--idle)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.info{color:var(--info)}.idle{color:var(--idle)}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.nm{font-weight:600;flex:1;min-width:0}
+.sub{color:var(--muted);font-size:12.5px;font-weight:400}
+/* Both columns are fixed-width so the percentages line up down the page. Status
+   labels vary from "Operational" to "Degraded performance", and without this the
+   uptime figures wander left and right by 60px per row. */
+.st{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;white-space:nowrap;min-width:172px}
+.up{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;
+min-width:84px;text-align:right}
+.inc{padding:14px 18px;border-bottom:1px solid var(--line)}.inc:last-child{border-bottom:0}
+.inc .when{color:var(--muted);font-size:12.5px;margin-bottom:3px}
+.none{padding:26px 18px;text-align:center;color:var(--muted)}
+.foot{margin-top:26px;text-align:center;color:var(--muted);font-size:12px}
+/* On a phone the fixed columns above do not fit: they crush the service name to
+   one word per line and push the card past the viewport. Below this width the
+   name takes its own line and status/uptime share the next one. */
+@media(max-width:560px){
+.row{flex-wrap:wrap;gap:4px 12px;padding:13px 16px}
+.nm{flex:1 0 100%}
+.st{min-width:0;order:2}
+.up{min-width:0;order:3;margin-left:auto;display:flex;align-items:baseline;gap:6px}
+.up .sub{display:inline}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="none" id="boot">Loading status…</div>
+</div>
+
+<script type="module">
+import { renderStatusBody } from './render.mjs';
+
+const SB_URL = 'https://cohifrzskydnozpmieov.supabase.co';
+const wrap = document.getElementById('wrap');
+
+// Same message for a missing, malformed, unknown or disabled token. A page that
+// distinguishes them is a page that confirms which tokens are real.
+const unavailable = () => {
+  wrap.innerHTML = '<div class="none">This status page is not available.</div>';
+};
+
+const token = new URLSearchParams(location.search).get('t');
+if (!token || !/^[a-f0-9]{16,64}$/.test(token)) {
+  unavailable();
+} else {
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/status?t=${encodeURIComponent(token)}`, {
+      headers: { accept: 'application/json' },
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    wrap.innerHTML = renderStatusBody(data);
+    document.title = `${data.title} — Status`;
+  } catch (e) {
+    // Never surface the underlying error: it is the client's page, and "502 from
+    // supabase.co" is both meaningless and ours to worry about, not theirs.
+    unavailable();
+  }
+}
+</script>
+</body>
+</html>

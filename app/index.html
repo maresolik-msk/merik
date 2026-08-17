@@ -3022,9 +3022,12 @@ async function dops(){
   },60000);
 }
 let DOPS_CLIENTS=[],DOPS_PROJECTS=[],DOPS_EMPS=[],DOPS_PAGES=[];
-// The status page is served by an Edge Function, not this app — it has to be
-// reachable by people who will never have a Merik login.
-const statusUrl=t=>`${SB_URL}/functions/v1/status?t=${encodeURIComponent(t)}`;
+// Served from the Merik site, not from the app and not from Supabase. Supabase
+// forces text/plain plus a sandbox CSP on everything from its functions domain,
+// so a page served there arrives as source text; /status/ fetches the JSON and
+// renders it. Client-facing, so it lives on the public domain by choice too.
+const STATUS_ORIGIN='https://www.merik.in';
+const statusUrl=t=>`${STATUS_ORIGIN}/status/?t=${encodeURIComponent(t)}`;
 async function copyStatusLink(token){
   try{await navigator.clipboard.writeText(statusUrl(token));toast('Link copied')}
   catch(e){toast('Could not copy — use Open and copy from the address bar','warn')}
@@ -3032,7 +3035,7 @@ async function copyStatusLink(token){
 function statusPageForm(){
   const div=document.createElement('div');div.className='modal';
   div.innerHTML=`<div class="card"><h2>New status page</h2>
-  <label>Title <span style="color:#889;font-weight:400">— the client sees this</span></label>
+  <label>Page heading <span style="color:#889;font-weight:400">— the client's name, not a URL</span></label>
   <input id="sp_title" placeholder="e.g. Acme Corp">
   <label>Client</label>
   <select id="sp_client"><option value="">Whole company — every production asset</option>
@@ -3046,7 +3049,11 @@ function statusPageForm(){
 }
 async function saveStatusPage(){
   const title=$('sp_title').value.trim();
-  if(!title)return toast('Give the page a title.');
+  if(!title)return toast('Give the page a heading.');
+  // The heading is the biggest text on a page a client reads. A URL pasted here
+  // is never what was meant, and it is an easy field to misread.
+  if(/^https?:\/\//i.test(title)||/^[\w.-]+\.[a-z]{2,}\/?$/i.test(title))
+    return toast('That looks like a URL. Use the client\'s name — this is the page heading.');
   const{error}=await sb.from('status_pages').insert({
     title,client_id:$('sp_client').value||null,intro:$('sp_intro').value.trim()||null});
   // One page per client is a unique constraint, not a bug to explain away.
