@@ -909,7 +909,7 @@ const ADMIN_GROUPS=[
  ['Task Management',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check"></i>','Task Log'],['insights','<i class="fa-solid fa-brain"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project"></i>','Project Intelligence']]],
  ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['prjfix','<i class="fa-solid fa-wrench"></i>','Fix Project Names'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Asset Management',[['asset','<i class="fa-solid fa-laptop"></i>','Assets'],['soft','<i class="fa-solid fa-cubes"></i>','Software']]],
- ['Digital Operations',[['dops','<i class="fa-solid fa-globe"></i>','Digital Assets'],['dopsrep','<i class="fa-solid fa-file-contract"></i>','SLA Reports']]],
+ ['Digital Operations',[['dops','<i class="fa-solid fa-globe"></i>','Digital Assets'],['dopsrep','<i class="fa-solid fa-file-contract"></i>','SLA Reports'],['devact','<i class="fa-solid fa-code-branch"></i>','Development Activity']]],
  ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings'],['adminfb','<i class="fa-solid fa-comment-dots"></i>','Feedback']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
@@ -1001,7 +1001,7 @@ function filterNav(q){
 }
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
-const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,dopsrep,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
+const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();
   document.querySelectorAll('#side a').forEach(a=>{a.classList.remove('act');a.removeAttribute('aria-current')});
   const el=$('nav-'+v);
@@ -3244,6 +3244,76 @@ async function resolveIncident(id){
   const now=new Date().toISOString();
   const{error}=await sb.from('incidents').update({state:'resolved',resolved_at:now,updated_at:now}).eq('id',id);
   if(error)return toast(saveErr(error));dops();
+}
+
+/* ----- development activity: what the team actually shipped -------------------
+   Reads change_events, which the `hooks` Edge Function fills from GitHub and
+   Vercel webhooks. Nothing is polled and no repository is cloned — the CI
+   already knows when it shipped and will say so for free.
+
+   This is a record of what happened, not a productivity metric. Commit counts
+   measure typing, and a team told they are being scored on them will produce
+   more commits and not more software. It is here so you can see whether work is
+   flowing, and so an outage can be read next to the deploy that preceded it.
+---------------------------------------------------------------------------- */
+const DEV_KIND={commit:['fa-code-commit','stW','pushed'],deployment:['fa-rocket','stP','deployed'],
+  pr_opened:['fa-code-pull-request','stH','opened PR'],pr_merged:['fa-code-merge','stP','merged PR'],
+  config_change:['fa-sliders','stL','changed config'],vendor_incident:['fa-plug','stA','vendor incident']};
+let DEV_DAYS=14,DEV_ASSET='';
+async function devact(){
+  const since=new Date(Date.now()-DEV_DAYS*864e5).toISOString();
+  let q=sb.from('change_events').select('*').gte('ts',since).order('ts',{ascending:false}).limit(500);
+  if(DEV_ASSET)q=q.eq('asset_id',DEV_ASSET);
+  const [{data:evs},{data:assets}]=await Promise.all([q,
+    sb.from('digital_assets').select('id,name').is('archived_at',null).order('name')]);
+  const list=evs||[],an={};(assets||[]).forEach(a=>an[a.id]=a.name);
+
+  const commits=list.filter(e=>e.kind==='commit');
+  const deploys=list.filter(e=>e.kind==='deployment');
+  const merges=list.filter(e=>e.kind==='pr_merged');
+  // A push can carry many commits; counting pushes would undercount the work.
+  const commitCount=commits.reduce((n,e)=>n+(+e.payload?.commits||1),0);
+  const people=new Set(list.map(e=>e.actor).filter(Boolean));
+  const repos=new Set(list.map(e=>e.payload?.repo).filter(Boolean));
+
+  // Group by local day so "today" means today here, not in UTC.
+  const byDay={};list.forEach(e=>{const d=String(new Date(e.ts).toLocaleDateString('en-CA'));
+    (byDay[d]=byDay[d]||[]).push(e)});
+
+  M(pgh('Development Activity','Commits, pull requests and deployments, straight from GitHub and Vercel.',
+    `<select onchange="DEV_DAYS=+this.value;devact()" style="width:auto;display:inline-block">
+      ${[7,14,30,90].map(d=>`<option value="${d}" ${DEV_DAYS===d?'selected':''}>Last ${d} days</option>`).join('')}
+     </select>
+     <select onchange="DEV_ASSET=this.value;devact()" style="width:auto;display:inline-block;margin-left:8px">
+      <option value="">All assets</option>
+      ${(assets||[]).map(a=>`<option value="${a.id}" ${DEV_ASSET===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}
+     </select>`)+
+  kpis([['<i class="fa-solid fa-code-commit"></i>','var(--brand-soft)','Commits',commitCount,`${commits.length} push${commits.length===1?'':'es'}`],
+    ['<i class="fa-solid fa-code-merge"></i>','#E6F7EC','PRs merged',merges.length],
+    ['<i class="fa-solid fa-rocket"></i>','#FFE9DC','Deployments',deploys.length],
+    ['<i class="fa-solid fa-users"></i>','#FDEBD0','Contributors',people.size,
+      repos.size?`${repos.size} repo${repos.size===1?'':'s'}`:'']])+
+  (list.length?Object.keys(byDay).sort().reverse().map(d=>`<div class="card">
+    <h3 style="margin:0 0 10px">${fmtDate(d)} <span style="font-weight:400;color:var(--muted);font-size:13px">— ${byDay[d].length} event${byDay[d].length===1?'':'s'}</span></h3>
+    <table><tr><th>What</th><th>Detail</th><th>Who</th><th>Where</th><th>Time</th></tr>
+    ${byDay[d].map(e=>{const[ic,cls,verb]=DEV_KIND[e.kind]||['fa-circle','stW',e.kind];
+      const n=+e.payload?.commits||0;
+      return `<tr>
+      <td style="white-space:nowrap"><span class="badge ${cls}"><i class="fa-solid ${ic}"></i> ${esc(verb)}</span>
+        ${n>1?`<div class="tl-sub">${n} commits</div>`:''}</td>
+      <td>${e.url?`<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title||e.ref||'(no message)')}</a>`
+                 :esc(e.title||e.ref||'(no message)')}
+        ${e.payload?.additions!=null?`<div class="tl-sub">+${e.payload.additions} −${e.payload.deletions} in ${e.payload.changed_files} file(s)</div>`:''}</td>
+      <td style="white-space:nowrap">${e.actor?esc(e.actor):'<span class="tl-dash">—</span>'}</td>
+      <td style="font-size:12px">${e.payload?.repo?esc(e.payload.repo):esc(e.source)}
+        ${e.payload?.branch?`<div class="tl-sub">${esc(e.payload.branch)}</div>`:''}
+        ${e.asset_id?`<div class="tl-sub">${esc(an[e.asset_id]||'')}</div>`:''}</td>
+      <td style="white-space:nowrap">${fmtTime(e.ts)}</td></tr>`}).join('')}
+    </table></div>`).join('')
+  :`<div class="card"><div class="empty"><i class="fa-solid fa-code-branch ill"></i>
+    <h3>Nothing recorded yet</h3>
+    <p>Development activity appears here once GitHub or Vercel is sending webhooks to Merik.
+       Until then this page stays empty — it never guesses.</p></div></div>`));
 }
 
 /* ----- monthly SLA report: the artifact that justifies the retainer ----------

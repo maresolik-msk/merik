@@ -67,23 +67,103 @@ export interface ParsedChange {
   actor: string | null;
   /** Host the change affects, used to find the asset it belongs to. */
   host: string | null;
+  /** Everything the activity feed groups or counts by. */
+  meta?: Record<string, unknown>;
 }
 
-/** A GitHub push: the head commit is the one that shipped. */
+/** `refs/heads/main` -> `main`. Tags and anything unexpected pass through as-is. */
+const shortRef = (ref: unknown): string | null =>
+  typeof ref === 'string' ? ref.replace(/^refs\/(heads|tags)\//, '') : null;
+
+/**
+ * A GitHub push.
+ *
+ * The head commit is the one that shipped, but the count and branch matter for
+ * an activity feed — "12 commits to main" reads very differently from one, and
+ * a push to a feature branch is not a release.
+ */
 export function parseGithubPush(body: Record<string, unknown>): ParsedChange | null {
   const head = (body.head_commit ?? null) as
     | { id?: string; message?: string; url?: string; author?: { username?: string; name?: string } }
     | null;
+  // A branch delete, or a push whose commits are all merges GitHub folds away.
   if (!head?.id) return null;
+
+  const commits = Array.isArray(body.commits) ? body.commits.length : 1;
+  const repo = (body.repository ?? {}) as { full_name?: string };
+  const branch = shortRef(body.ref);
+
   return {
     kind: 'commit',
     ref: String(head.id).slice(0, 12),
     // First line only: a commit body can be paragraphs, and this goes in a list.
     title: (head.message ?? '').split('\n')[0].slice(0, 200) || null,
     url: head.url ?? null,
-    actor: head.author?.username ?? head.author?.name ?? null,
+    actor: head.author?.username ?? head.author?.name ??
+      (body.pusher as { name?: string })?.name ?? null,
     host: null,
+    meta: { repo: repo.full_name ?? null, branch, commits },
   };
+}
+
+/**
+ * A pull request opening or merging.
+ *
+ * Closed-without-merge is deliberately not recorded: abandoned work is not
+ * development activity anyone wants counted, and it would inflate the feed with
+ * things that never shipped.
+ */
+export function parseGithubPullRequest(body: Record<string, unknown>): ParsedChange | null {
+  const action = String(body.action ?? '');
+  const pr = (body.pull_request ?? {}) as {
+    number?: number;
+    title?: string;
+    html_url?: string;
+    merged?: boolean;
+    merged_by?: { login?: string };
+    user?: { login?: string };
+    base?: { ref?: string };
+    additions?: number;
+    deletions?: number;
+    changed_files?: number;
+  };
+  if (!pr.number) return null;
+
+  const merged = action === 'closed' && pr.merged === true;
+  if (action !== 'opened' && !merged) return null;
+
+  const repo = (body.repository ?? {}) as { full_name?: string };
+  return {
+    kind: merged ? 'pr_merged' : 'pr_opened',
+    ref: `#${pr.number}`,
+    title: (pr.title ?? '').slice(0, 200) || null,
+    url: pr.html_url ?? null,
+    actor: (merged ? pr.merged_by?.login : pr.user?.login) ?? pr.user?.login ?? null,
+    host: null,
+    meta: {
+      repo: repo.full_name ?? null,
+      branch: pr.base?.ref ?? null,
+      additions: pr.additions ?? null,
+      deletions: pr.deletions ?? null,
+      changed_files: pr.changed_files ?? null,
+    },
+  };
+}
+
+/**
+ * Route by GitHub's event header rather than guessing from the body. Without
+ * this a pull_request payload was fed to the push parser, found no head_commit,
+ * and was silently dropped.
+ */
+export function parseGithubEvent(
+  event: string | null,
+  body: Record<string, unknown>,
+): ParsedChange | null {
+  if (event === 'push') return parseGithubPush(body);
+  if (event === 'pull_request') return parseGithubPullRequest(body);
+  // ping, stars, issues, everything else: accepted and ignored, so GitHub does
+  // not retry them forever.
+  return null;
 }
 
 /**

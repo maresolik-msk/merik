@@ -17,7 +17,7 @@
 // be exactly the shortcut that requirement is meant to prevent.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
-  parseGithubPush,
+  parseGithubEvent,
   parseVercelDeployment,
   verifyGithub,
   verifyVercel,
@@ -62,7 +62,9 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: 'invalid json' }, 400);
   }
 
-  const parsed = provider === 'github' ? parseGithubPush(body) : parseVercelDeployment(body);
+  const parsed = provider === 'github'
+    ? parseGithubEvent(req.headers.get('x-github-event'), body)
+    : parseVercelDeployment(body);
   // Not every delivery is a change worth recording — a preview build, a failed
   // deploy, a branch push with no head commit. Accepted and ignored, so the
   // sender does not retry forever.
@@ -104,7 +106,7 @@ Deno.serve(async (req) => {
     title: parsed.title,
     url: parsed.url,
     actor: parsed.actor,
-    payload: { host: parsed.host },
+    payload: { host: parsed.host, ...(parsed.meta ?? {}) },
   });
   if (error) return json({ ok: false, error: error.message }, 500);
 

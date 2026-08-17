@@ -5,6 +5,7 @@
 // rejection.
 import { assertEquals } from "jsr:@std/assert@1";
 import {
+  parseGithubEvent,
   parseGithubPush,
   parseVercelDeployment,
   timingSafeEqual,
@@ -77,6 +78,60 @@ Deno.test("a GitHub push yields the head commit, first line only", () => {
 Deno.test("a branch push with no head commit records nothing", () => {
   assertEquals(parseGithubPush({}), null);
   assertEquals(parseGithubPush({ head_commit: null }), null);
+});
+
+Deno.test("a push records its branch, repo and commit count", () => {
+  const c = parseGithubEvent("push", {
+    ref: "refs/heads/main",
+    repository: { full_name: "maresolik-msk/merik" },
+    commits: [{}, {}, {}],
+    head_commit: { id: "abc123def4567", message: "ship it", author: { username: "priya" } },
+  });
+  // "3 commits to main" reads very differently from one.
+  assertEquals(c?.meta, { repo: "maresolik-msk/merik", branch: "main", commits: 3 });
+});
+
+Deno.test("events are routed by GitHub's header, not guessed from the body", () => {
+  const prBody = {
+    action: "opened",
+    repository: { full_name: "o/r" },
+    pull_request: { number: 42, title: "Add reports", user: { login: "arun" }, base: { ref: "main" } },
+  };
+  // Before routing existed this was fed to the push parser and silently dropped.
+  assertEquals(parseGithubEvent("pull_request", prBody)?.kind, "pr_opened");
+  assertEquals(parseGithubEvent("push", prBody), null);
+  // ping, stars, issues: accepted and ignored so GitHub stops retrying.
+  assertEquals(parseGithubEvent("ping", { zen: "hello" }), null);
+  assertEquals(parseGithubEvent(null, prBody), null);
+});
+
+Deno.test("a merged PR is recorded, an abandoned one is not", () => {
+  const base = {
+    repository: { full_name: "o/r" },
+    pull_request: {
+      number: 7,
+      title: "Refactor payroll",
+      user: { login: "priya" },
+      merged_by: { login: "arun" },
+      base: { ref: "main" },
+      additions: 120,
+      deletions: 40,
+      changed_files: 6,
+    },
+  };
+  const merged = parseGithubEvent("pull_request", { ...base, action: "closed", pull_request: { ...base.pull_request, merged: true } });
+  assertEquals(merged?.kind, "pr_merged");
+  assertEquals(merged?.ref, "#7");
+  // Credited to whoever merged it, which is the act being recorded.
+  assertEquals(merged?.actor, "arun");
+  assertEquals(merged?.meta?.additions, 120);
+
+  // Closed without merging: work that never shipped must not inflate the feed.
+  assertEquals(
+    parseGithubEvent("pull_request", { ...base, action: "closed", pull_request: { ...base.pull_request, merged: false } }),
+    null,
+  );
+  assertEquals(parseGithubEvent("pull_request", { ...base, action: "synchronize" }), null);
 });
 
 Deno.test("only successful production Vercel deployments count", () => {
