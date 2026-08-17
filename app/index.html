@@ -697,6 +697,14 @@ async function loadNotifs(){
           title:(r.digital_assets?.name||'An asset')+' is not responding',
           body:`Sev${r.severity} · started ${agoTxt(r.started_at)}`+
                (r.state==='detected'?' — not acknowledged':` — ${r.state}`)}));}),
+      // High-risk early warnings. Only unacknowledged high risk: the bell is for
+      // "needs me", and a 45% hunch belongs on the Early Warnings page, not here.
+      notifSource(async()=>{
+        const{data}=await sb.from('early_warnings').select('*').eq('state','open').gte('risk',70)
+          .order('detected_at',{ascending:false}).limit(10);
+        return (data||[]).map(r=>({ts:r.detected_at,view:'warns',icon:'fa-tower-observation',warn:true,
+          title:r.title,
+          body:`${r.risk}% risk · confidence ${r.confidence}% — nothing is down yet`}));}),
     ]));
   } else if(role==='superadmin'){
     out=out.concat(...await Promise.all([
@@ -909,7 +917,7 @@ const ADMIN_GROUPS=[
  ['Task Management',[['mtr','<i class="fa-solid fa-chart-column"></i>','Monthly Tracker'],['task','<i class="fa-solid fa-circle-check"></i>','Task Log'],['insights','<i class="fa-solid fa-brain"></i>','Task Insights'],['projint','<i class="fa-solid fa-diagram-project"></i>','Project Intelligence']]],
  ['Client Management',[['cli','<i class="fa-solid fa-handshake"></i>','Clients'],['prj','<i class="fa-solid fa-folder"></i>','Projects'],['prjfix','<i class="fa-solid fa-wrench"></i>','Fix Project Names'],['quo','<i class="fa-solid fa-file-lines"></i>','Quotes'],['inv','<i class="fa-solid fa-file-invoice"></i>','Invoices']]],
  ['Asset Management',[['asset','<i class="fa-solid fa-laptop"></i>','Assets'],['soft','<i class="fa-solid fa-cubes"></i>','Software']]],
- ['Digital Operations',[['dops','<i class="fa-solid fa-globe"></i>','Digital Assets'],['dopsrep','<i class="fa-solid fa-file-contract"></i>','SLA Reports'],['devact','<i class="fa-solid fa-code-branch"></i>','Development Activity']]],
+ ['Digital Operations',[['dops','<i class="fa-solid fa-globe"></i>','Digital Assets'],['warns','<i class="fa-solid fa-tower-observation"></i>','Early Warnings'],['dopsrep','<i class="fa-solid fa-file-contract"></i>','SLA Reports'],['devact','<i class="fa-solid fa-code-branch"></i>','Development Activity']]],
  ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings'],['adminfb','<i class="fa-solid fa-comment-dots"></i>','Feedback']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
@@ -1001,7 +1009,7 @@ function filterNav(q){
 }
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
-const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
+const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,warns,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();
   document.querySelectorAll('#side a').forEach(a=>{a.classList.remove('act');a.removeAttribute('aria-current')});
   const el=$('nav-'+v);
@@ -2961,7 +2969,7 @@ function agoTxt(ts){
 let DOPS_TIMER=null;
 async function dops(){
   const [{data:rows},{data:incs},{data:cls},{data:prjs},{data:emps},{data:pages},{data:slo},
-         {data:vendors},{data:deps},{data:corr}]=await Promise.all([
+         {data:vendors},{data:deps},{data:corr},{data:warnRows}]=await Promise.all([
     sb.from('digital_assets').select('*').is('archived_at',null).order('name'),
     sb.from('incidents').select('*').neq('state','resolved').order('started_at',{ascending:false}),
     sb.from('clients').select('id,name').order('name'),
@@ -2972,8 +2980,10 @@ async function dops(){
     sb.from('vendor_status').select('*').order('label'),
     sb.from('asset_dependencies').select('*'),
     sb.from('incident_events').select('incident_id,kind,payload')
-      .in('kind',['deploy_detected','commit_linked'])]);
-  const list=rows||[],open=incs||[];
+      .in('kind',['deploy_detected','commit_linked']),
+    sb.from('early_warnings').select('id,asset_id,title,risk,confidence')
+      .in('state',['open','acknowledged']).order('risk',{ascending:false})]);
+  const list=rows||[],open=incs||[],warnsOpen=warnRows||[];
   DOPS_PAGES=pages||[];
   const hb={};(slo||[]).forEach(r=>hb[r.asset_id]=r);
   DOPS_VENDORS=vendors||[];DOPS_DEPS=deps||[];
@@ -2997,6 +3007,14 @@ async function dops(){
     ['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Operational',c('operational')],
     ['<i class="fa-solid fa-circle-exclamation"></i>','#FADBD8','Down',c('down')],
     ['<i class="fa-solid fa-bell"></i>','#FFE9DC','Open Incidents',open.length]])+
+  // Predictions live on their own page; this is the pointer, so "what might go
+  // wrong next" is one click from "what is wrong now" without mixing the two.
+  (warnsOpen.length?`<div class="card" style="border-left:4px solid var(--amber);cursor:pointer" onclick="go('warns')">
+    <h3 style="margin:0 0 6px"><i class="fa-solid fa-tower-observation"></i> ${warnsOpen.length} early warning${warnsOpen.length===1?'':'s'}</h3>
+    <div style="font-size:13px">${warnsOpen.slice(0,3).map(w=>
+      `<b>${esc(w.title)}</b> — ${w.risk}% risk`).join(' · ')}${warnsOpen.length>3?' · …':''}</div>
+    <div style="font-size:12px;color:#889;margin-top:6px">Behaving abnormally, not yet down. Click through for the evidence.</div>
+  </div>`:'')+
   (vendorsDown.length?`<div class="card" style="border-left:4px solid var(--amber)">
     <h3 style="margin:0 0 6px"><i class="fa-solid fa-plug-circle-exclamation"></i> Third-party outage</h3>
     <div style="font-size:13px">${vendorsDown.map(v=>
@@ -3207,6 +3225,12 @@ function dopsForm(a={}){
   <div style="font-size:11.5px;color:#889;margin-top:4px">Incidents on this asset are assigned to this person automatically.</div>
   <div class="row"><div><label>Criticality</label>${sel('criticality',DA_CRIT,a.criticality||'normal')}</div>
   <div><label>SLA tier</label>${sel('sla_tier',DA_SLA,a.sla_tier||'99.9',slaTxt)}</div></div>
+  ${a.id&&a.ingest_key?`<label style="margin-top:10px">Browser error reporting <span style="color:#889;font-weight:400">— optional</span></label>
+  <div style="font-size:11.5px;color:#889;margin-bottom:6px">Paste this before &lt;/body&gt; on the site. It reports JavaScript errors and failed
+    requests to Merik — the failures uptime checks can't see. It never sends form contents, cookies or query strings.</div>
+  <textarea id="d_snippet" rows="3" readonly onclick="this.select()" style="font-family:monospace;font-size:11px">&lt;script src="https://www.merik.in/merik.js"&gt;&lt;/script&gt;
+&lt;script&gt;Merik.init({ key: "${esc(a.ingest_key)}" });&lt;/script&gt;</textarea>
+  <button class="btn sm sec" style="margin-top:4px" onclick="copyVal('d_snippet')">Copy snippet</button>`:''}
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveDops('${a.id||''}')">Save</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
@@ -3244,6 +3268,102 @@ async function resolveIncident(id){
   const now=new Date().toISOString();
   const{error}=await sb.from('incidents').update({state:'resolved',resolved_at:now,updated_at:now}).eq('id',id);
   if(error)return toast(saveErr(error));dops();
+}
+
+/* ----- early warnings: what is likely to go wrong next ------------------------
+   The proactive half of the module. The probe answers "is it up"; the analyzer
+   (probe ?job=analyze, scoring in warn.ts) compares each asset's last hour with
+   what its own two weeks say normal is, and writes at most one warning per asset
+   when the deviation is worth a human's attention. This page renders what it
+   decided — every number here was computed server-side and arrives with the
+   evidence that produced it, because a risk score nobody can interrogate is a
+   number nobody will trust.
+---------------------------------------------------------------------------- */
+const WARN_RISK=r=>r>=70?['stA','High']:r>=45?['stL','Medium']:['stH','Low'];
+const WARN_KIND_TXT={latency:'slowdown',latency_trend:'deterioration',error_rate:'intermittent failures',
+  budget_burn:'SLA at risk',frontend_errors:'browser errors'};
+let WARN_TIMER=null;
+async function warns(){
+  const [{data:open},{data:closed},{data:assets},{data:emps}]=await Promise.all([
+    sb.from('early_warnings').select('*').in('state',['open','acknowledged'])
+      .order('risk',{ascending:false}),
+    sb.from('early_warnings').select('*').in('state',['resolved','dismissed'])
+      .order('updated_at',{ascending:false}).limit(30),
+    sb.from('digital_assets').select('id,name,owner_employee_id').is('archived_at',null),
+    sb.from('employees').select('id,full_name')]);
+  const an={},ao={},en={};(assets||[]).forEach(a=>{an[a.id]=a.name;ao[a.id]=a.owner_employee_id});
+  (emps||[]).forEach(e=>en[e.id]=e.full_name);
+  const live=open||[],past=closed||[];
+  // The honest scoreboard: of the warnings that closed, how many turned into a
+  // real incident. This number is the feature's own accountability.
+  const graduated=past.filter(w=>w.incident_id).length;
+
+  M(pgh('Early Warnings','What is drifting away from its own normal — before it becomes an outage.')+
+  kpis([['<i class="fa-solid fa-tower-observation"></i>','var(--brand-soft)','Active warnings',live.length],
+    ['<i class="fa-solid fa-fire"></i>','#FADBD8','High risk',live.filter(w=>w.risk>=70).length],
+    ['<i class="fa-solid fa-clock-rotate-left"></i>','#FFE9DC','Closed (30 shown)',past.length],
+    ['<i class="fa-solid fa-bullseye"></i>','#E6F7EC','Became incidents',graduated,
+      past.length?`${Math.round(100*graduated/past.length)}% of closed`:'']])+
+
+  (live.length?live.map(w=>{
+    const [cls,band]=WARN_RISK(w.risk);
+    const ev=Array.isArray(w.evidence)?w.evidence:[];
+    return `<div class="card" style="border-left:4px solid ${w.risk>=70?'var(--red,#c0392b)':'var(--amber)'}">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <h3 style="margin:0 0 2px">${esc(w.title)}</h3>
+        <div style="font-size:12.5px;color:#889">${esc(an[w.asset_id]||'—')} · ${esc(WARN_KIND_TXT[w.kind]||w.kind)}
+          · detected ${agoTxt(w.detected_at)} · last seen ${agoTxt(w.last_seen_at)}
+          ${ao[w.asset_id]?` · owner ${esc(en[ao[w.asset_id]]||'—')}`:''}
+          ${w.state==='acknowledged'?' · <b>acknowledged</b>':''}</div>
+      </div>
+      <div style="text-align:right;white-space:nowrap">
+        <span class="badge ${cls}" style="font-size:14px">${w.risk}% risk · ${band}</span>
+        <div style="font-size:11.5px;color:#889;margin-top:4px">confidence ${w.confidence}% — this is a prediction, not a fact</div>
+      </div></div>
+    <div style="margin-top:10px;font-size:13px"><b>Why Merik thinks this</b>
+      <ul style="margin:6px 0 0 18px;padding:0">
+      ${ev.map(e=>`<li style="margin:3px 0">${esc(e.label)}${e.detail?`<div class="tl-sub">${esc(e.detail)}</div>`:''}</li>`).join('')||'<li>No evidence recorded.</li>'}
+      </ul></div>
+    <div style="margin-top:8px;font-size:13px"><b>Likely impact</b><div style="color:#556">${esc(w.impact||'—')}</div></div>
+    <div style="margin-top:8px;font-size:13px"><b>Where to look</b><div style="color:#556">${esc(w.recommendation||'—')}</div></div>
+    <div class="noprint" style="margin-top:12px;display:flex;gap:8px">
+      ${w.state==='open'?`<button class="btn sm sec" onclick="warnSet('${w.id}','acknowledged')">Acknowledge</button>`:''}
+      <button class="btn sm sec" onclick="go('dops')">Open asset</button>
+      <button class="btn sm warn" onclick="warnSet('${w.id}','dismissed')" title="Wrong call? Dismissing is recorded — it is how the thresholds earn distrust.">Dismiss</button>
+    </div></div>`}).join('')
+  :`<div class="card"><div class="empty"><i class="fa-solid fa-tower-observation ill"></i>
+    <h3>Nothing is drifting</h3>
+    <p>Every monitored asset is behaving like its own recent history. Warnings appear
+       here when latency, failures or browser errors move well outside the baseline
+       Merik has measured for that asset — usually before anything is visibly down.</p></div></div>`)+
+
+  (past.length?`<div class="card"><h3 style="margin:0 0 10px">Recently closed</h3>
+    <table><tr><th>Warning</th><th>Asset</th><th>Risk</th><th>Outcome</th><th>Closed</th></tr>
+    ${past.map(w=>`<tr>
+      <td>${esc(w.title)}</td>
+      <td>${esc(an[w.asset_id]||'—')}</td>
+      <td>${w.risk}%</td>
+      <td>${w.incident_id?'<span class="badge stA">became an incident</span>'
+          :w.state==='dismissed'?'<span class="badge stW">dismissed</span>'
+          :'<span class="badge stP">recovered on its own</span>'}</td>
+      <td style="white-space:nowrap">${agoTxt(w.resolved_at||w.updated_at)}</td></tr>`).join('')}
+    </table></div>`:''));
+
+  // Same refresh discipline as dops(): the analyzer writes on its own clock, and
+  // a stale warning list is this page failing at its one job.
+  clearInterval(WARN_TIMER);
+  WARN_TIMER=setInterval(()=>{
+    if(VIEW!=='warns'||!ME)return clearInterval(WARN_TIMER);
+    if(document.querySelector('.modal'))return;
+    warns();
+  },60000);
+}
+async function warnSet(id,state){
+  if(state==='dismissed'&&!confirm('Dismiss this warning? It will not re-alert while the same deviation continues.'))return;
+  const{error}=await sb.from('early_warnings')
+    .update({state,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error)return toast(saveErr(error));warns();
 }
 
 /* ----- development activity: what the team actually shipped -------------------

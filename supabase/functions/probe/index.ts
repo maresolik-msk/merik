@@ -40,6 +40,15 @@ import {
   shouldAlertNow,
   slackText,
 } from './alerts.ts';
+import {
+  analyze,
+  type Pulse,
+  RISK_HIGH,
+  type Warning,
+  warningHtml,
+  warningSlackText,
+  warningSubject,
+} from './warn.ts';
 
 const BATCH = 60;       // monitors per invocation
 const CONCURRENCY = 10; // in-flight checks
@@ -389,8 +398,16 @@ Deno.serve(async (req) => {
   // pg_cron calls this with ?job=vendors on its own schedule. Same secret, same
   // function, different work — a second Edge Function for eight HTTP GETs would
   // be a second thing to deploy and keep in step.
-  if (new URL(req.url).searchParams.get('job') === 'vendors') {
+  const job = new URL(req.url).searchParams.get('job');
+  if (job === 'vendors') {
     return json({ ok: true, vendors: await pollVendorStatus(admin) });
+  }
+  // Every five minutes: read what normal looks like, compare this hour to it,
+  // and open or close early warnings. Same reasoning as above for sharing the
+  // function — and it must not share the *minute*, because a slow analysis pass
+  // would delay the checks that detect a real outage.
+  if (job === 'analyze') {
+    return json({ ok: true, ...await runAnalysis(admin, new Date()) });
   }
 
   const now = new Date();
@@ -576,6 +593,226 @@ Deno.serve(async (req) => {
 
   return json({ ok: true, checked: results.length, opened, resolved, alerted, inconclusive });
 });
+
+// ============================================================ early warnings ---
+//
+// The proactive half of the module. The check loop above answers "is it down";
+// this answers "is it going wrong", by comparing the last hour against what this
+// monitor's own two weeks say normal is (see warn.ts for the scoring, which is
+// pure and tested — this function only moves rows).
+//
+// One warning per asset, enforced by a partial unique index in the schema rather
+// than by care here. Twenty correlated signals are one warning with twenty
+// pieces of evidence; that is the entire anti-noise design and it belongs
+// somewhere the code cannot drift away from it.
+
+/** Assets scored per pass. Well above any tenant's asset count today. */
+const ANALYZE_BATCH = 500;
+/**
+ * How long a warning survives with no signals before it closes itself.
+ *
+ * Not immediately: an intermittent problem that fires every third pass would
+ * otherwise open and close a warning all afternoon, and each reopen is a fresh
+ * notification. Two hours of genuine quiet is a recovery.
+ */
+const WARNING_QUIET_MIN = 120;
+/** Warnings notified per pass, for the same reason ALERT_BATCH exists. */
+const WARN_ALERT_BATCH = 20;
+
+interface OpenWarning {
+  id: string;
+  asset_id: string;
+  state: string;
+  risk: number;
+  notified_at: string | null;
+  last_seen_at: string;
+}
+
+async function runAnalysis(admin: Admin, now: Date) {
+  const { data: pulses, error } = await admin
+    .from('asset_pulse').select('*').limit(ANALYZE_BATCH).returns<Pulse[]>();
+  if (error) return { assets: 0, error: error.message };
+  if (!pulses?.length) return { assets: 0 };
+
+  const { data: openRows } = await admin
+    .from('early_warnings')
+    .select('id, asset_id, state, risk, notified_at, last_seen_at')
+    .in('state', ['open', 'acknowledged'])
+    .returns<OpenWarning[]>();
+  const openByAsset = new Map((openRows ?? []).map((w) => [w.asset_id, w]));
+
+  // A dismissal is a human saying "wrong call". Without this, the next pass
+  // would recreate the warning — and notify again — while the same deviation
+  // continues, which turns Dismiss into a five-minute snooze that lies about
+  // being a button. A day of silence per dismissal; a genuinely new problem
+  // after that gets a genuinely new warning.
+  const { data: dismissed } = await admin
+    .from('early_warnings')
+    .select('asset_id')
+    .eq('state', 'dismissed')
+    .gte('updated_at', new Date(now.getTime() - 24 * 3600_000).toISOString())
+    .returns<Array<{ asset_id: string }>>();
+  const recentlyDismissed = new Set((dismissed ?? []).map((w) => w.asset_id));
+
+  const ts = now.toISOString();
+  let opened = 0, refreshed = 0, resolved = 0, graduated = 0;
+
+  for (const p of pulses) {
+    const open = openByAsset.get(p.asset_id) ?? null;
+
+    // The prediction came true. Close the warning against the incident rather
+    // than leaving both open — one problem, one thing to look at — and keep the
+    // link, because "warnings that became incidents" is the only honest measure
+    // of whether any of this works.
+    if (p.open_incident_id) {
+      if (open) {
+        await admin.from('early_warnings').update({
+          state: 'resolved',
+          incident_id: p.open_incident_id,
+          resolved_at: ts,
+          updated_at: ts,
+        }).eq('id', open.id);
+        graduated++;
+      }
+      continue;
+    }
+
+    const w = analyze(p, now);
+
+    if (w) {
+      if (open) {
+        // Refresh the numbers, never the state: an acknowledged warning stays
+        // acknowledged, and notified_at is left alone so nobody is told twice
+        // about a problem that is simply continuing.
+        await admin.from('early_warnings').update({
+          kind: w.kind,
+          risk: w.risk,
+          confidence: w.confidence,
+          severity: w.severity,
+          title: w.title,
+          impact: w.impact,
+          recommendation: w.recommendation,
+          evidence: w.evidence,
+          last_seen_at: ts,
+          updated_at: ts,
+        }).eq('id', open.id);
+        refreshed++;
+      } else if (!recentlyDismissed.has(p.asset_id)) {
+        const { error: insErr } = await admin.from('early_warnings').insert({
+          org_id: w.org_id,
+          asset_id: w.asset_id,
+          kind: w.kind,
+          risk: w.risk,
+          confidence: w.confidence,
+          severity: w.severity,
+          title: w.title,
+          impact: w.impact,
+          recommendation: w.recommendation,
+          evidence: w.evidence,
+          detected_at: ts,
+          last_seen_at: ts,
+          updated_at: ts,
+        });
+        // The unique index is the authority on "one open warning per asset", so
+        // a race with a concurrent pass loses here and that is the correct
+        // outcome — not an error worth retrying.
+        if (!insErr) opened++;
+      }
+      continue;
+    }
+
+    if (open) {
+      const quietFor = (now.getTime() - new Date(open.last_seen_at).getTime()) / 60_000;
+      if (quietFor >= WARNING_QUIET_MIN) {
+        await admin.from('early_warnings')
+          .update({ state: 'resolved', resolved_at: ts, updated_at: ts })
+          .eq('id', open.id);
+        resolved++;
+      }
+    }
+  }
+
+  const notified = await flushWarnings(admin, now);
+  return { assets: pulses.length, opened, refreshed, resolved, graduated, notified };
+}
+
+interface WarnAsset { name: string; owner_employee_id: string | null }
+interface PendingWarning extends Warning {
+  id: string;
+  digital_assets: WarnAsset | WarnAsset[];
+}
+
+/**
+ * Tell someone once, and only about the ones worth interrupting for.
+ *
+ * Medium and low warnings are deliberately silent — they are on the Early
+ * Warnings page for whoever looks, which is where a 45%-risk hunch belongs. A
+ * tool that emails about every hunch is a tool with a filter rule pointed at it
+ * inside a month.
+ */
+async function flushWarnings(admin: Admin, now: Date): Promise<number> {
+  const { data: pending } = await admin
+    .from('early_warnings')
+    .select(
+      'id, org_id, asset_id, kind, risk, confidence, severity, title, impact,' +
+      'recommendation, evidence, digital_assets!inner(name, owner_employee_id)',
+    )
+    .is('notified_at', null)
+    .eq('state', 'open')
+    .gte('risk', RISK_HIGH)
+    .order('detected_at')
+    .limit(WARN_ALERT_BATCH)
+    .returns<PendingWarning[]>();
+
+  if (!pending?.length) return 0;
+
+  let sent = 0;
+  for (const w of pending) {
+    // Same quiet-hours rule as incidents. A Sev2 prediction at 3am is not worth
+    // a phone call — by definition nothing has broken yet.
+    if (!shouldAlertNow(w.severity, now)) continue;
+
+    const asset = Array.isArray(w.digital_assets) ? w.digital_assets[0] : w.digital_assets;
+    const recipients = await alertRecipients(admin, w.org_id, asset.owner_employee_id);
+
+    for (const to of recipients) {
+      try {
+        await admin.functions.invoke('send-email', {
+          body: {
+            to,
+            org_id: w.org_id,
+            subject: warningSubject(w),
+            html: warningHtml(w, asset.name),
+          },
+        });
+      } catch (e) {
+        console.error('warning email failed', to, (e as Error)?.message);
+      }
+    }
+
+    const { data: org } = await admin
+      .from('orgs').select('slack_webhook_url').eq('id', w.org_id).maybeSingle()
+      .returns<{ slack_webhook_url: string | null }>();
+    if (org?.slack_webhook_url) {
+      try {
+        await fetch(org.slack_webhook_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: warningSlackText(w) }),
+          signal: AbortSignal.timeout(5_000),
+        });
+      } catch (e) {
+        console.error('warning slack failed', (e as Error)?.message);
+      }
+    }
+
+    await admin.from('early_warnings')
+      .update({ notified_at: new Date().toISOString() })
+      .eq('id', w.id);
+    sent++;
+  }
+  return sent;
+}
 
 interface PendingIncident {
   id: string;
