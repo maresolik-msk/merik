@@ -61,8 +61,10 @@ insert into public.vendor_status (provider, label, status_url) values
   ('github',     'GitHub',     'https://www.githubstatus.com/api/v2/status.json'),
   ('vercel',     'Vercel',     'https://www.vercel-status.com/api/v2/status.json'),
   ('twilio',     'Twilio',     'https://status.twilio.com/api/v2/status.json'),
-  ('stripe',     'Stripe',     'https://status.stripe.com/api/v2/status.json'),
-  ('sendgrid',   'SendGrid',   'https://status.sendgrid.com/api/v2/status.json'),
+  -- stripestatus.com, not status.stripe.com: the latter is a 404. SendGrid is
+  -- deliberately absent — it has no reachable Statuspage feed, and Twilio's
+  -- above covers it.
+  ('stripe',     'Stripe',     'https://www.stripestatus.com/api/v2/status.json'),
   ('openai',     'OpenAI',     'https://status.openai.com/api/v2/status.json')
 on conflict (provider) do nothing;
 
