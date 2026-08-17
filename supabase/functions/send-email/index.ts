@@ -46,25 +46,50 @@ Deno.serve(async (req) => {
     const admin = createClient(url, service);
 
     // --- Authenticate + authorize the caller ---
+    // Two kinds of caller. A signed-in admin, as before. Or another Edge
+    // Function running as the service role — the Digital Operations probe has
+    // no user session to present, and duplicating the SMTP setup into it would
+    // mean two places to rotate the Gmail app password.
     const jwt = (req.headers.get("Authorization") || "").replace("Bearer ", "");
-    const { data: caller } = await admin.auth.getUser(jwt);
-    if (!caller?.user) throw new Error("Not authenticated");
-    const { data: prof } = await admin
-      .from("profiles").select("role, org_id").eq("id", caller.user.id).single();
-    if (!prof || !["admin", "superadmin"].includes(prof.role)) {
-      throw new Error("Only an admin may send email");
+    const internal = jwt === service;
+
+    // An internal caller names the org it is acting for. It does not get to
+    // skip the anti-relay rule below — it gets checked against that org rather
+    // than against its own profile, which it hasn't got.
+    const body = await req.json();
+    const { to, subject, html, text, attachments, org_id: bodyOrgId } = body;
+
+    let orgId: string | null = null;
+    let unrestricted = false;
+
+    if (internal) {
+      if (typeof bodyOrgId !== "string" || !bodyOrgId) {
+        throw new Error("Internal calls must name an 'org_id'");
+      }
+      orgId = bodyOrgId;
+    } else {
+      const { data: caller } = await admin.auth.getUser(jwt);
+      if (!caller?.user) throw new Error("Not authenticated");
+      const { data: prof } = await admin
+        .from("profiles").select("role, org_id").eq("id", caller.user.id).single();
+      if (!prof || !["admin", "superadmin"].includes(prof.role)) {
+        throw new Error("Only an admin may send email");
+      }
+      orgId = prof.org_id;
+      unrestricted = prof.role === "superadmin";
     }
 
     // --- Validate the payload ---
-    const { to, subject, html, text, attachments } = await req.json();
     if (typeof to !== "string" || !EMAIL_RE.test(to)) throw new Error("Valid 'to' email required");
     if (typeof subject !== "string" || !subject.trim()) throw new Error("'subject' required");
     if (!html && !text) throw new Error("'html' or 'text' body required");
 
-    // --- Anti-abuse: tenant admins can only email their own org's employees ---
-    if (prof.role !== "superadmin") {
+    // --- Anti-abuse: nobody but a superadmin may email outside their own org ---
+    // This is what stops the function being an open spam relay, so the internal
+    // path goes through it too.
+    if (!unrestricted) {
       const { data: emp } = await admin
-        .from("employees").select("id").eq("org_id", prof.org_id).ilike("email", to).maybeSingle();
+        .from("employees").select("id").eq("org_id", orgId).ilike("email", to).maybeSingle();
       if (!emp) throw new Error("Recipient must be an employee in your organization");
     }
 

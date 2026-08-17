@@ -679,12 +679,25 @@ async function loadNotifs(){
           title:'Merik replied to your feedback',body:(r.admin_reply||'').slice(0,90)}));}),
     ]));
   } else if(role==='admin'){
-    out=await notifSource(async()=>{
-      const{data}=await sb.from('wfh_leave').select('*,employees(full_name)').eq('approved','Pending')
-        .order('req_date',{ascending:false}).limit(20);
-      return (data||[]).map(r=>({ts:nts(r),view:'wfh',icon:'fa-hourglass-half',warn:true,
-        title:`${r.employees?.full_name||'An employee'} requested ${r.status}`,
-        body:(r.end_date&&r.end_date!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(r.end_date)}`:fmtDate(r.req_date))+' — awaiting your approval'}));});
+    out=out.concat(...await Promise.all([
+      notifSource(async()=>{
+        const{data}=await sb.from('wfh_leave').select('*,employees(full_name)').eq('approved','Pending')
+          .order('req_date',{ascending:false}).limit(20);
+        return (data||[]).map(r=>({ts:nts(r),view:'wfh',icon:'fa-hourglass-half',warn:true,
+          title:`${r.employees?.full_name||'An employee'} requested ${r.status}`,
+          body:(r.end_date&&r.end_date!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(r.end_date)}`:fmtDate(r.req_date))+' — awaiting your approval'}));}),
+      // Open incidents. The bell is where an admin already looks for "something
+      // needs me", and a site being down qualifies more than most things here.
+      // Silently absent when the tenant has no Digital Operations module — the
+      // table read just fails and notifSource swallows it, same as any other.
+      notifSource(async()=>{
+        const{data}=await sb.from('incidents').select('*,digital_assets(name)')
+          .neq('state','resolved').order('started_at',{ascending:false}).limit(10);
+        return (data||[]).map(r=>({ts:r.started_at,view:'dops',icon:'fa-triangle-exclamation',warn:true,
+          title:(r.digital_assets?.name||'An asset')+' is not responding',
+          body:`Sev${r.severity} · started ${agoTxt(r.started_at)}`+
+               (r.state==='detected'?' — not acknowledged':` — ${r.state}`)}));}),
+    ]));
   } else if(role==='superadmin'){
     out=out.concat(...await Promise.all([
       notifSource(async()=>{
@@ -2929,13 +2942,15 @@ function agoTxt(ts){
 }
 let DOPS_TIMER=null;
 async function dops(){
-  const [{data:rows},{data:incs},{data:cls},{data:prjs},{data:emps}]=await Promise.all([
+  const [{data:rows},{data:incs},{data:cls},{data:prjs},{data:emps},{data:pages}]=await Promise.all([
     sb.from('digital_assets').select('*').is('archived_at',null).order('name'),
     sb.from('incidents').select('*').neq('state','resolved').order('started_at',{ascending:false}),
     sb.from('clients').select('id,name').order('name'),
     sb.from('projects').select('id,name').order('name'),
-    sb.from('employees').select('id,full_name,emp_code').eq('status','Active').order('full_name')]);
+    sb.from('employees').select('id,full_name,emp_code').eq('status','Active').order('full_name'),
+    sb.from('status_pages').select('*').order('title')]);
   const list=rows||[],open=incs||[];
+  DOPS_PAGES=pages||[];
   DOPS_CLIENTS=cls||[];DOPS_PROJECTS=prjs||[];DOPS_EMPS=emps||[];
   const cn={},pn={},en={};DOPS_CLIENTS.forEach(c=>cn[c.id]=c.name);DOPS_PROJECTS.forEach(p=>pn[p.id]=p.name);
   DOPS_EMPS.forEach(e=>en[e.id]=e.full_name);
@@ -2958,6 +2973,8 @@ async function dops(){
     <td style="white-space:nowrap">${agoTxt(i.started_at)}${i.state!=='detected'?`<div class="tl-sub">${esc(i.state)}</div>`:''}</td>
     <td class="noprint" style="white-space:nowrap">
       ${i.state==='detected'?`<button class="btn sm sec" onclick="ackIncident('${i.id}')">Acknowledge</button>`:''}
+      <button class="btn sm sec" onclick='clientUpdateForm(${JSON.stringify(i).replace(/'/g,"&#39;")})'
+        title="Write what the client sees">${i.client_visible?'Client update ✓':'Client update'}</button>
       <button class="btn sm" onclick="resolveIncident('${i.id}')">Resolve</button></td></tr>`).join('')}</table></div>`:'')+
   `<div class="card" style="overflow:auto"><table><tr><th>Asset</th><th>Client</th><th>Project</th><th>Owner</th><th>SLA</th><th>Status</th><th></th></tr>
   ${list.map(a=>{const rj=JSON.stringify(a).replace(/'/g,"&#39;");
@@ -2974,7 +2991,22 @@ async function dops(){
       ${a.primary_url?`<button class="btn sm sec" onclick="muteAsset('${a.id}')" title="Deploying? Stop incidents for ${DA_MUTE_MIN} minutes">Mute ${DA_MUTE_MIN}m</button>`:''}
       <button class="btn sm sec" onclick='dopsForm(${rj})'>Edit</button>
       <button class="btn sm warn" onclick="delDops('${a.id}')">Del</button></td></tr>`}).join('')
-    ||'<tr><td colspan="7" style="text-align:center;color:#889;padding:30px">No digital assets yet — add a client site or API to start watching it.</td></tr>'}</table></div>`);
+    ||'<tr><td colspan="7" style="text-align:center;color:#889;padding:30px">No digital assets yet — add a client site or API to start watching it.</td></tr>'}</table></div>
+
+  <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
+    <div><h3 style="margin:0">Status pages</h3>
+    <div style="font-size:12px;color:#889">A public page you can give a client. Only incidents you have written a client update for appear on it.</div></div>
+    <button class="btn sm" onclick="statusPageForm()">＋ New page</button></div>
+  <table><tr><th>Page</th><th>Client</th><th>Link</th><th></th></tr>
+  ${DOPS_PAGES.map(p=>`<tr>
+    <td><b>${esc(p.title)}</b>${p.enabled?'':' <span class="badge stA">disabled</span>'}</td>
+    <td>${p.client_id?esc(cn[p.client_id]||'—'):'<span style="color:var(--muted)">Whole company</span>'}</td>
+    <td style="font-size:12px;word-break:break-all">${esc(statusUrl(p.token))}</td>
+    <td class="noprint" style="white-space:nowrap">
+      <button class="btn sm sec" onclick="copyStatusLink(${escArg(p.token)})">Copy</button>
+      <a class="btn sm sec" href="${esc(statusUrl(p.token))}" target="_blank" rel="noopener">Open</a>
+      <button class="btn sm warn" onclick="delStatusPage('${p.id}')">Del</button></td></tr>`).join('')
+    ||'<tr><td colspan="4" style="text-align:center;color:#889;padding:24px">No status pages yet.</td></tr>'}</table></div>`);
 
   // The probe writes status from Postgres, so the page has to re-read to notice.
   // A stale "operational" is the one value on this page that must not linger.
@@ -2989,7 +3021,73 @@ async function dops(){
     dops();
   },60000);
 }
-let DOPS_CLIENTS=[],DOPS_PROJECTS=[],DOPS_EMPS=[];
+let DOPS_CLIENTS=[],DOPS_PROJECTS=[],DOPS_EMPS=[],DOPS_PAGES=[];
+// The status page is served by an Edge Function, not this app — it has to be
+// reachable by people who will never have a Merik login.
+const statusUrl=t=>`${SB_URL}/functions/v1/status?t=${encodeURIComponent(t)}`;
+async function copyStatusLink(token){
+  try{await navigator.clipboard.writeText(statusUrl(token));toast('Link copied')}
+  catch(e){toast('Could not copy — use Open and copy from the address bar','warn')}
+}
+function statusPageForm(){
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>New status page</h2>
+  <label>Title <span style="color:#889;font-weight:400">— the client sees this</span></label>
+  <input id="sp_title" placeholder="e.g. Acme Corp">
+  <label>Client</label>
+  <select id="sp_client"><option value="">Whole company — every production asset</option>
+  ${DOPS_CLIENTS.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select>
+  <label>Intro <span style="color:#889;font-weight:400">— optional</span></label>
+  <textarea id="sp_intro" rows="2" placeholder="Live status of the services we run for you."></textarea>
+  <div style="font-size:11.5px;color:#889;margin-top:6px">Anyone with the link can read the page. It shows service names, uptime and approved incident updates — never URLs, error messages or other clients.</div>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveStatusPage()">Create</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveStatusPage(){
+  const title=$('sp_title').value.trim();
+  if(!title)return toast('Give the page a title.');
+  const{error}=await sb.from('status_pages').insert({
+    title,client_id:$('sp_client').value||null,intro:$('sp_intro').value.trim()||null});
+  // One page per client is a unique constraint, not a bug to explain away.
+  if(error)return toast(/duplicate|unique/i.test(error.message)
+    ? 'That client already has a status page.' : saveErr(error));
+  document.querySelector('.modal').remove();dops();
+}
+async function delStatusPage(id){
+  if(!confirm('Delete this status page? Its link stops working immediately.'))return;
+  const{error}=await sb.from('status_pages').delete().eq('id',id);
+  if(error)return toast(saveErr(error));dops();
+}
+// The approval gate (§10.3). Nothing reaches a client automatically: a human
+// writes the wording and publishes it, and can unpublish it again.
+function clientUpdateForm(i){
+  const div=document.createElement('div');div.className='modal';
+  div.innerHTML=`<div class="card"><h2>What the client sees</h2>
+  <div style="font-size:12.5px;color:#889;margin-bottom:10px">Internally this is
+    “${esc(i.title)}”. The client never sees that, the URL, or the error — only what you write here.</div>
+  <label>Client-safe summary</label>
+  <textarea id="cu_summary" rows="3" placeholder="We are investigating errors affecting some bookings. Payments are unaffected.">${esc(i.client_summary||'')}</textarea>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:10px">
+    <input type="checkbox" id="cu_visible" ${i.client_visible?'checked':''} style="width:16px;height:16px;margin:0">
+    Publish this on the status page</label>
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveClientUpdate('${i.id}')">Save</button>
+  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(div);
+}
+async function saveClientUpdate(id){
+  const summary=$('cu_summary').value.trim(),visible=$('cu_visible').checked;
+  // Publishing an empty box would put a blank entry on a client's status page.
+  if(visible&&!summary)return toast('Write the summary before publishing it.');
+  const now=new Date().toISOString();
+  const{error}=await sb.from('incidents')
+    .update({client_summary:summary||null,client_visible:visible,updated_at:now}).eq('id',id);
+  if(error)return toast(saveErr(error));
+  await sb.from('incident_events').insert({incident_id:id,kind:'client_notified',
+    payload:{published:visible},actor_employee_id:ME.employee?.id||null});
+  document.querySelector('.modal').remove();
+  toast(visible?'Published to the status page':'Saved — not published');dops();
+}
 function dopsForm(a={}){
   const sel=(k,opts,cur,txt)=>`<select id="d_${k}">${opts.map(o=>`<option value="${o}" ${cur===o?'selected':''}>${txt?txt(o):o.replace('_',' ')}</option>`).join('')}</select>`;
   const pick=(k,rows,cur,lbl)=>`<select id="d_${k}"><option value="">—</option>${rows.map(r=>`<option value="${r.id}" ${cur===r.id?'selected':''}>${esc(lbl(r))}</option>`).join('')}</select>`;

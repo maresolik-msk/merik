@@ -18,10 +18,22 @@
 //   * dns / tcp / synthetic_flow / integration — Phase 2.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { nextState, type MonitorState, type StateRow } from './state.ts';
+import { type AlertIncident, alertHtml, alertSubject, shouldAlertNow, slackText } from './alerts.ts';
 
 const BATCH = 60;       // monitors per invocation
 const CONCURRENCY = 10; // in-flight checks
 const DEFAULT_TIMEOUT_MS = 10_000;
+const ALERT_BATCH = 20; // incidents notified per invocation
+
+// One factory so the helpers below can name the client's type. Writing it as
+// ReturnType<typeof createClient> instead gives a differently-parameterised
+// client than this call actually produces, and every table write fails to check.
+const serviceClient = () =>
+  createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+type Admin = ReturnType<typeof serviceClient>;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -134,10 +146,7 @@ Deno.serve(async (req) => {
   if (!secret) return json({ ok: false, error: 'PROBE_SECRET not configured' }, 500);
   if (req.headers.get('x-probe-secret') !== secret) return json({ ok: false }, 401);
 
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
+  const admin = serviceClient();
 
   const now = new Date();
   const { data: due, error: dueErr } = await admin
@@ -265,5 +274,143 @@ Deno.serve(async (req) => {
   if (results.length) await admin.from('check_results').insert(results);
   if (usage.length) await admin.from('usage_events').insert(usage);
 
-  return json({ ok: true, checked: results.length, opened, resolved });
+  // Alerting runs after the checks, not inside them. An incident opened this
+  // minute is picked up by this same pass; one held back for quiet hours is
+  // picked up by a later one, with no queue to drain.
+  const alerted = await flushAlerts(admin, now);
+
+  return json({ ok: true, checked: results.length, opened, resolved, alerted });
 });
+
+interface PendingIncident {
+  id: string;
+  org_id: string;
+  severity: number;
+  title: string;
+  started_at: string;
+  cause_category: string | null;
+  assigned_employee_id: string | null;
+  digital_assets: { name: string; primary_url: string | null }
+    | { name: string; primary_url: string | null }[];
+}
+
+/**
+ * Tell someone about incidents nobody has been told about yet.
+ *
+ * `alerted_at` is both the marker and the lock: it is set once, so a still-open
+ * incident never pages twice, and a failure to send leaves it null so the next
+ * run tries again.
+ */
+async function flushAlerts(
+  admin: Admin,
+  now: Date,
+): Promise<number> {
+  const { data: pending } = await admin
+    .from('incidents')
+    .select(
+      'id, org_id, severity, title, started_at, cause_category, assigned_employee_id,' +
+      'digital_assets!inner(name, primary_url)',
+    )
+    .is('alerted_at', null)
+    .neq('state', 'resolved')
+    .order('started_at')
+    .limit(ALERT_BATCH)
+    .returns<PendingIncident[]>();
+
+  if (!pending?.length) return 0;
+
+  let sent = 0;
+  for (const inc of pending) {
+    if (!shouldAlertNow(inc.severity, now)) continue;
+
+    const asset = Array.isArray(inc.digital_assets) ? inc.digital_assets[0] : inc.digital_assets;
+    const payload: AlertIncident = {
+      title: inc.title,
+      severity: inc.severity,
+      started_at: inc.started_at,
+      cause_category: inc.cause_category,
+      assetName: asset.name,
+      assetUrl: asset.primary_url,
+    };
+
+    const recipients = await alertRecipients(admin, inc.org_id, inc.assigned_employee_id);
+
+    // Best effort per channel. A dead SMTP box must not stop Slack, and neither
+    // must stop the incident being marked as handled — retrying forever would
+    // turn one broken mailbox into a permanent alert storm.
+    for (const to of recipients) {
+      try {
+        await admin.functions.invoke('send-email', {
+          body: {
+            to,
+            org_id: inc.org_id,
+            subject: alertSubject(payload),
+            html: alertHtml(payload),
+          },
+        });
+      } catch (e) {
+        console.error('alert email failed', to, (e as Error)?.message);
+      }
+    }
+
+    const { data: org } = await admin
+      .from('orgs').select('slack_webhook_url').eq('id', inc.org_id).maybeSingle()
+      .returns<{ slack_webhook_url: string | null }>();
+    if (org?.slack_webhook_url) {
+      try {
+        await fetch(org.slack_webhook_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: slackText(payload) }),
+          signal: AbortSignal.timeout(5_000),
+        });
+      } catch (e) {
+        console.error('slack alert failed', (e as Error)?.message);
+      }
+    }
+
+    await admin.from('incidents')
+      .update({ alerted_at: new Date().toISOString() })
+      .eq('id', inc.id);
+    await admin.from('incident_events').insert({
+      org_id: inc.org_id,
+      incident_id: inc.id,
+      kind: 'state_changed',
+      payload: { alerted: true, recipients: recipients.length },
+    });
+    sent++;
+  }
+  return sent;
+}
+
+/**
+ * The asset owner, or the org's admins when nobody owns it.
+ *
+ * The blueprint's escalation chain is owner → team on-call rota → manager.
+ * Merik has no rota and no teams table, so inventing the middle two would be
+ * inventing policy. Falling back to admins at least means an unowned asset
+ * going down is not silent.
+ */
+async function alertRecipients(
+  admin: Admin,
+  orgId: string,
+  ownerId: string | null,
+): Promise<string[]> {
+  if (ownerId) {
+    const { data: owner } = await admin
+      .from('employees').select('email').eq('id', ownerId).maybeSingle()
+      .returns<{ email: string | null }>();
+    if (owner?.email) return [owner.email];
+  }
+
+  const { data: admins } = await admin
+    .from('profiles')
+    .select('employees!inner(email)')
+    .eq('org_id', orgId)
+    .eq('role', 'admin')
+    .returns<Array<{ employees: { email: string | null } | { email: string | null }[] }>>();
+
+  return (admins ?? [])
+    .map((r) => (Array.isArray(r.employees) ? r.employees[0] : r.employees)?.email)
+    .filter((e): e is string => !!e);
+}

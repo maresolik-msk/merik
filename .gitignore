@@ -17,3 +17,6 @@ tmp/
 .env.*
 .claude/
 __pycache__/
+
+# Supabase CLI scratch
+supabase/.temp/
