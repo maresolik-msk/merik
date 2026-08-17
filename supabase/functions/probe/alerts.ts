@@ -24,6 +24,41 @@ export function shouldAlertNow(severity: number, now: Date): boolean {
   return hour >= WORKING_START_HOUR && hour < WORKING_END_HOUR;
 }
 
+// Severity from how fast the asset is spending its error budget, not from a
+// criticality flag somebody set at registration time (blueprint §8.4, Google's
+// multi-window model). Each rate is only meaningful against its own window: 6×
+// measured over one hour is noise, 6× over six hours is an outage.
+//
+//   1h  ≥ 14.4×  → 2% of the monthly budget gone, exhausted in ~2 days  → Sev1
+//   6h  ≥ 6×     → 5% gone, exhausted in ~5 days                        → Sev2
+//   3d  ≥ 1×     → will miss the SLO                                    → Sev3
+export const BURN_SEV1_1H = 14.4;
+export const BURN_SEV2_6H = 6;
+export const BURN_SEV3_3D = 1;
+
+export interface BurnRates {
+  burn_rate_1h: number | null;
+  burn_rate_6h: number | null;
+  burn_rate_3d: number | null;
+}
+
+/**
+ * `fallback` is used when the asset has no error budget to burn — a best_effort
+ * tier has no contracted target, so there is nothing to measure against and the
+ * declared criticality is the only signal available.
+ */
+export function severityFromBurn(rates: BurnRates | null, fallback: number): number {
+  if (!rates) return fallback;
+  const { burn_rate_1h: h1, burn_rate_6h: h6, burn_rate_3d: d3 } = rates;
+  if (h1 === null && h6 === null && d3 === null) return fallback;
+  if (h1 !== null && h1 >= BURN_SEV1_1H) return 1;
+  if (h6 !== null && h6 >= BURN_SEV2_6H) return 2;
+  if (d3 !== null && d3 >= BURN_SEV3_3D) return 3;
+  // Burning, but slowly enough that it will not miss the SLO. Worth a ticket,
+  // not worth interrupting anyone.
+  return 4;
+}
+
 export interface AlertIncident {
   title: string;
   severity: number;

@@ -17,13 +17,26 @@
 //     faked with a third-party "is my cert ok" API.
 //   * dns / tcp / synthetic_flow / integration — Phase 2.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { connect as tlsConnect } from 'node:tls';
 import { nextState, type MonitorState, type StateRow } from './state.ts';
-import { type AlertIncident, alertHtml, alertSubject, shouldAlertNow, slackText } from './alerts.ts';
+import {
+  type AlertIncident,
+  alertHtml,
+  alertSubject,
+  type BurnRates,
+  severityFromBurn,
+  shouldAlertNow,
+  slackText,
+} from './alerts.ts';
 
 const BATCH = 60;       // monitors per invocation
 const CONCURRENCY = 10; // in-flight checks
 const DEFAULT_TIMEOUT_MS = 10_000;
 const ALERT_BATCH = 20; // incidents notified per invocation
+const SSL_TIMEOUT_MS = 8_000;
+// Long enough that a Let's Encrypt renewal (30 days out) has already had its
+// chances, short enough that the warning still leaves room to act.
+const SSL_WARN_DAYS = 14;
 
 // One factory so the helpers below can name the client's type. Writing it as
 // ReturnType<typeof createClient> instead gives a differently-parameterised
@@ -133,6 +146,74 @@ async function runHttpCheck(target: string, config: Record<string, unknown>): Pr
   }
 }
 
+/**
+ * Certificate expiry.
+ *
+ * `fetch` already fails on an *invalid* certificate, which the http monitor
+ * records as a connect failure — but by then the client's site is down and the
+ * point was to know beforehand. This reads the peer certificate and fails while
+ * there is still time to renew.
+ *
+ * Uses node:tls because Deno's own TLS API exposes no peer certificate. The
+ * Supabase Edge Runtime supports raw outbound TLS — send-email speaks SMTP over
+ * it — so this works there as well as locally.
+ */
+async function runSslCheck(target: string): Promise<CheckOutcome> {
+  const started = performance.now();
+  let host: string;
+  let port: number;
+  try {
+    const u = new URL(target);
+    host = u.hostname;
+    port = u.port ? Number(u.port) : 443;
+  } catch {
+    return {
+      ok: false, status_code: null, latency_ms: 0,
+      failure_stage: 'dns', error: `not a URL: ${target}`.slice(0, 300),
+    };
+  }
+
+  try {
+    const validTo = await new Promise<string>((resolve, reject) => {
+      const socket = tlsConnect({ host, port, servername: host }, () => {
+        const cert = socket.getPeerCertificate();
+        socket.destroy();
+        if (!cert || !cert.valid_to) reject(new Error('no certificate presented'));
+        else resolve(cert.valid_to);
+      });
+      socket.on('error', reject);
+      socket.setTimeout(SSL_TIMEOUT_MS, () => {
+        socket.destroy();
+        reject(new Error('TLS handshake timed out'));
+      });
+    });
+
+    const latency_ms = Math.round(performance.now() - started);
+    const days = Math.floor((new Date(validTo).getTime() - Date.now()) / 86_400_000);
+
+    if (days < 0) {
+      return {
+        ok: false, status_code: null, latency_ms, failure_stage: 'tls',
+        error: `certificate expired ${-days} day(s) ago`,
+      };
+    }
+    if (days <= SSL_WARN_DAYS) {
+      return {
+        ok: false, status_code: null, latency_ms, failure_stage: 'tls',
+        error: `certificate expires in ${days} day(s)`,
+      };
+    }
+    return { ok: true, status_code: null, latency_ms, failure_stage: null, error: null };
+  } catch (e) {
+    return {
+      ok: false, status_code: null,
+      latency_ms: Math.round(performance.now() - started),
+      failure_stage: 'tls',
+      error: String((e as Error)?.message ?? e).slice(0, 300),
+    };
+  }
+}
+
 async function pooled<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
   const queue = [...items];
   const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
@@ -156,7 +237,7 @@ Deno.serve(async (req) => {
       'digital_assets!inner(name, criticality, owner_employee_id, maintenance_until, archived_at, status)',
     )
     .eq('enabled', true)
-    .eq('type', 'http')
+    .in('type', ['http', 'ssl'])
     .lte('next_run_at', now.toISOString())
     .is('digital_assets.archived_at', null)
     .order('next_run_at')
@@ -188,7 +269,9 @@ Deno.serve(async (req) => {
 
   await pooled(due, CONCURRENCY, async (m) => {
     const asset = Array.isArray(m.digital_assets) ? m.digital_assets[0] : m.digital_assets;
-    const outcome = await runHttpCheck(m.target, (m.config ?? {}) as Record<string, unknown>);
+    const outcome = m.type === 'ssl'
+      ? await runSslCheck(m.target)
+      : await runHttpCheck(m.target, (m.config ?? {}) as Record<string, unknown>);
     const ts = new Date().toISOString();
 
     results.push({
@@ -207,6 +290,16 @@ Deno.serve(async (req) => {
     let openIncidentId = prev.open_incident_id;
 
     if (t.action === 'open_incident') {
+      // Severity is measured, not declared: how fast this asset is spending its
+      // error budget. The criticality map is only the fallback for a
+      // best_effort asset, which has no budget to burn.
+      const { data: slo } = await admin
+        .from('asset_slo')
+        .select('burn_rate_1h, burn_rate_6h, burn_rate_3d')
+        .eq('asset_id', m.asset_id)
+        .maybeSingle()
+        .returns<BurnRates>();
+
       const { data: incident } = await admin.from('incidents').insert({
         org_id: m.org_id,
         asset_id: m.asset_id,
@@ -214,8 +307,10 @@ Deno.serve(async (req) => {
         // The whole point of the module: the incident knows who owns the thing
         // before anyone has looked at it.
         assigned_employee_id: asset.owner_employee_id,
-        severity: SEVERITY[asset.criticality] ?? 3,
-        title: `${asset.name} is not responding`,
+        severity: severityFromBurn(slo, SEVERITY[asset.criticality] ?? 3),
+        title: m.type === 'ssl'
+          ? `${asset.name} — TLS certificate problem`
+          : `${asset.name} is not responding`,
         cause_category: outcome.failure_stage,
         started_at: ts,
       }).select('id').single();
