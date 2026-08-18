@@ -70,6 +70,47 @@ by the super admin.
 - **Software** — software subscriptions, seat management (or per-user access),
   and monthly spend tracking per tool.
 
+### Digital Operations (Digital Health)
+The sites, apps and APIs the org runs for itself or its clients — is each one
+up right now, and is any of them *becoming* abnormal.
+
+- **Digital Assets** — registry of monitored sites/APIs, each tied to a client,
+  project and owning employee. A URL gets an HTTP uptime monitor automatically
+  (plus a daily SSL-expiry check for https). The native probe
+  (`supabase/functions/probe`, driven by pg_cron) confirms failures with
+  hysteresis, opens incidents pre-assigned to the asset's owner, suppresses
+  them during declared maintenance or a hard vendor outage (Statuspage feeds
+  for Stripe, Supabase, GitHub, …), and attaches whatever deployed just before.
+  Health is a measured SLO error budget against the asset's SLA tier, never an
+  invented weighting. Alerts go out once per incident (email + optional Slack),
+  Sev1 at any hour, the rest in working hours.
+- **Early Warnings** — the proactive half. Hourly baselines
+  (`monitor_baseline`) record each monitor's own normal latency percentiles and
+  error rate; every five minutes the analyzer compares the last hour against
+  them and writes **at most one warning per asset** (enforced by a unique
+  index) carrying risk and confidence as separate numbers plus the evidence
+  list: latency vs baseline, steady deterioration, intermittent failures below
+  the incident threshold, budget burn, browser-error spikes, and any recent
+  deploy as correlated context — never as a claimed cause. Warnings
+  self-resolve after two quiet hours, graduate into the incident when the
+  prediction comes true (the linked outcome is shown as the feature's own
+  scoreboard), and notify once, high-risk only.
+- **Browser SDK** (`merik.js`) — dependency-free snippet a tenant pastes on a
+  client site to report the failures a probe can't see: JS errors, unhandled
+  rejections, failed requests and resources. No cookies, no identity, no query
+  strings; events are redacted and fingerprint-grouped server-side
+  (`supabase/functions/collect`) into hourly counters keyed by a per-asset
+  ingest key.
+- **SLA Reports** — printable per-client monthly report: measured uptime vs
+  contracted SLA per service, incident log, MTTA/MTTR. Reads hourly rollups so
+  months older than the raw 30-day retention still report.
+- **Development Activity** — commits, PRs and deployments from GitHub/Vercel
+  webhooks via per-repo links (`repo_links`) that a tenant admin connects from
+  Merik; no client credentials are ever stored.
+- **Status pages** — public, token-URL status page per client (or org-wide),
+  served by the `status` edge function from merik.in; only human-approved
+  client summaries appear on it.
+
 ### Settings
 - **Company Settings** — org profile, logo upload, workspace preferences.
 - **Feedback** — the tenant admin's view of feedback raised inside their org.
@@ -138,7 +179,9 @@ See [docs/AI.md](AI.md).
 
 - **Backend** — Supabase (Postgres + Auth + RLS + Edge Functions).
 - **Edge functions** — `ai`, `payroll`, `send-email`, `create-employee-login`,
-  `review-signup`, `notify-lead`, `su-manage`.
+  `review-signup`, `notify-lead`, `su-manage`, `probe` (uptime checks, early
+  warnings, alerting), `collect` (browser telemetry ingest), `hooks`
+  (GitHub/Vercel webhooks), `status` (public status pages).
 - **Email** — SMTP-backed transactional mail (welcome credentials, payslips,
   employee documents, new-lead alerts). Tenant admins may only email addresses
   belonging to employees in their own org, so it can't act as an open relay.
