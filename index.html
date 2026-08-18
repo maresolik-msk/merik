@@ -136,6 +136,14 @@
         "@type": "Answer",
         "text": "Merik has an optional AI layer that can draft performance summaries and quotes for a human to edit. It is off unless enabled, gated per feature and per company with a monthly call cap, and drafts are always reviewed by a person before use. Core features work with AI switched off entirely. What AI actually helps with in HR →"
       }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Merik monitor our websites and client sites?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The Digital Operations module checks the websites, web apps and APIs you register — per client, if you run client properties — from the outside every few minutes: availability, response time, HTTP status and SSL expiry. Merik learns each site's normal behaviour and raises an early warning when it drifts, opens incidents assigned to the asset's owner, and produces monthly SLA reports and client-facing status pages. A one-line browser snippet also reports JavaScript errors from real visitors. How proactive monitoring works →"
+      }
     }
   ]
 }
@@ -306,7 +314,7 @@
   <div class="wrap">
     <div class="answer-box reveal">
       <h2>What is Merik?</h2>
-      <p><b>Merik is an all-in-one workforce management platform for small and growing businesses.</b> It combines employee management, attendance tracking, leave and work-from-home requests, monthly payroll and payslips, daily task tracking, client and project management, quotes and invoices, and asset tracking into one secure company workspace.</p>
+      <p><b>Merik is an all-in-one workforce management platform for small and growing businesses.</b> It combines employee management, attendance tracking, leave and work-from-home requests, monthly payroll and payslips, daily task tracking, client and project management, quotes and invoices, asset tracking — and Digital Operations, which watches the websites and APIs you run and warns you before they fail — in one secure company workspace.</p>
       <p>Every company gets an isolated workspace enforced at the database level. Employees get self-service — they mark their own attendance, request leave, log daily work and download payslips — so HR stops being the bottleneck for routine requests. Merik is free to start, and a workspace takes under five minutes to create.</p>
     </div>
   </div>
@@ -318,7 +326,7 @@
     <div class="sec-head reveal">
       <div class="eyebrow">Interactive tour</div>
       <h2>Click a module. See what it actually does.</h2>
-      <p>Eight connected modules sharing one dataset — so nothing has to be typed twice.</p>
+      <p>Nine connected modules sharing one dataset — so nothing has to be typed twice.</p>
     </div>
 
     <div class="tour">
@@ -340,6 +348,9 @@
         </button>
         <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-asset">
           <span class="ic">💻</span><span><b>Assets &amp; Software</b><small>Who has which laptop, and what SaaS costs</small></span>
+        </button>
+        <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-ops">
+          <span class="ic">📡</span><span><b>Digital Operations</b><small>Sites &amp; APIs watched, warned before they fail</small></span>
         </button>
       </div>
 
@@ -421,6 +432,19 @@
             <div class="tour-foot"><a href="/blog/it-asset-management-small-business">IT asset register →</a><a href="/blog/software-subscription-spend-management">Cut SaaS waste →</a></div>
           </div>
         </div>
+
+        <div class="tour-panel" id="t-ops" role="tabpanel">
+          <div class="tour-card">
+            <div class="th"><h3>Digital Operations — live</h3><span>Checked every 5 min</span></div>
+            <div class="rows">
+              <div class="trow"><b>Acme Corp website</b><span class="meta">99.98% · 30 days</span><span class="tag g">Operational</span></div>
+              <div class="trow"><b>Orders API</b><span class="meta">p95 3.2× its normal · deploy 24 min ago</span><span class="tag o">Early warning</span></div>
+              <div class="trow"><b>Client portal</b><span class="meta">SSL renews in 41 days</span><span class="tag g">Operational</span></div>
+              <div class="trow"><b>Health — error budget left</b><span class="bar"><i style="width:92%"></i></span><span class="meta">92</span></div>
+            </div>
+            <div class="tour-foot"><a href="/blog/proactive-application-monitoring">Proactive monitoring →</a><a href="/blog/api-failure-detection">Detect API failures →</a></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -489,6 +513,18 @@
         <div class="ficon">🏢</div>
         <h3>Isolated workspaces</h3>
         <p>One workspace per company, enforced by row-level security in Postgres — not just in app code.</p>
+      </div>
+      <div class="b w3 dark reveal">
+        <div class="ficon" style="background:rgba(217,58,49,.2);color:#fff">📡</div>
+        <h3>Digital Operations — sites &amp; APIs, watched</h3>
+        <p>Register the websites and APIs you run — yours or your clients' — and Merik checks them from the outside every few minutes: uptime, response time, SSL expiry. Incidents open automatically, assigned to whoever owns the asset, with the deploy that landed just before shown on the timeline.</p>
+        <div class="chiplist"><span>Uptime checks</span><span>SSL expiry</span><span>Auto-assigned incidents</span><span>SLA reports</span></div>
+      </div>
+      <div class="b w3 reveal d1">
+        <div class="ficon">🔭</div>
+        <h3>Early warnings, before the outage</h3>
+        <p>Merik learns each site's normal — latency, error rate, browser errors — and warns when behaviour drifts well outside it, with a risk score, a confidence score and the evidence. One warning per problem, not twenty alerts. A browser snippet catches the JavaScript errors uptime checks can't see.</p>
+        <div class="chiplist"><span>Measured baselines</span><span>Risk + confidence</span><span>Browser errors</span><span>Status pages</span></div>
       </div>
     </div>
 
@@ -774,6 +810,7 @@
       <details><summary>Does Merik work for remote and field teams?</summary><p>Yes. Employees check in and out from their own device and the location is captured and reverse-geocoded to a readable place name, so "present" means something verifiable for field staff. Work-from-home is a separate request type that is approved and recorded like leave. <a href="/blog/geolocation-attendance-field-teams">Attendance for field teams →</a></p></details>
       <details><summary>Can Merik handle clients, projects and invoicing?</summary><p>Yes. Merik includes client records, projects per client, line-item quotes that convert into invoices, and project-level intelligence that rolls up the hours logged in the daily task log against each client and project. <a href="/blog/quote-to-invoice-workflow">See the quote-to-invoice flow →</a></p></details>
       <details><summary>Does Merik use AI, and is it optional?</summary><p>Merik has an optional AI layer that can draft performance summaries and quotes for a human to edit. It is off unless enabled, gated per feature and per company with a monthly call cap, and drafts are always reviewed by a person before use. Core features work with AI switched off entirely. <a href="/blog/ai-in-hr-software-what-actually-helps">What AI actually helps with in HR →</a></p></details>
+      <details><summary>Can Merik monitor our websites and client sites?</summary><p>Yes. The Digital Operations module checks the websites, web apps and APIs you register — per client, if you run client properties — from the outside every few minutes: availability, response time, HTTP status and SSL expiry. Merik learns each site's normal behaviour and raises an early warning when it drifts, opens incidents assigned to the asset's owner, and produces monthly SLA reports and client-facing status pages. A one-line browser snippet also reports JavaScript errors from real visitors. <a href="/blog/proactive-application-monitoring">How proactive monitoring works →</a></p></details>
     </div>
   </div>
 </section>
@@ -876,11 +913,11 @@
     <div class="foot">
       <div>
         <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
-        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+        <p class="desc">Merik is the all-in-one platform for employee management, attendance, leave, payroll, daily task tracking — and monitoring the websites and APIs you run.</p>
       </div>
       <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
-      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
-      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a><a href="/modules">Digital Operations</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a><a href="/blog/proactive-application-monitoring">Proactive monitoring</a></div>
       <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
     </div>
     <div class="foot-social">
