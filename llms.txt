@@ -12,7 +12,7 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Modules](https://www.merik.in/modules): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices, assets & software.
 - [Pricing](https://www.merik.in/pricing): Free workspace with unlimited employee self sign-up; guided setup available on request.
 - [ROI calculator](https://www.merik.in/roi): Interactive estimate of what manual attendance, leave and payroll admin costs per year.
-- [Blog](https://www.merik.in/blog/): 40 practical guides on attendance, payroll, leave, tasks, clients, assets and HR.
+- [Blog](https://www.merik.in/blog/): 60 practical guides — attendance, payroll, leave, tasks, clients, assets and HR, plus application monitoring, API reliability, frontend error detection, observability and proactive incident prevention.
 
 ## Key facts
 
@@ -26,6 +26,7 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - Time estimation: `predictTime()` is a local similarity model over the company's own task history — not an LLM — and backtests its own weights leave-one-out to minimise median error.
 - Security: multi-tenant with isolation enforced in Postgres by row-level security, not only in application code. Roles: superadmin, admin, employee.
 - AI: optional and off by default. One server-side function, four fail-closed gates (master switch, per-feature flag, per-tenant grant, monthly call cap). Drafts only — performance summaries and quote drafts, always human-edited. Provider keys stored as AES-GCM ciphertext.
+- Digital Operations (monitoring): register websites, web apps and APIs (per client for agencies) and Merik checks them from the outside every few minutes — availability, response time, HTTP status, daily SSL-certificate expiry. Latency and error-rate baselines are measured per monitor over 14 days; deviations raise at most one early warning per asset, carrying a risk score, a separate confidence score and the evidence list. Confirmed failures open incidents auto-assigned to the asset's owner, alerted once by email or Slack with quiet-hours rules. A browser SDK (merik.js, one script tag, no cookies, query strings stripped, server-side redaction) reports JavaScript errors, unhandled rejections and failed requests, grouped by fingerprint per hour. GitHub and Vercel webhooks put deploys on the incident timeline; vendor status feeds (Stripe, Supabase, GitHub, Vercel, Cloudflare, Twilio, OpenAI) explain and suppress dependency-caused incidents. Health scores are SLO error budgets against a declared SLA tier; monthly per-client SLA reports and public token-URL status pages are built in.
 - Region: built for Indian small businesses (INR, CTC structures, state Shops & Establishments context), usable anywhere.
 - Contact: maresolik@gmail.com
 

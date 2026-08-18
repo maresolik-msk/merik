@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Application Monitoring for Startups: What to Monitor First</title>
+<meta name="description" content="A pragmatic monitoring guide for startups — what to monitor first with two engineers and no budget, what to defer, and how to get early warnings without building an observability stack.">
+<meta name="keywords" content="startup application monitoring, startup monitoring tools, application monitoring for startups, SaaS startup monitoring, minimal monitoring setup, monitoring on a budget">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/application-monitoring-for-startups">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Application monitoring for startups: what to monitor first">
+<meta property="og:description" content="What a two-engineer team should monitor first, what can wait, and how to get early warnings without an observability budget.">
+<meta property="og:url" content="https://www.merik.in/blog/application-monitoring-for-startups">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/monitoring.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Monitoring">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Application monitoring for startups: what to monitor first">
+<meta name="twitter:description" content="What a two-engineer team should monitor first, what can wait, and how to get early warnings without an observability budget.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/application-monitoring-for-startups#post","headline":"Application Monitoring for Startups: What to Monitor First","description":"A pragmatic monitoring guide for startups — what to monitor first with two engineers and no budget, what to defer, and how to get early warnings without building an observability stack.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/application-monitoring-for-startups","image":"https://www.merik.in/assets/images/blog/monitoring.svg","articleSection":"Monitoring","keywords":"startup application monitoring, startup monitoring tools, application monitoring for startups, SaaS startup monitoring, minimal monitoring setup, monitoring on a budget","wordCount":787,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Monitoring for startups","item":"https://www.merik.in/blog/application-monitoring-for-startups"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What monitoring does an early-stage startup actually need?","acceptedAnswer":{"@type":"Answer","text":"Five things: outside-in uptime checks on every public surface; checks on the API endpoints behind signup, login and billing; TLS certificate expiry monitoring; frontend error reporting from real browsers; and deployment events recorded into the monitoring timeline. Together they catch the failure modes that cost early users, and they take about an afternoon to set up."}},
+      {"@type":"Question","name":"Should a startup build its own monitoring?","acceptedAnswer":{"@type":"Answer","text":"No. A homegrown checker — a cron job that curls the site and posts to Slack — lacks confirmation logic, baselines, deduplication and alert routing, and it becomes unowned infrastructure that fails silently. Managed monitoring costs less than the engineering hours a homegrown version consumes, and the startup's scarce hours belong in the product."}},
+      {"@type":"Question","name":"When should a startup add log aggregation or tracing?","acceptedAnswer":{"@type":"Answer","text":"When a specific recurring question demands it. Logs earn their cost when you are repeatedly digging into servers to answer \"why did this fail?\". Tracing earns its cost when requests cross enough services that locating the slow hop is genuinely hard. Adopting either on principle, before the question exists, buys maintenance burden without benefit."}},
+      {"@type":"Question","name":"How do startups avoid alert fatigue with a tiny team?","acceptedAnswer":{"@type":"Answer","text":"Three rules: require consecutive failures before any alert fires, so network blips never page; let severity control loudness, so only real outages interrupt and everything else waits for working hours; and collapse correlated symptoms into single incidents so one problem is one notification. With two people on call, every false alarm meaningfully erodes trust in the system."}},
+      {"@type":"Question","name":"Is product analytics a substitute for monitoring?","acceptedAnswer":{"@type":"Answer","text":"No. Analytics describes user behaviour; monitoring detects failures. A funnel showing signup conversion dropping is often the delayed echo of a technical failure — a broken form, a failing API — that error monitoring would have surfaced within minutes instead of after a week of lost signups."}},
+      {"@type":"Question","name":"What does early monitoring give a startup later?","acceptedAnswer":{"@type":"Answer","text":"History. Stored checks become the baseline that defines normal latency and error rates per endpoint, and baselines are what make proactive early warnings possible. A team that starts checks in month one has working deviation detection by month two; a team that starts after its first bad outage learns normal from zero at the worst time."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Monitoring for startups</nav>
+    <div class="eyebrow">Monitoring</div>
+    <h1>Application monitoring for startups: <span class="accent">what to monitor first</span></h1>
+    <p class="lead">You have two engineers, one product, and no time. Here is the monitoring that pays for itself this week — and the monitoring that can wait a year.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/monitoring.svg" alt="Small team prioritising monitoring layers" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>A startup should monitor, in priority order: public availability of every user-facing surface, the two or three API endpoints that map to signup and revenue, TLS certificate expiry, frontend errors in real browsers, and deployments — and should defer log aggregation, tracing and infrastructure metrics until the product has grown into them.</b> The reasoning is brutal economics: a startup has no ops team to absorb false alarms and no support tier to absorb undetected failures, so every monitoring choice must maximise caught-incidents per hour of setup and per alert sent.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>For a startup, the monitoring question is <b>coverage per hour of effort</b> — not completeness.</li>
+      <li>Five checks cover most startup failure modes: <b>uptime, key API endpoints, SSL expiry, frontend errors, deploy events</b>.</li>
+      <li>Alert noise is deadlier for startups than for enterprises: with two people on call, <b>every false alarm is a real interruption</b>.</li>
+      <li>Buy or use managed monitoring; <b>never build it</b> — your scarce engineering hours belong in the product.</li>
+      <li>Add logs, tracing and metrics <b>when a specific recurring question demands them</b>, not on principle.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#economics">The startup monitoring equation</a></li>
+      <li><a href="#first">The five things to set up this week</a></li>
+      <li><a href="#later">What waits — and the trigger that ends the waiting</a></li>
+      <li><a href="#baselines">The early-warning upgrade (free if you started early)</a></li>
+      <li><a href="#mistakes">The four mistakes startups actually make</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="economics">The startup monitoring equation</h2>
+
+    <p>Enterprises monitor to protect revenue they already have. Startups monitor to protect something more fragile: the willingness of early users to keep trying an unproven product. An early adopter who hits a broken signup page does not file a ticket — they close the tab, and the startup never learns they existed.</p>
+    <p>That asymmetry defines the whole approach:</p>
+    <ul>
+      <li><b>Detection matters more than diagnosis.</b> With three services and one database, once you know something is wrong you will find it in minutes. The expensive part is <i>knowing</i> — nights and weekends included.</li>
+      <li><b>Noise is intolerable.</b> An enterprise rotation absorbs false pages as a cost of business. A two-person team that gets woken twice for nothing mutes the channel, and then the real one lands silently.</li>
+      <li><b>Setup time is product time.</b> Every hour spent assembling monitoring infrastructure is an hour not spent on the thing users are paying for. The correct amount of monitoring <i>engineering</i> for a startup is approximately zero — use tools that do it for you.</li>
+    </ul>
+
+
+    <h2 id="first">The five things to set up this week</h2>
+
+    <ol>
+      <li><b>Uptime checks on everything public</b> — the app, the marketing site, the API. Outside-in, every few minutes, with confirmation before alerting so one network blip does not page anyone. Ten minutes of setup; catches the total-outage class forever.</li>
+      <li><b>Checks on the endpoints that map to money</b> — login, signup, checkout/billing, the core data read. Not <code>/health</code>: <a href="/blog/saas-monitoring-checklist">health endpoints stay green through real failures</a>. Assert expected status, record latency.</li>
+      <li><b>SSL expiry monitoring</b> — because auto-renewal fails quietly, and a certificate outage is a total outage with a preventable date on it.</li>
+      <li><b>Frontend error reporting</b> — one script tag. For a startup shipping fast, this is disproportionately valuable: <a href="/blog/frontend-error-monitoring">most "it's broken" reports from early users are frontend errors</a> the server never saw, and reproduction details from users are scarce.</li>
+      <li><b>Deploy events into the monitoring timeline</b> — a webhook from GitHub or Vercel. Startups deploy constantly; when an anomaly appears, "what shipped in the last hour?" is the first question, and the timeline should already hold the answer.</li>
+    </ol>
+    <p>Total setup: an afternoon. Ongoing maintenance: effectively none.</p>
+
+
+    <h2 id="later">What waits — and the trigger that ends the waiting</h2>
+
+    <p>Deferring is only safe if you know what would un-defer it:</p>
+    <ul>
+      <li><b>Log aggregation</b> — wait until you are repeatedly SSHing into things to answer "why did this fail?". That recurring question is the trigger; before it, <a href="/blog/logs-vs-monitoring">logs are a cost without a customer</a>.</li>
+      <li><b>Distributed tracing</b> — wait until a request crosses enough services that "which hop is slow?" is genuinely unanswerable. With a monolith and a database, it is answerable by reading.</li>
+      <li><b>Infrastructure metrics</b> — on managed platforms, skip; the provider watches the machines. The trigger is running your own boxes.</li>
+      <li><b>Synthetic user journeys</b> — valuable, but a browser-automation suite is a standing maintenance commitment. The trigger is a flow (usually checkout) whose breakage costs more per hour than the suite costs per month.</li>
+      <li><b>On-call tooling</b> — with two people there is no rotation to manage. The trigger is the third engineer.</li>
+    </ul>
+
+
+    <h2 id="baselines">The early-warning upgrade (free if you started early)</h2>
+
+    <p>Everything in the week-one list is reactive: it fires when something has failed. The upgrade — and the reason to start monitoring before you think you need it — is that stored check history turns into <b>baselines</b>, and baselines turn reactive checks into <a href="/blog/proactive-application-monitoring">proactive warnings</a>.</p>
+    <p>Once a monitor has a couple of weeks of latency and error history, "abnormal" becomes computable: p95 latency at 3× its own normal, errors at 8× the usual rate, a steady climb across six hours. Those patterns precede a meaningful share of outages — which means a two-person team can get told about problems <i>before</i> the outage, which is precisely when a two-person team needs the head start. The team that starts checks in month one has baselines by month two; the team that waits for the first bad outage starts learning "normal" from zero, during the worst possible week. <a href="/blog/reduce-mttd">Early detection compounds</a>.</p>
+
+
+    <h2 id="mistakes">The four mistakes startups actually make</h2>
+
+    <ul>
+      <li><b>Building it themselves.</b> A cron job that curls the site and posts to Slack is a fun Friday project that becomes unowned infrastructure with no baselines, no confirmation logic, no dedupe — and it fails silently the week the founder who wrote it is fundraising.</li>
+      <li><b>Monitoring the demo, not the product.</b> The marketing site gets a checker because it is easy; the billing webhook endpoint — where the actual money moves — gets nothing.</li>
+      <li><b>Alerting everything to one channel.</b> A #alerts channel where certificate warnings, deploy notices and outages interleave trains everyone to skim. Severity must decide loudness: outages interrupt, warnings queue for working hours.</li>
+      <li><b>Confusing analytics with monitoring.</b> Product analytics says what users did; monitoring says what broke. A funnel dashboard showing signup completion dropping 40% is detecting an incident — a week late, as <a href="/blog/detect-bugs-before-users-report-them">a user-behaviour echo</a> of an error someone could have been told about in four minutes.</li>
+    </ul>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Week-one setup</th><td>Uptime checks, money-path API checks, SSL expiry, frontend error script, deploy webhook</td></tr>
+      <tr><th>Total setup time</th><td>About an afternoon; ongoing maintenance near zero</td></tr>
+      <tr><th>Defer until triggered</th><td>Logs (recurring "why?"), tracing (many services), infra metrics (own boxes), synthetics (costly flow)</td></tr>
+      <tr><th>Noise rule</th><td>Confirmation before alerting; severity decides loudness; predictions never page at night</td></tr>
+      <tr><th>Build vs buy</th><td>Buy/use managed — monitoring engineering hours belong in the product</td></tr>
+      <tr><th>The compounding asset</th><td>Stored check history becomes baselines, which turn reactive checks into early warnings</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What monitoring does an early-stage startup actually need?</summary><p>Five things: outside-in uptime checks on every public surface; checks on the API endpoints behind signup, login and billing; TLS certificate expiry monitoring; frontend error reporting from real browsers; and deployment events recorded into the monitoring timeline. Together they catch the failure modes that cost early users, and they take about an afternoon to set up.</p></details>
+      <details><summary>Should a startup build its own monitoring?</summary><p>No. A homegrown checker — a cron job that curls the site and posts to Slack — lacks confirmation logic, baselines, deduplication and alert routing, and it becomes unowned infrastructure that fails silently. Managed monitoring costs less than the engineering hours a homegrown version consumes, and the startup's scarce hours belong in the product.</p></details>
+      <details><summary>When should a startup add log aggregation or tracing?</summary><p>When a specific recurring question demands it. Logs earn their cost when you are repeatedly digging into servers to answer "why did this fail?". Tracing earns its cost when requests cross enough services that locating the slow hop is genuinely hard. Adopting either on principle, before the question exists, buys maintenance burden without benefit.</p></details>
+      <details><summary>How do startups avoid alert fatigue with a tiny team?</summary><p>Three rules: require consecutive failures before any alert fires, so network blips never page; let severity control loudness, so only real outages interrupt and everything else waits for working hours; and collapse correlated symptoms into single incidents so one problem is one notification. With two people on call, every false alarm meaningfully erodes trust in the system.</p></details>
+      <details><summary>Is product analytics a substitute for monitoring?</summary><p>No. Analytics describes user behaviour; monitoring detects failures. A funnel showing signup conversion dropping is often the delayed echo of a technical failure — a broken form, a failing API — that error monitoring would have surfaced within minutes instead of after a week of lost signups.</p></details>
+      <details><summary>What does early monitoring give a startup later?</summary><p>History. Stored checks become the baseline that defines normal latency and error rates per endpoint, and baselines are what make proactive early warnings possible. A team that starts checks in month one has working deviation detection by month two; a team that starts after its first bad outage learns normal from zero at the worst time.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's Digital Operations module is deliberately startup-shaped: registering an asset takes a minute, and the URL alone buys outside-in checks with confirmation, latency recording, and daily SSL monitoring — no agents, no config files. The merik.js snippet is one script tag for frontend errors, with grouping and privacy redaction handled server-side. A GitHub or Vercel webhook puts deploys on the same timeline as anomalies.</p>
+    <p>The noise discipline in this article is enforced, not advised: two consecutive failures before an incident, one warning per asset no matter how many signals fire, alerts sent once, and only Sev1 allowed to interrupt outside working hours. And because checks are stored from day one, baselines accumulate automatically — a couple of weeks in, <a href="/blog/proactive-application-monitoring">early warnings</a> switch on with no extra work. Incidents arrive pre-assigned to whoever owns the asset, which in a startup is usually you — but at least you will know first.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Monitoring" href="/blog/saas-monitoring-checklist">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="What should you monitor in a SaaS application?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>What should you monitor in a SaaS application?</h3>
+        <p>The complete checklist — uptime, APIs, frontend errors, certificates, dependencies, deploys.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/proactive-application-monitoring">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="What is proactive application monitoring?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>What is proactive application monitoring?</h3>
+        <p>Detecting problems before users report them — baselines, anomalies and early warnings, explained.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Incidents" href="/blog/reduce-mttd">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How to reduce MTTD (mean time to detect) application issues" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>How to reduce MTTD (mean time to detect) application issues</h3>
+        <p>Most incident time is spent not knowing. Six changes that cut detection from hours to minutes.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

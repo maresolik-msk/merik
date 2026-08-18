@@ -1,0 +1,15 @@
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="240" fill="#F7F6F3"/>
+  <rect x="80" y="52" width="240" height="40" rx="10" fill="#ffffff" stroke="#ECECEC" stroke-width="2"/>
+  <circle cx="102" cy="72" r="7" fill="#1E8449"/>
+  <text x="120" y="77" font-family="Inter,Arial" font-size="13" font-weight="700" fill="#15161A">is it wrong?</text>
+  <text x="296" y="77" font-family="Inter,Arial" font-size="11" font-weight="700" fill="#767B85" text-anchor="end">monitoring</text>
+  <rect x="80" y="100" width="240" height="40" rx="10" fill="#ffffff" stroke="#ECECEC" stroke-width="2"/>
+  <circle cx="102" cy="120" r="7" fill="#B45309"/>
+  <text x="120" y="125" font-family="Inter,Arial" font-size="13" font-weight="700" fill="#15161A">why is it wrong?</text>
+  <text x="296" y="125" font-family="Inter,Arial" font-size="11" font-weight="700" fill="#767B85" text-anchor="end">observability</text>
+  <rect x="80" y="148" width="240" height="40" rx="10" fill="#15161A"/>
+  <circle cx="102" cy="168" r="7" fill="#D93A31"/>
+  <text x="120" y="173" font-family="Inter,Arial" font-size="13" font-weight="700" fill="#ffffff">what breaks next?</text>
+  <text x="296" y="173" font-family="Inter,Arial" font-size="11" font-weight="700" fill="#C9CCD3" text-anchor="end">proactive</text>
+</svg>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>What Is Observability? How It Differs From Monitoring</title>
+<meta name="description" content="Monitoring tells you something is wrong; observability helps you understand why. Clear definitions, the three pillars, where each approach fits, and where proactive detection sits in the evolution.">
+<meta name="keywords" content="observability vs monitoring, observability, application observability, monitoring vs observability, three pillars of observability, telemetry, proactive monitoring">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/observability-vs-monitoring">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="What is observability, and how is it different from monitoring?">
+<meta property="og:description" content="Monitoring answers "is it wrong?", observability answers "why?" — and proactive detection asks "what's next?". The three, untangled.">
+<meta property="og:url" content="https://www.merik.in/blog/observability-vs-monitoring">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/observability.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Observability">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What is observability, and how is it different from monitoring?">
+<meta name="twitter:description" content="Monitoring answers "is it wrong?", observability answers "why?" — and proactive detection asks "what's next?". The three, untangled.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/observability-vs-monitoring#post","headline":"What Is Observability? How It Differs From Monitoring","description":"Monitoring tells you something is wrong; observability helps you understand why. Clear definitions, the three pillars, where each approach fits, and where proactive detection sits in the evolution.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/observability-vs-monitoring","image":"https://www.merik.in/assets/images/blog/observability.svg","articleSection":"Observability","keywords":"observability vs monitoring, observability, application observability, monitoring vs observability, three pillars of observability, telemetry, proactive monitoring","wordCount":597,"timeRequired":"PT5M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Observability vs monitoring","item":"https://www.merik.in/blog/observability-vs-monitoring"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What is the difference between monitoring and observability?","acceptedAnswer":{"@type":"Answer","text":"Monitoring continuously checks predefined signals — availability, latency, error rates — and tells you that something is wrong. Observability is a property of a system: whether its outputs (metrics, logs, traces) are rich enough to let you work out why something went wrong, including problems nobody anticipated. Monitoring detects; observability diagnoses."}},
+      {"@type":"Question","name":"What are the three pillars of observability?","acceptedAnswer":{"@type":"Answer","text":"Metrics (numeric time series showing trends and shapes), logs (detailed records of discrete events), and traces (the path of a request across services, with timing per hop). They are the standard ingredients — but having all three does not itself make a system observable; the telemetry must be structured and connected well enough to answer new questions."}},
+      {"@type":"Question","name":"Do I need observability tooling or is monitoring enough?","acceptedAnswer":{"@type":"Answer","text":"It depends on diagnostic complexity. If your architecture is simple enough that, once alerted, you can find the cause by reading code and checking a database, monitoring plus discipline is enough. When requests cross many services and \"which hop failed?\" becomes genuinely hard, traces and structured logs earn their cost. Monitoring is unconditional; observability is bought when the questions demand it."}},
+      {"@type":"Question","name":"Which should come first, monitoring or observability?","acceptedAnswer":{"@type":"Answer","text":"Monitoring, without exception. Detection is the precondition for diagnosis — deep telemetry on problems you learn about from customers is backwards. Establish outside-in checks, per-endpoint monitoring, frontend error collection and baselines first; add diagnostic depth as system complexity makes \"why\" questions hard."}},
+      {"@type":"Question","name":"Where does proactive detection fit between them?","acceptedAnswer":{"@type":"Answer","text":"Proactive detection extends monitoring forward in time: using stored check history to define normal behaviour, then flagging deviations and trends before they become failures. It is arithmetic on monitoring data rather than a separate telemetry stack, which makes it reachable for teams that have never adopted heavyweight observability platforms."}},
+      {"@type":"Question","name":"Does proactive monitoring replace observability?","acceptedAnswer":{"@type":"Answer","text":"No. Early warnings tell you something is drifting and roughly where to look; they do not reconstruct the internal mechanism of a novel failure the way traces and rich logs can. Equally, observability platforms do not automatically provide early warning. Mature teams treat them as complementary layers answering different questions."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Observability vs monitoring</nav>
+    <div class="eyebrow">Observability</div>
+    <h1>What is <span class="accent">observability</span> — and how is it different from monitoring?</h1>
+    <p class="lead">The two words get used interchangeably by people selling things. They name different capabilities, you often need both, and the order you build them in matters.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/observability.svg" alt="Monitoring, observability and prediction as layers" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 5 min read</p>
+    <p class="lede"><b>Monitoring is watching known signals for known problems — is the site up, is latency normal, is the error rate rising. Observability is the ability to understand a system's internal state from its outputs, so you can diagnose problems you never anticipated.</b> Monitoring tells you <i>that</i> something is wrong; observability helps you work out <i>why</i>. They are complements, not competitors — and a third capability, proactive detection, extends the timeline in the other direction by asking <i>what is likely to go wrong next</i>.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Monitoring watches <b>known-important signals</b> and answers "is something wrong?" — fast, cheap, and essential.</li>
+      <li>Observability is a <b>property of the system</b>: can its outputs answer questions you did not plan in advance? It answers "why is it wrong?".</li>
+      <li>The "three pillars" — <b>metrics, logs, traces</b> — are ingredients of observability, not a synonym for it.</li>
+      <li>Build in order: <b>monitoring first</b> (know that), observability as complexity demands it (know why), proactive detection on top (know before).</li>
+      <li>For most small-to-mid teams, full observability tooling is a <b>later purchase</b> than vendors suggest — but monitoring is never optional.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#monitoring">Monitoring: known questions, continuous answers</a></li>
+      <li><a href="#observability">Observability: unknown questions, answerable later</a></li>
+      <li><a href="#relationship">How they fit together (and the build order)</a></li>
+      <li><a href="#evolution">The evolution: from "is it down?" to "what's next?"</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="monitoring">Monitoring: known questions, continuous answers</h2>
+
+    <p>Monitoring predefines what matters — availability, latency, error rate, certificate expiry — and checks it continuously. Its virtues are speed and clarity: a failed check is unambiguous, cheap to run, and fires within minutes of the problem. Its structural limit is that it only watches what someone decided in advance to watch: the <i>known unknowns</i>. A failure mode nobody anticipated has no check waiting for it.</p>
+    <p>That limit is real but smaller than it sounds, because most production problems are variations on a familiar catalogue — <a href="/blog/production-issues-monitoring-should-detect">outages, endpoint failures, error spikes, latency drift, dead jobs, dependency outages</a>. A well-built monitoring layer catches the catalogue. What it cannot do by itself is explain a novel failure's internals — which is where the second capability comes in.</p>
+
+
+    <h2 id="observability">Observability: unknown questions, answerable later</h2>
+
+    <p>Observability is borrowed from control theory: a system is observable if its internal state can be inferred from its outputs. Applied to software: when something strange happens, can you interrogate the system's telemetry to reconstruct what occurred — without shipping new code to add the missing print statement?</p>
+    <p>The conventional ingredients are the three pillars:</p>
+    <ul>
+      <li><b>Metrics</b> — cheap numeric time series (request counts, durations, saturation) that show shapes and trends;</li>
+      <li><b>Logs</b> — discrete event records with detail, the raw material of "what exactly happened at 14:32";</li>
+      <li><b>Traces</b> — a request's journey across services, showing where time went and which hop failed.</li>
+    </ul>
+    <p>But the pillars are ingredients, not the property. A team can ship all three and still be unable to answer novel questions — unstructured logs, uncorrelated traces, metrics without labels. Observability is achieved when the outputs are rich and connected enough that new questions get answers. That richness has a real cost — instrumentation effort, storage, query tooling — which is why it should be bought when the questions demand it, <a href="/blog/logs-vs-monitoring">not on principle</a>.</p>
+
+
+    <h2 id="relationship">How they fit together (and the build order)</h2>
+
+    <p>The clean division of labour:</p>
+    <table class="facts">
+      <tr><th>Question</th><td><b>Capability</b></td></tr>
+      <tr><th>Is something wrong right now?</th><td>Monitoring</td></tr>
+      <tr><th>Why is it wrong — what is the mechanism?</th><td>Observability</td></tr>
+      <tr><th>What is drifting toward wrong?</th><td>Proactive detection (baselines + trends on monitoring data)</td></tr>
+    </table>
+    <p>The practical build order follows the questions' urgency. <b>Monitoring first</b>, always: knowing about problems is the precondition for everything else, and it is cheap. <b>Observability as complexity demands it</b>: a monolith with a database can usually be understood by reading; once requests cross many services, "why" needs traces and structured logs. <b>Proactive detection</b> is not a third toolset but a way of using monitoring data — <a href="/blog/proactive-application-monitoring">baselines and deviation detection</a> layered on checks you already run.</p>
+    <p>The common failure is inverting the order: buying an observability platform while the checkout endpoint has no check on it. Deep diagnosis of problems you find out about from customers is a strange place to start.</p>
+
+
+    <h2 id="evolution">The evolution: from "is it down?" to "what's next?"</h2>
+
+    <p>The industry's trajectory is a lengthening timeline of the same underlying question:</p>
+    <ol>
+      <li><b>Reactive monitoring</b> — "it is down" — detect failure fast; the 2000s baseline.</li>
+      <li><b>Observability</b> — "here is why it broke" — diagnose complex systems; the 2010s addition, driven by microservices.</li>
+      <li><b>Proactive detection</b> — "it is heading toward broken" — baselines, trend analysis and early warnings on the monitoring layer; the current frontier for most teams.</li>
+    </ol>
+    <p>Each layer builds on the previous one's data. Proactive detection in particular is mostly <i>arithmetic on stored monitoring history</i> — which means teams that never adopted heavyweight observability can still reach it: the prerequisite is stored checks, not a platform migration. Honest positioning matters here: proactive detection does not replace observability's diagnostic depth, and observability platforms do not automatically provide early warning. They answer different questions on different timelines — <a href="/blog/reactive-vs-proactive-monitoring">the reactive/proactive comparison</a> makes the timeline explicit.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Monitoring</th><td>Continuous checking of predefined signals — answers "is something wrong?"</td></tr>
+      <tr><th>Observability</th><td>System property: internal state inferable from outputs — answers "why is it wrong?"</td></tr>
+      <tr><th>Three pillars</th><td>Metrics, logs, traces — ingredients of observability, not its definition</td></tr>
+      <tr><th>Proactive detection</th><td>Baselines + trend analysis on monitoring data — answers "what is going wrong next?"</td></tr>
+      <tr><th>Build order</th><td>Monitoring first, observability as complexity demands, proactive detection on stored history</td></tr>
+      <tr><th>Common mistake</th><td>Buying diagnostic depth before basic detection coverage exists</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What is the difference between monitoring and observability?</summary><p>Monitoring continuously checks predefined signals — availability, latency, error rates — and tells you that something is wrong. Observability is a property of a system: whether its outputs (metrics, logs, traces) are rich enough to let you work out why something went wrong, including problems nobody anticipated. Monitoring detects; observability diagnoses.</p></details>
+      <details><summary>What are the three pillars of observability?</summary><p>Metrics (numeric time series showing trends and shapes), logs (detailed records of discrete events), and traces (the path of a request across services, with timing per hop). They are the standard ingredients — but having all three does not itself make a system observable; the telemetry must be structured and connected well enough to answer new questions.</p></details>
+      <details><summary>Do I need observability tooling or is monitoring enough?</summary><p>It depends on diagnostic complexity. If your architecture is simple enough that, once alerted, you can find the cause by reading code and checking a database, monitoring plus discipline is enough. When requests cross many services and "which hop failed?" becomes genuinely hard, traces and structured logs earn their cost. Monitoring is unconditional; observability is bought when the questions demand it.</p></details>
+      <details><summary>Which should come first, monitoring or observability?</summary><p>Monitoring, without exception. Detection is the precondition for diagnosis — deep telemetry on problems you learn about from customers is backwards. Establish outside-in checks, per-endpoint monitoring, frontend error collection and baselines first; add diagnostic depth as system complexity makes "why" questions hard.</p></details>
+      <details><summary>Where does proactive detection fit between them?</summary><p>Proactive detection extends monitoring forward in time: using stored check history to define normal behaviour, then flagging deviations and trends before they become failures. It is arithmetic on monitoring data rather than a separate telemetry stack, which makes it reachable for teams that have never adopted heavyweight observability platforms.</p></details>
+      <details><summary>Does proactive monitoring replace observability?</summary><p>No. Early warnings tell you something is drifting and roughly where to look; they do not reconstruct the internal mechanism of a novel failure the way traces and rich logs can. Equally, observability platforms do not automatically provide early warning. Mature teams treat them as complementary layers answering different questions.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik sits deliberately at layers one and three of this evolution. The monitoring layer: outside-in checks, per-endpoint assertions, SSL monitoring, browser error collection — the "is something wrong?" question, answered continuously. The proactive layer: 14-day baselines per monitor, deviation and trend detection, and <a href="/blog/proactive-application-monitoring">early warnings</a> carrying risk, confidence and evidence — the "what is going wrong next?" question, answered from Merik's own stored history.</p>
+    <p>What Merik honestly is not: a log aggregation or distributed tracing platform. When your architecture grows into deep "why" questions, dedicated observability tooling complements what Merik detects — and the incident timeline, with its deploy correlation and dependency context, tells you where to point that tooling first. Detection coverage now, diagnostic depth when you need it, and no pretence that one substitutes for the other.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Observability" href="/blog/logs-vs-monitoring">
+        <img class="thumb" src="/assets/images/blog/observability.svg" alt="Why logs alone are not enough for application monitoring" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Observability</span>
+        <h3>Why logs alone are not enough for application monitoring</h3>
+        <p>Logs are records, not lookouts — nobody reads them until after the incident.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/proactive-application-monitoring">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="What is proactive application monitoring?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>What is proactive application monitoring?</h3>
+        <p>Detecting problems before users report them — baselines, anomalies and early warnings, explained.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/proactive-application-reliability">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="The complete guide to proactive application reliability" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>The complete guide to proactive application reliability</h3>
+        <p>Observe, baseline, warn, respond, learn — the full loop that prevents incidents instead of narrating them.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

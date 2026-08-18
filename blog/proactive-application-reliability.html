@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>The Complete Guide to Proactive Application Reliability</title>
+<meta name="description" content="The cornerstone guide: how monitoring, baselines, early warnings, error budgets, incident response and deploy correlation combine into a reliability practice that prevents incidents instead of narrating them.">
+<meta name="keywords" content="application reliability, proactive monitoring, incident prevention, reliability engineering, error budget, early warning system, application health, site reliability practices">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/proactive-application-reliability">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="The complete guide to proactive application reliability">
+<meta property="og:description" content="From uptime checks to early warnings to error budgets — the full architecture of a reliability practice that prevents incidents.">
+<meta property="og:url" content="https://www.merik.in/blog/proactive-application-reliability">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/api.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Reliability">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The complete guide to proactive application reliability">
+<meta name="twitter:description" content="From uptime checks to early warnings to error budgets — the full architecture of a reliability practice that prevents incidents.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/proactive-application-reliability#post","headline":"The Complete Guide to Proactive Application Reliability","description":"The cornerstone guide: how monitoring, baselines, early warnings, error budgets, incident response and deploy correlation combine into a reliability practice that prevents incidents instead of narrating them.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/proactive-application-reliability","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"application reliability, proactive monitoring, incident prevention, reliability engineering, error budget, early warning system, application health, site reliability practices","wordCount":882,"timeRequired":"PT7M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Proactive reliability guide","item":"https://www.merik.in/blog/proactive-application-reliability"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What is proactive application reliability?","acceptedAnswer":{"@type":"Answer","text":"It is the practice of keeping software dependable by detecting deterioration before it becomes failure: continuous outside-in observation of what users experience, baselines defining measured normal, deviation and trend detection, evidence-backed early warnings, correlated incident response routed to named owners, and post-incident learning that improves detection. The defining difference from reactive operations is when the work happens — before failure, while problems are still trends."}},
+      {"@type":"Question","name":"How is this different from just having monitoring?","acceptedAnswer":{"@type":"Answer","text":"Monitoring is the observation stage — necessary but only one-sixth of the loop. A reliability practice adds baselines (what is normal), detection (what is abnormal), honest warning (what deserves attention, with what evidence), structured response (one owned incident per cause) and learning (what would have caught this earlier). Many teams have monitoring; far fewer run the loop."}},
+      {"@type":"Question","name":"What is an error budget and why does it matter?","acceptedAnswer":{"@type":"Answer","text":"An error budget is the failure a reliability target permits — a 99.9% monthly target allows about 43 minutes of downtime. Expressing health as budget remaining makes reliability arithmetic rather than argument: severity comes from burn rate, priorities come from budget state, and the ship-versus-stabilise tension resolves by looking at the number."}},
+      {"@type":"Question","name":"Can a small team practise proactive reliability?","acceptedAnswer":{"@type":"Answer","text":"Yes — every stage has a low-maintenance form. Outside-in checks and certificate monitoring are minutes of setup; browser error collection is a script tag; baselines accumulate automatically from stored checks; and correlation plus ownership are properties of good tooling rather than headcount. Coverage of the loop matters more than sophistication at any stage."}},
+      {"@type":"Question","name":"Does proactive reliability prevent all incidents?","acceptedAnswer":{"@type":"Answer","text":"No, and honest practice never claims it. Some failures arrive with no warning. The aim is to move the substantial fraction of incidents that are preceded by measurable deterioration — latency drift, error creep, resource exhaustion, expiring certificates — from the outage column to the caught-early column, while keeping fast reactive detection for the rest."}},
+      {"@type":"Question","name":"Where should a team start?","acceptedAnswer":{"@type":"Answer","text":"Start the observation layer this week: outside-in checks on user-facing surfaces, per-endpoint checks on money paths, SSL monitoring, browser error collection, deploy events. Let two weeks of history build baselines, then enable deviation-based warnings. Add error-budget targets per service, assign owners to every monitored asset, and begin monthly incident review. Each step is small; the compounding is in running the whole loop."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Proactive reliability guide</nav>
+    <div class="eyebrow">Reliability</div>
+    <h1>The complete guide to <span class="accent">proactive application reliability</span></h1>
+    <p class="lead">Reliability is not a tool you install; it is a loop you run: observe, understand, predict, warn, respond, learn. This guide assembles the whole loop — and links to the deep dives for every part.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/api.svg" alt="The layers of a proactive reliability practice" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 7 min read</p>
+    <p class="lede"><b>Proactive application reliability is the practice of keeping software dependable by detecting deterioration before it becomes failure — combining outside-in monitoring, measured baselines, early warnings, error budgets, correlated incident response and post-incident learning into one continuous loop.</b> It differs from traditional reactive operations in <i>when</i> work happens: reactive teams spend their effort during and after incidents; proactive teams spend a fraction of that effort earlier, when the same problems are still cheap trends. This cornerstone guide assembles the complete practice and links to the detailed articles on each component.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Reliability is a <b>loop, not a stack</b>: observe → establish normal → detect abnormal → warn → respond → learn, continuously.</li>
+      <li>The economic argument is timing: <b>the same problem costs less the earlier it is met</b> — trend < warning < incident < outage < churn.</li>
+      <li><b>Error budgets</b> turn reliability from a feeling into arithmetic: a target, its allowed failure, and the spend rate against it.</li>
+      <li>Prediction must be honest: risk and confidence stated separately, <b>predictions never presented as facts</b>, and misses admitted.</li>
+      <li>Small teams can run the whole loop: every component has a low-maintenance form, and <b>coverage beats sophistication</b>.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#loop">The reliability loop</a></li>
+      <li><a href="#observe">Stage 1–2: observation and baselines</a></li>
+      <li><a href="#detect">Stage 3–4: detection and honest early warning</a></li>
+      <li><a href="#budget">The arithmetic backbone: error budgets and burn</a></li>
+      <li><a href="#respond">Stage 5: response that spends the head start well</a></li>
+      <li><a href="#learn">Stage 6: learning, and the compounding effect</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="loop">The reliability loop</h2>
+
+    <p>Every mature reliability practice, whatever tooling it runs on, is the same six-stage loop:</p>
+    <ol>
+      <li><b>Observe</b> — continuously measure what users experience: availability, latency, errors, frontend behaviour, dependencies.</li>
+      <li><b>Establish normal</b> — turn observation history into baselines: what does healthy look like, per endpoint, per site?</li>
+      <li><b>Detect abnormal</b> — compare the present against normal; find the deviations and trends that precede failure.</li>
+      <li><b>Warn early</b> — surface deviations as evidence-backed warnings while they are still trends, with honest risk and confidence.</li>
+      <li><b>Respond</b> — when warnings come true or failures arrive unannounced, route one correlated incident to a named owner with context attached.</li>
+      <li><b>Learn</b> — feed each incident back: what preceded it, what would have caught it earlier, which warnings worked.</li>
+    </ol>
+    <p>Reactive operations run stages 5–6 only. The proactive difference is stages 2–4 — and they are precisely the stages that require no heroics, just accumulated data and honest statistics.</p>
+
+
+    <h2 id="observe">Stage 1–2: observation and baselines</h2>
+
+    <p>Observation must start where users are: <b>outside-in checks</b> on every user-facing surface, <a href="/blog/api-failure-detection">per-endpoint API monitoring</a> with status and content assertions, <a href="/blog/frontend-error-monitoring">browser error collection</a> for the layer servers cannot see, certificate and DNS checks for the calendar failures, and deployment events recorded into the same timeline. (The full inventory, with priorities, is the <a href="/blog/saas-monitoring-checklist">SaaS monitoring checklist</a>; the minimal version for tiny teams is the <a href="/blog/application-monitoring-for-startups">startup edition</a>.)</p>
+    <p>Stored observations become <b>baselines</b>: latency percentiles, error rates and volume per monitor over a trailing window. Baselines are the hinge of the whole practice — they convert "is 700ms slow?" from a debate into a lookup. Two weeks of five-minute checks yields a stable normal; from then on, <i>abnormal</i> is computable. <a href="/blog/proactive-application-monitoring">The proactive monitoring guide</a> covers the mechanics.</p>
+
+
+    <h2 id="detect">Stage 3–4: detection and honest early warning</h2>
+
+    <p>Detection is comparison: current behaviour against baseline (is p95 at 3× its own normal?), and trend against time (has latency risen five hours straight?). The art is separating signal from weather — ratio <i>and</i> absolute thresholds, confirmation before conclusions, floors under error rates — so that what surfaces deserves attention. <a href="/blog/production-issues-monitoring-should-detect">Ten specific detections</a> cover the practical catalogue.</p>
+    <p>Warning is the part most tooling gets wrong, in one of two directions: alert-per-signal (noise, then muting, then nothing) or a single opaque score (unexplainable, then ignored). The honest form is <b>one warning per degrading asset</b>, carrying:</p>
+    <ul>
+      <li><b>risk</b> — how bad the evidence looks;</li>
+      <li><b>confidence</b> — how much evidence there is, stated separately, because 78% risk on two hours of data and on two weeks of data are different claims;</li>
+      <li><b>the evidence itself</b> — each deviating signal, with magnitudes;</li>
+      <li><b>context</b> — what deployed recently, which dependencies are degraded, presented as correlation rather than verdict;</li>
+      <li><b>a recommendation</b> — where to look first.</li>
+    </ul>
+    <p>And warnings must be accountable: self-resolving when behaviour recovers, linked to the incident when they come true, so the system's hit rate is measurable. A prediction system that never admits misses is a horoscope. <a href="/blog/ai-application-monitoring">Where AI helps and where it overclaims</a> is its own discussion.</p>
+
+
+    <h2 id="budget">The arithmetic backbone: error budgets and burn</h2>
+
+    <p>Proactive practice needs a quantitative definition of "how reliable is reliable enough", and the SRE tradition's answer — the <b>error budget</b> — remains the best available. Declare a target per service (99.9% monthly availability); the target implies allowed failure (0.1% ≈ 43 minutes); the budget is what remains of that allowance; <b>health is budget remaining</b>, a number explainable in one sentence and traceable to raw checks.</p>
+    <p><b>Burn rate</b> — current spend speed as a multiple of the break-even rate — is the severity signal: sustained 14× burn over an hour is an emergency arithmetically, not by anyone's gut feel. Budgets also settle the classic tension between shipping and stability: a healthy budget licenses risk-taking, an exhausted one buys down risk instead. The full construction is in <a href="/blog/application-health-monitoring">the application health guide</a>.</p>
+
+
+    <h2 id="respond">Stage 5: response that spends the head start well</h2>
+
+    <p>Early detection buys minutes; response design decides whether they are spent or wasted. Four rules preserve the head start:</p>
+    <ul>
+      <li><b>Correlate first.</b> One cause producing twenty signals must reach humans as one incident with twenty pieces of evidence. Fan-out noise is how channels get muted.</li>
+      <li><b>Assign by ownership.</b> Every monitored asset has a named owner; incidents arrive assigned, not posted to a channel where they are nobody's job. Unowned minutes are wasted minutes — <a href="/blog/reduce-mttd">MTTD gains die in assignment lag</a>.</li>
+      <li><b>Attach the context.</b> Failing stage, deviation magnitudes, recent deploys, dependency status — the first fifteen minutes of every investigation, pre-assembled.</li>
+      <li><b>Respect severity honestly.</b> Budget-burn emergencies interrupt anyone at any hour; predictions and slow drifts wait for morning. A system that pages at 3am for a 45%-risk hunch is training its humans to ignore it.</li>
+    </ul>
+
+
+    <h2 id="learn">Stage 6: learning, and the compounding effect</h2>
+
+    <p>The loop closes when incidents feed back into detection. After each one: what preceded it in the telemetry? Was there a warning — and if not, what signal would have caught it? Which warnings this month came true, and which fizzled? This review is what tunes thresholds, adds missing monitors, and builds institutional memory — <a href="/blog/prevent-small-bugs-becoming-incidents">interrupting the escalation chain earlier each time</a>.</p>
+    <p>Run for a few months, the loop compounds visibly: baselines sharpen, warnings grow more precise, repeat incident classes get monitors and stop repeating, and the on-call experience shifts from firefighting to reviewing briefings. The destination is not zero incidents — that target is dishonest — but a steadily larger fraction of problems met as trends rather than outages, with <a href="/blog/reactive-vs-proactive-monitoring">reactive capability</a> intact for the failures that give no warning. Reliability, in the end, is the loop running.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>The loop</th><td>Observe → establish normal → detect abnormal → warn early → respond → learn</td></tr>
+      <tr><th>Observation layers</th><td>Outside-in checks, per-endpoint APIs, browser errors, certificates/DNS, deploy events</td></tr>
+      <tr><th>The hinge</th><td>Baselines — measured normal per monitor, making "abnormal" computable</td></tr>
+      <tr><th>Honest warning form</th><td>One per asset: risk + confidence separately, evidence with magnitudes, correlated context, recommendation</td></tr>
+      <tr><th>Arithmetic backbone</th><td>Error budgets: health = budget remaining; burn rate = severity</td></tr>
+      <tr><th>Response rules</th><td>Correlate first, assign by ownership, attach context, severity decides loudness</td></tr>
+      <tr><th>The goal</th><td>Not zero incidents — a growing fraction of problems met as trends instead of outages</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What is proactive application reliability?</summary><p>It is the practice of keeping software dependable by detecting deterioration before it becomes failure: continuous outside-in observation of what users experience, baselines defining measured normal, deviation and trend detection, evidence-backed early warnings, correlated incident response routed to named owners, and post-incident learning that improves detection. The defining difference from reactive operations is when the work happens — before failure, while problems are still trends.</p></details>
+      <details><summary>How is this different from just having monitoring?</summary><p>Monitoring is the observation stage — necessary but only one-sixth of the loop. A reliability practice adds baselines (what is normal), detection (what is abnormal), honest warning (what deserves attention, with what evidence), structured response (one owned incident per cause) and learning (what would have caught this earlier). Many teams have monitoring; far fewer run the loop.</p></details>
+      <details><summary>What is an error budget and why does it matter?</summary><p>An error budget is the failure a reliability target permits — a 99.9% monthly target allows about 43 minutes of downtime. Expressing health as budget remaining makes reliability arithmetic rather than argument: severity comes from burn rate, priorities come from budget state, and the ship-versus-stabilise tension resolves by looking at the number.</p></details>
+      <details><summary>Can a small team practise proactive reliability?</summary><p>Yes — every stage has a low-maintenance form. Outside-in checks and certificate monitoring are minutes of setup; browser error collection is a script tag; baselines accumulate automatically from stored checks; and correlation plus ownership are properties of good tooling rather than headcount. Coverage of the loop matters more than sophistication at any stage.</p></details>
+      <details><summary>Does proactive reliability prevent all incidents?</summary><p>No, and honest practice never claims it. Some failures arrive with no warning. The aim is to move the substantial fraction of incidents that are preceded by measurable deterioration — latency drift, error creep, resource exhaustion, expiring certificates — from the outage column to the caught-early column, while keeping fast reactive detection for the rest.</p></details>
+      <details><summary>Where should a team start?</summary><p>Start the observation layer this week: outside-in checks on user-facing surfaces, per-endpoint checks on money paths, SSL monitoring, browser error collection, deploy events. Let two weeks of history build baselines, then enable deviation-based warnings. Add error-budget targets per service, assign owners to every monitored asset, and begin monthly incident review. Each step is small; the compounding is in running the whole loop.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's Digital Operations module is this loop, shipped as a product. Observation: outside-in checks with confirmation, per-endpoint assertions, daily SSL monitoring, the merik.js browser SDK, and deploy events from GitHub/Vercel webhooks. Baselines: p50/p95/p99 and error rates per monitor over 14 days, recomputed hourly. Detection and warning: at most one early warning per asset, carrying risk and confidence separately with the full evidence list, self-resolving on recovery and linked to the incident when it comes true.</p>
+    <p>Response: incidents open once per cause, arrive assigned to the asset's owner with deploys and dependency status on the timeline, and alert by severity — budget-burn emergencies immediately, everything else in working hours. Learning: warnings carry their outcomes, incidents carry their evidence, and monthly SLA reports turn the stored checks into the commercial artefact. Register an asset, paste a snippet, connect a repo — the loop starts running. The deep dives linked throughout this guide are the practice; <a href="/app/">the workspace</a> is where it runs.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Monitoring" href="/blog/application-health-monitoring">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Application health monitoring: the complete guide" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Application health monitoring: the complete guide</h3>
+        <p>Every layer of application health, and how to roll them into one honest score.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Observability" href="/blog/reactive-vs-proactive-monitoring">
+        <img class="thumb" src="/assets/images/blog/observability.svg" alt="Reactive vs proactive monitoring: what&#x27;s the difference?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Observability</span>
+        <h3>Reactive vs proactive monitoring: what's the difference?</h3>
+        <p>One tells you it broke; the other tells you it's breaking. That word is worth hours.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Incidents" href="/blog/prevent-small-bugs-becoming-incidents">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How proactive monitoring stops small bugs becoming major incidents" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>How proactive monitoring stops small bugs becoming major incidents</h3>
+        <p>Small error → repeated error → degradation → outage. Cutting the chain at its cheapest link.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="240" fill="#F7F6F3"/>
+  <circle cx="70" cy="120" r="12" fill="#ffffff" stroke="#1E8449" stroke-width="3"/>
+  <path d="M86 120 h28" stroke="#C9CCD3" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="130" cy="120" r="12" fill="#ffffff" stroke="#B45309" stroke-width="3"/>
+  <path d="M146 120 h28" stroke="#C9CCD3" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="190" cy="120" r="14" fill="#B45309"/>
+  <rect x="188" y="112" width="4" height="9" rx="2" fill="#ffffff"/>
+  <circle cx="190" cy="126" r="2.5" fill="#ffffff"/>
+  <path d="M212 108 l30 -22" stroke="#D93A31" stroke-width="4" stroke-linecap="round"/>
+  <path d="M236 96 l16 -12 M228 84 l24 12" stroke="#D93A31" stroke-width="0" />
+  <g transform="translate(238,74)">
+    <path d="M0 22 L11 0 L22 22" fill="none" stroke="#D93A31" stroke-width="3" stroke-linecap="round"/>
+    <path d="M4 14 L18 14" stroke="#D93A31" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <path d="M212 132 l30 22" stroke="#C9CCD3" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 5"/>
+  <circle cx="266" cy="164" r="12" fill="#ffffff" stroke="#C9CCD3" stroke-width="3"/>
+  <path d="M261 164 l4 4 8 -9" fill="none" stroke="#1E8449" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="70" y="152" font-family="Inter,Arial" font-size="10.5" font-weight="700" fill="#767B85" text-anchor="middle">error</text>
+  <text x="130" y="152" font-family="Inter,Arial" font-size="10.5" font-weight="700" fill="#767B85" text-anchor="middle">repeats</text>
+  <text x="190" y="152" font-family="Inter,Arial" font-size="10.5" font-weight="700" fill="#B45309" text-anchor="middle">warned</text>
+  <text x="290" y="168" font-family="Inter,Arial" font-size="10.5" font-weight="700" fill="#1E8449">fixed</text>
+  <text x="284" y="66" font-family="Inter,Arial" font-size="10.5" font-weight="700" fill="#D93A31">outage</text>
+  <path d="M254 96 l14 -10" stroke="#D93A31" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 6"/>
+</svg>

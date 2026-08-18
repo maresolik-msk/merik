@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>How to Monitor JavaScript Console Errors in Production</title>
+<meta name="description" content="Console errors in production are real failures happening to real users. How to capture uncaught exceptions and rejections at scale, group them, protect privacy, and alert on what matters.">
+<meta name="keywords" content="JavaScript console error monitoring, console error monitoring, production console errors, browser console errors, window.onerror, unhandledrejection, error grouping fingerprint">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/javascript-console-error-monitoring">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="How to monitor JavaScript console errors in production">
+<meta property="og:description" content="The errors in your users' consoles are failures nobody will ever report. How to capture, group and alert on them properly.">
+<meta property="og:url" content="https://www.merik.in/blog/javascript-console-error-monitoring">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/errors.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Errors">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to monitor JavaScript console errors in production">
+<meta name="twitter:description" content="The errors in your users' consoles are failures nobody will ever report. How to capture, group and alert on them properly.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/javascript-console-error-monitoring#post","headline":"How to Monitor JavaScript Console Errors in Production","description":"Console errors in production are real failures happening to real users. How to capture uncaught exceptions and rejections at scale, group them, protect privacy, and alert on what matters.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/javascript-console-error-monitoring","image":"https://www.merik.in/assets/images/blog/errors.svg","articleSection":"Errors","keywords":"JavaScript console error monitoring, console error monitoring, production console errors, browser console errors, window.onerror, unhandledrejection, error grouping fingerprint","wordCount":776,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Console error monitoring","item":"https://www.merik.in/blog/javascript-console-error-monitoring"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"How do I capture JavaScript errors in production?","acceptedAnswer":{"@type":"Answer","text":"Register listeners for the browser's global 'error' event, which receives uncaught exceptions and (with the capture flag) resource load failures, and the 'unhandledrejection' event, which receives promise rejections nothing caught. Report them in small batches to a collection endpoint, using sendBeacon when the page is being closed so final errors are not lost."}},
+      {"@type":"Question","name":"What is error fingerprinting?","acceptedAnswer":{"@type":"Answer","text":"Fingerprinting is grouping error events by their normalised shape rather than their exact text. Numbers, IDs and URLs in the message are replaced with placeholders, and the result is hashed together with the error kind and source file. Thousands of occurrences of one bug then collapse into a single group with a counter, which is what makes both triage and rate-based alerting practical."}},
+      {"@type":"Question","name":"Should I alert on every console error?","acceptedAnswer":{"@type":"Answer","text":"No. Production sites always carry background errors from extensions, old browsers and bots, so per-error alerting is unusable noise. Alert when a site's hourly error count deviates strongly from its own historical baseline — a many-times-normal spike almost always marks a real regression, usually one that shipped in a recent deploy."}},
+      {"@type":"Question","name":"Are console errors a privacy risk?","acceptedAnswer":{"@type":"Answer","text":"Yes, if collected carelessly. Error messages and URLs routinely contain session tokens, email addresses and other personal data. A responsible pipeline strips query strings before reporting, redacts secret-shaped and personal-shaped strings again at the collector, sets no cookies, collects no user identity, and retains error detail for weeks rather than years."}},
+      {"@type":"Question","name":"What is a ChunkLoadError and why does it spike after deploys?","acceptedAnswer":{"@type":"Answer","text":"Single-page applications load code in named chunks. A deploy that renames those chunks invalidates the file names referenced by pages already open in users' browsers; when such a page tries to lazy-load a route, the old chunk name 404s and throws ChunkLoadError. A spike right after deployment is the signature. Mitigations include keeping old chunks available for a grace period and prompting stale sessions to reload."}},
+      {"@type":"Question","name":"Can I monitor console errors without slowing my site down?","acceptedAnswer":{"@type":"Answer","text":"Yes. A capture script needs only two event listeners and a small batching queue — a few kilobytes of code, no framework, deferred loading, and no work at all on pages where nothing fails. The essential guard is defensive wrapping so the monitor itself can never throw or loop; monitoring must never become the thing that breaks the page."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Console error monitoring</nav>
+    <div class="eyebrow">Errors</div>
+    <h1>How to monitor <span class="accent">JavaScript console errors</span> in production</h1>
+    <p class="lead">Open your site, press F12, and read the console. Now remember: every user has one of those too — theirs is full of errors you have never seen, and none of them will tell you.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/errors.svg" alt="Browser console errors being collected and grouped" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>Monitoring JavaScript console errors in production means capturing the uncaught exceptions, unhandled promise rejections and failed loads that surface in real users' browser consoles, reporting them to a collector, grouping duplicates by fingerprint, and alerting when a site's error rate deviates sharply from its own normal.</b> The console on your development machine shows one environment; production is thousands of environments — browser versions, extensions, network conditions — each with its own console you will never look at. Monitoring is how those consoles report back.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>A console error in production is <b>a failure that happened to a real user</b> — the console is just where the evidence lands.</li>
+      <li>Two browser events capture most of it: <b><code>error</code></b> (uncaught exceptions, resource failures) and <b><code>unhandledrejection</code></b> (async failures).</li>
+      <li>Raw capture without <b>fingerprint grouping</b> is unusable: one bug at scale is tens of thousands of near-identical messages.</li>
+      <li>Error text must be treated as <b>hostile input for privacy</b>: messages and URLs routinely carry tokens and personal data.</li>
+      <li>Alert on <b>deviation from the site's own error baseline</b>, never on individual errors.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#matter">Do console errors actually matter?</a></li>
+      <li><a href="#capture">What to capture, technically</a></li>
+      <li><a href="#grouping">Grouping: from 40,000 messages to 6 bugs</a></li>
+      <li><a href="#privacy">Privacy: error text is a data leak by default</a></li>
+      <li><a href="#alerting">Alerting: the baseline is the site's own history</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="matter">Do console errors actually matter?</h2>
+
+    <p>The sceptical position — "there are always console errors, it's noise" — is half right. Some are: third-party extensions injecting broken scripts, museum-piece browsers, bots executing half a page. If your policy is "zero console errors", production will humble you by lunchtime.</p>
+    <p>But inside the noise, console errors are precisely the failures that matter and go unreported:</p>
+    <ul>
+      <li>an <code>undefined is not a function</code> from the browser your team does not test on — every user on it locked out of a feature;</li>
+      <li>an unhandled rejection in a save flow — <a href="/blog/silent-application-failures">data quietly not persisting</a> while the UI claims success;</li>
+      <li>a <code>ChunkLoadError</code> after a deploy renamed bundles — users with the old page open unable to navigate;</li>
+      <li>a CSP violation silently blocking your payment provider's script — checkout dead in exactly one configuration.</li>
+    </ul>
+    <p>The task is not "eliminate console errors"; it is <b>see them, group them, and notice when their rate changes</b> — because a rate change is a regression with a timestamp.</p>
+
+
+    <h2 id="capture">What to capture, technically</h2>
+
+    <p>Two global listeners cover most of the surface:</p>
+    <ul>
+      <li><b><code>window.addEventListener('error', …)</code></b> — fires for uncaught exceptions (message, source file, line, error object) and, with the capture flag, for failed resource loads (the script/img/link element that did not arrive).</li>
+      <li><b><code>window.addEventListener('unhandledrejection', …)</code></b> — fires for promise rejections nothing caught, which in async-heavy codebases is where the majority of real failures surface. The reason may be an Error, a string, or anything; capture defensively.</li>
+    </ul>
+    <p>Optionally, wrapping <code>fetch</code> observes failed network calls (status ≥ 400, network failures) — with one non-negotiable guard: <b>never report failures of the reporting endpoint itself</b>, or a collector outage becomes an infinite error loop.</p>
+    <p>Delivery discipline: batch reports on an interval rather than firing per-error; cap the queue so a loop cannot flood; use <code>sendBeacon</code> on page hide so the error that broke the page is not lost when the user closes it; and wrap the entire reporter so a bug in monitoring can never break the page it monitors.</p>
+
+
+    <h2 id="grouping">Grouping: from 40,000 messages to 6 bugs</h2>
+
+    <p>One broken deploy on a busy site generates tens of thousands of error events in an afternoon. Stored raw, that is a haystack. The fix is <b>fingerprinting</b>:</p>
+    <ol>
+      <li><b>Normalise the message</b> — replace numbers, IDs, UUIDs and URLs with placeholders, so <code>user 4821 not found</code> and <code>user 9317 not found</code> share a shape.</li>
+      <li><b>Hash the shape</b> together with the error kind and source file into a fingerprint.</li>
+      <li><b>Count per fingerprint per hour</b> — one row per bug per hour, holding a counter and one representative message.</li>
+    </ol>
+    <p>The questions that matter — which errors, how often, since when, still growing? — are all answerable from those counters, at a millionth of the storage. And the counter shape is what makes rate-based alerting possible at all.</p>
+
+
+    <h2 id="privacy">Privacy: error text is a data leak by default</h2>
+
+    <p>Nobody designs error messages to carry secrets; they carry them anyway. URLs arrive with session tokens in query strings; API errors echo emails ("no account for jo@example.com"); stack traces embed request payloads. Collect all of that verbatim and your error database quietly becomes your most sensitive datastore — with none of the access controls.</p>
+    <p>Minimum discipline, enforced at both ends:</p>
+    <ul>
+      <li><b>In the browser:</b> strip query strings and fragments from every URL before reporting; send the page path, never the full location; read no cookies, no storage, no form contents; attach no user identity.</li>
+      <li><b>At the collector:</b> re-redact regardless of what the client did — token-shaped strings, JWTs, emails, long opaque identifiers, card-shaped digit runs — because client-side promises can be edited by anyone with a dev console.</li>
+      <li><b>Retention:</b> error detail is debugging material, not history. Weeks, not years.</li>
+    </ul>
+    <p>If you run websites for clients, this is doubled: the users in those consoles are your client's customers, and your diligence is part of what the client is paying for.</p>
+
+
+    <h2 id="alerting">Alerting: the baseline is the site's own history</h2>
+
+    <p>The wrong rule is a fixed threshold ("alert over 100 errors/hour") — instantly too noisy for a busy site and too deaf for a quiet one. The right rule is self-referential: <b>compare this hour against this site's usual hour</b>, using a median of recent history so one previous bad afternoon does not distort the norm.</p>
+    <ul>
+      <li>40 errors/hour on a site that always runs 35–45: background. File it, fix it in a sprint, do not page anyone.</li>
+      <li>40 errors/hour on a site whose median is 2: an 18–20× deviation. Something changed — almost certainly <a href="/blog/detect-bugs-before-users-report-them">a deploy in the last few hours</a> — and it is worth attention now.</li>
+    </ul>
+    <p>Best practice folds the spike into the application's wider health signal rather than alerting in isolation: an error-rate deviation plus rising API latency plus a deploy twenty minutes ago is <b>one</b> early warning with three pieces of evidence, not three notifications. <a href="/blog/frontend-error-monitoring">Frontend error monitoring</a> is one instrument in the orchestra, not a soloist.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Capture surface</th><td>window 'error' event (exceptions + resource failures), 'unhandledrejection', optional fetch wrapping</td></tr>
+      <tr><th>Reporter discipline</th><td>Batch on an interval, cap the queue, sendBeacon on page hide, never report the reporter's own endpoint</td></tr>
+      <tr><th>Grouping method</th><td>Normalise message (IDs/numbers/URLs → placeholders) → hash with kind+source → hourly counter per fingerprint</td></tr>
+      <tr><th>Privacy rules</th><td>Strip query strings client-side; redact tokens/emails/card shapes server-side; no cookies or identity; short retention</td></tr>
+      <tr><th>Alert rule</th><td>Deviation vs the site's own median hour — never fixed thresholds, never individual errors</td></tr>
+      <tr><th>Common real culprits</th><td>Undefined property access per-browser, unhandled rejections in save flows, ChunkLoadError after deploys, CSP blocks</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>How do I capture JavaScript errors in production?</summary><p>Register listeners for the browser's global 'error' event, which receives uncaught exceptions and (with the capture flag) resource load failures, and the 'unhandledrejection' event, which receives promise rejections nothing caught. Report them in small batches to a collection endpoint, using sendBeacon when the page is being closed so final errors are not lost.</p></details>
+      <details><summary>What is error fingerprinting?</summary><p>Fingerprinting is grouping error events by their normalised shape rather than their exact text. Numbers, IDs and URLs in the message are replaced with placeholders, and the result is hashed together with the error kind and source file. Thousands of occurrences of one bug then collapse into a single group with a counter, which is what makes both triage and rate-based alerting practical.</p></details>
+      <details><summary>Should I alert on every console error?</summary><p>No. Production sites always carry background errors from extensions, old browsers and bots, so per-error alerting is unusable noise. Alert when a site's hourly error count deviates strongly from its own historical baseline — a many-times-normal spike almost always marks a real regression, usually one that shipped in a recent deploy.</p></details>
+      <details><summary>Are console errors a privacy risk?</summary><p>Yes, if collected carelessly. Error messages and URLs routinely contain session tokens, email addresses and other personal data. A responsible pipeline strips query strings before reporting, redacts secret-shaped and personal-shaped strings again at the collector, sets no cookies, collects no user identity, and retains error detail for weeks rather than years.</p></details>
+      <details><summary>What is a ChunkLoadError and why does it spike after deploys?</summary><p>Single-page applications load code in named chunks. A deploy that renames those chunks invalidates the file names referenced by pages already open in users' browsers; when such a page tries to lazy-load a route, the old chunk name 404s and throws ChunkLoadError. A spike right after deployment is the signature. Mitigations include keeping old chunks available for a grace period and prompting stale sessions to reload.</p></details>
+      <details><summary>Can I monitor console errors without slowing my site down?</summary><p>Yes. A capture script needs only two event listeners and a small batching queue — a few kilobytes of code, no framework, deferred loading, and no work at all on pages where nothing fails. The essential guard is defensive wrapping so the monitor itself can never throw or loop; monitoring must never become the thing that breaks the page.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>This article describes merik.js, Merik's browser reporter, almost mechanism for mechanism — because these are the mechanics we consider table stakes. One script tag captures uncaught errors, unhandled rejections, failed requests and failed resources; batches on a ten-second interval; caps its queue; flushes by beacon on page hide; and refuses to report failures of its own endpoint. Query strings never leave the browser, and the collector re-redacts tokens, emails and card-shaped strings before anything touches storage.</p>
+    <p>Grouping is fingerprint-based into hourly counters per site, and alerting is exactly the self-referential rule above: this hour against the site's own median, folded into the asset's <a href="/blog/proactive-application-monitoring">early-warning signal</a> beside uptime, latency and deploy evidence rather than shouting on its own. Add the snippet to a site you run, and its console errors stop being a thing you discover during screen-shares.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Errors" href="/blog/frontend-error-monitoring">
+        <img class="thumb" src="/assets/images/blog/errors.svg" alt="Frontend errors: why users see problems before your team does" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Errors</span>
+        <h3>Frontend errors: why users see problems before your team does</h3>
+        <p>The server said 200. The page broke anyway. Seeing the failures uptime checks can't.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Errors" href="/blog/silent-application-failures">
+        <img class="thumb" src="/assets/images/blog/errors.svg" alt="The hidden cost of silent application failures" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Errors</span>
+        <h3>The hidden cost of silent application failures</h3>
+        <p>The failures nobody notices are the ones that compound. What silence costs, and how to end it.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Observability" href="/blog/ai-application-monitoring">
+        <img class="thumb" src="/assets/images/blog/observability.svg" alt="How AI helps detect application problems before they become incidents" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Observability</span>
+        <h3>How AI helps detect application problems before they become incidents</h3>
+        <p>Learned baselines, anomaly detection, correlation — the honest map of where AI helps monitoring.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="240" fill="#F7F6F3"/>
+  <rect x="46" y="84" width="110" height="72" rx="14" fill="#ffffff" stroke="#ECECEC" stroke-width="2"/>
+  <text x="101" y="115" font-family="Inter,Arial" font-size="13" font-weight="800" fill="#15161A" text-anchor="middle">client</text>
+  <rect x="66" y="126" width="70" height="7" rx="3.5" fill="#C9CCD3"/>
+  <rect x="244" y="84" width="110" height="72" rx="14" fill="#15161A"/>
+  <text x="299" y="115" font-family="Inter,Arial" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">/api/orders</text>
+  <rect x="264" y="126" width="70" height="7" rx="3.5" fill="#3A3B40"/>
+  <path d="M162 106 h72" stroke="#1E8449" stroke-width="3" stroke-linecap="round"/>
+  <path d="M226 100 l10 6 -10 6" fill="none" stroke="#1E8449" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M234 134 h-72" stroke="#D93A31" stroke-width="3" stroke-linecap="round" stroke-dasharray="7 6"/>
+  <path d="M172 128 l-10 6 10 6" fill="none" stroke="#D93A31" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="168" y="52" width="64" height="22" rx="11" fill="#D93A31"/>
+  <text x="200" y="67" font-family="Inter,Arial" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">504</text>
+  <text x="200" y="186" font-family="Inter,Arial" font-size="11" font-weight="700" fill="#767B85" text-anchor="middle">p95 420ms → 1400ms</text>
+</svg>

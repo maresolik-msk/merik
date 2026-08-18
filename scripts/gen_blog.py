@@ -15,8 +15,11 @@ import html
 import pathlib
 import re
 
-from blog_posts import POSTS
+from blog_posts import POSTS as WORKFORCE_POSTS
+from blog_posts_monitoring import POSTS as MONITORING_POSTS
 from site_chrome import CHROME_JS, footer, header
+
+POSTS = WORKFORCE_POSTS + MONITORING_POSTS
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BLOG = ROOT / "blog"
@@ -154,10 +157,72 @@ CARDS = [
     ("spreadsheet-to-workforce-software-migration", "AI", "ai",
      "Migrating from spreadsheets to workforce software: a 30-day plan",
      "A week-by-week migration that doesn't blow up your next payroll."),
+    # Monitoring — the Digital Operations cluster (blog_posts_monitoring.py)
+    ("proactive-application-monitoring", "Monitoring", "monitoring",
+     "What is proactive application monitoring?",
+     "Detecting problems before users report them — baselines, anomalies and early warnings, explained."),
+    ("application-health-monitoring", "Monitoring", "monitoring",
+     "Application health monitoring: the complete guide",
+     "Every layer of application health, and how to roll them into one honest score."),
+    ("saas-monitoring-checklist", "Monitoring", "monitoring",
+     "What should you monitor in a SaaS application?",
+     "The complete checklist — uptime, APIs, frontend errors, certificates, dependencies, deploys."),
+    ("application-monitoring-for-startups", "Monitoring", "monitoring",
+     "Application monitoring for startups: what to monitor first",
+     "The monitoring that pays for itself this week, and the monitoring that can wait a year."),
+    ("frontend-error-monitoring", "Errors", "errors",
+     "Frontend errors: why users see problems before your team does",
+     "The server said 200. The page broke anyway. Seeing the failures uptime checks can't."),
+    ("javascript-console-error-monitoring", "Errors", "errors",
+     "How to monitor JavaScript console errors in production",
+     "Capture, group and alert on the errors in your users' consoles — without drowning in noise."),
+    ("backend-error-monitoring", "Errors", "errors",
+     "Backend errors that break your product without crashing it",
+     "One route 500s, a pool saturates, a consumer dies — and the process stays healthy throughout."),
+    ("silent-application-failures", "Errors", "errors",
+     "The hidden cost of silent application failures",
+     "The failures nobody notices are the ones that compound. What silence costs, and how to end it."),
+    ("api-failure-detection", "Reliability", "api",
+     "How to detect API failures before your customers do",
+     "APIs degrade before they die — latency drift, timeouts, error trickles. Monitoring that listens."),
+    ("production-issues-monitoring-should-detect", "Reliability", "api",
+     "10 production issues your monitoring should detect automatically",
+     "If a human has to notice any of these ten, the monitoring has a gap."),
+    ("application-up-but-users-see-errors", "Reliability", "api",
+     "Your application is up. So why are users still having problems?",
+     "Uptime 100%, users unhappy — both true. Closing the gap between server health and experience."),
+    ("proactive-application-reliability", "Reliability", "api",
+     "The complete guide to proactive application reliability",
+     "Observe, baseline, warn, respond, learn — the full loop that prevents incidents instead of narrating them."),
+    ("observability-vs-monitoring", "Observability", "observability",
+     "What is observability, and how is it different from monitoring?",
+     "Monitoring says something is wrong; observability says why. The two, untangled."),
+    ("logs-vs-monitoring", "Observability", "observability",
+     "Why logs alone are not enough for application monitoring",
+     "Logs are records, not lookouts — nobody reads them until after the incident."),
+    ("ai-application-monitoring", "Observability", "observability",
+     "How AI helps detect application problems before they become incidents",
+     "Learned baselines, anomaly detection, correlation — the honest map of where AI helps monitoring."),
+    ("reactive-vs-proactive-monitoring", "Observability", "observability",
+     "Reactive vs proactive monitoring: what's the difference?",
+     "One tells you it broke; the other tells you it's breaking. That word is worth hours."),
+    ("detect-bugs-before-users-report-them", "Incidents", "incidents",
+     "Why waiting for users to report bugs is too late",
+     "The first report ends a long silence — days of failures and quiet exits. Detect first."),
+    ("broken-user-flows", "Incidents", "incidents",
+     "How to detect broken user flows before customers complain",
+     "A flow is only as healthy as its weakest step — and the weakest step hides in healthy components."),
+    ("reduce-mttd", "Incidents", "incidents",
+     "How to reduce MTTD (mean time to detect) application issues",
+     "Most incident time is spent not knowing. Six changes that cut detection from hours to minutes."),
+    ("prevent-small-bugs-becoming-incidents", "Incidents", "incidents",
+     "How proactive monitoring stops small bugs becoming major incidents",
+     "Small error → repeated error → degradation → outage. Cutting the chain at its cheapest link."),
 ]
 
 CARD_BY_SLUG = {c[0]: c for c in CARDS}
-CATEGORIES = ["Attendance", "Payroll", "Leave", "Tasks", "Clients", "Assets", "HR", "AI"]
+CATEGORIES = ["Attendance", "Payroll", "Leave", "Tasks", "Clients", "Assets", "HR", "AI",
+              "Monitoring", "Errors", "Reliability", "Observability", "Incidents"]
 
 HEAD_COMMON = """<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
 <script>
@@ -375,9 +440,9 @@ def build_index():
 <html lang="en">
 <head>
 {HEAD_COMMON}
-<title>Merik Blog | {len(CARDS)} Guides on Workforce, Attendance, Payroll &amp; HR</title>
-<meta name="description" content="{len(CARDS)} practical guides on workforce management, attendance, leave, payroll, daily tasks, clients, assets and HR for small and growing businesses — from the Merik team.">
-<meta name="keywords" content="workforce management blog, attendance tracking guide, payroll automation, HR software for small business, leave management tips, task tracking guide, Merik blog">
+<title>Merik Blog | {len(CARDS)} Guides on Workforce, Payroll, HR &amp; Application Monitoring</title>
+<meta name="description" content="{len(CARDS)} practical guides on workforce management, attendance, leave, payroll, daily tasks — plus application monitoring, API reliability, frontend errors and proactive incident detection — from the Merik team.">
+<meta name="keywords" content="workforce management blog, attendance tracking guide, payroll automation, HR software for small business, application monitoring guide, API monitoring, frontend error monitoring, proactive monitoring, Merik blog">
 <meta name="author" content="Merik">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#D93A31">
@@ -386,14 +451,14 @@ def build_index():
 <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Merik">
-<meta property="og:title" content="Merik Blog — Workforce, Attendance, Payroll &amp; HR Guides">
-<meta property="og:description" content="Practical guides on workforce management, attendance, leave, payroll and HR for small and growing businesses.">
+<meta property="og:title" content="Merik Blog — Workforce, Payroll, HR &amp; Monitoring Guides">
+<meta property="og:description" content="Practical guides on workforce management, payroll and HR — plus application monitoring, reliability and proactive incident detection.">
 <meta property="og:url" content="{SITE}/blog/">
 <meta property="og:image" content="{SITE}/assets/images/og-image.png">
 <meta property="og:locale" content="en_IN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Merik Blog">
-<meta name="twitter:description" content="Guides on workforce management, attendance, leave, payroll and HR for small business.">
+<meta name="twitter:description" content="Guides on workforce management, payroll, HR, application monitoring and reliability for small business.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -402,11 +467,11 @@ def build_index():
 {{
   "@context":"https://schema.org",
   "@graph":[
-    {{"@type":"Blog","@id":"{SITE}/blog/#blog","url":"{SITE}/blog/","name":"Merik Blog","description":"Guides on workforce management, attendance, leave, payroll, tasks, clients, assets and HR for small and growing businesses.","publisher":{{"@id":"{SITE}/#org"}},"isPartOf":{{"@id":"{SITE}/#website"}},"inLanguage":"en"}},
+    {{"@type":"Blog","@id":"{SITE}/blog/#blog","url":"{SITE}/blog/","name":"Merik Blog","description":"Guides on workforce management, attendance, leave, payroll, tasks, clients, assets and HR — and on application monitoring, reliability, error detection and proactive incident prevention — for small and growing businesses.","publisher":{{"@id":"{SITE}/#org"}},"isPartOf":{{"@id":"{SITE}/#website"}},"inLanguage":"en"}},
     {{"@type":"BreadcrumbList","itemListElement":[
       {{"@type":"ListItem","position":1,"name":"Home","item":"{SITE}/"}},
       {{"@type":"ListItem","position":2,"name":"Blog","item":"{SITE}/blog/"}}]}},
-    {{"@type":"ItemList","name":"Merik workforce guides","numberOfItems":{len(CARDS)},"itemListElement":[
+    {{"@type":"ItemList","name":"Merik guides","numberOfItems":{len(CARDS)},"itemListElement":[
       {items}]}}
   ]
 }}
@@ -422,15 +487,15 @@ def build_index():
   <div class="wrap">
     <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> Blog</nav>
     <div class="eyebrow">Merik Blog</div>
-    <h1>Guides for running your <span class="accent">workforce</span></h1>
-    <p class="lead">{len(CARDS)} practical, no-fluff guides on attendance, leave, payroll, daily tasks, clients, assets and HR — for small and growing businesses replacing spreadsheets with one workspace.</p>
+    <h1>Guides for running your <span class="accent">business</span></h1>
+    <p class="lead">{len(CARDS)} practical, no-fluff guides — attendance, leave, payroll, tasks, clients and HR for running your team, plus application monitoring, reliability and proactive incident detection for running what you ship.</p>
   </div>
 </div>
 
 <section class="features">
   <div class="wrap">
     <div class="blog-search">
-      <input id="blogSearch" type="search" placeholder="Search {len(CARDS)} guides — payroll, leave, attendance…" aria-label="Search the blog">
+      <input id="blogSearch" type="search" placeholder="Search {len(CARDS)} guides — payroll, monitoring, API errors…" aria-label="Search the blog">
     </div>
     <div class="blog-filters" id="blogFilters">
       <button class="on" data-cat="all">All ({len(CARDS)})</button>
@@ -441,7 +506,7 @@ def build_index():
 {cards}
 
     </div>
-    <p class="blog-empty" id="blogEmpty">No guides match that search. Try “payroll”, “leave” or “attendance”.</p>
+    <p class="blog-empty" id="blogEmpty">No guides match that search. Try “payroll”, “monitoring” or “attendance”.</p>
   </div>
 </section>
 

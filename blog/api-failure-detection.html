@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>How to Detect API Failures Before Your Customers Do</title>
+<meta name="description" content="API failures rarely start as outages — they start as timeouts, 5xx trickles and latency climbs. How to monitor APIs per endpoint and catch failures before customers report them.">
+<meta name="keywords" content="API monitoring, API failure detection, API error monitoring, API downtime, API monitoring tools, API latency monitoring, endpoint monitoring, API health check">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/api-failure-detection">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="How to detect API failures before your customers do">
+<meta property="og:description" content="API failures announce themselves in advance — as timeouts, error trickles and latency climbs. Monitoring that listens catches them first.">
+<meta property="og:url" content="https://www.merik.in/blog/api-failure-detection">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/api.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Reliability">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to detect API failures before your customers do">
+<meta name="twitter:description" content="API failures announce themselves in advance — as timeouts, error trickles and latency climbs. Monitoring that listens catches them first.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/api-failure-detection#post","headline":"How to Detect API Failures Before Your Customers Do","description":"API failures rarely start as outages — they start as timeouts, 5xx trickles and latency climbs. How to monitor APIs per endpoint and catch failures before customers report them.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/api-failure-detection","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"API monitoring, API failure detection, API error monitoring, API downtime, API monitoring tools, API latency monitoring, endpoint monitoring, API health check","wordCount":788,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"API failure detection","item":"https://www.merik.in/blog/api-failure-detection"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"How does API monitoring work?","acceptedAnswer":{"@type":"Answer","text":"API monitoring sends requests to each critical endpoint on a fixed interval from outside your infrastructure, validates the response status and optionally its content, records latency, and tracks failures. Failures are confirmed across consecutive checks before an incident is raised, and latency is compared against the endpoint's own measured baseline so degradation is caught before hard failure."}},
+      {"@type":"Question","name":"Why isn't a /health endpoint enough?","acceptedAnswer":{"@type":"Answer","text":"Health endpoints typically return a static success without exercising the database, dependencies or business logic, so they stay green through most real failures. Meaningful API monitoring checks the endpoints consumers actually call, with the assertions those calls depend on."}},
+      {"@type":"Question","name":"What API metrics predict failure earliest?","acceptedAnswer":{"@type":"Answer","text":"Latency percentile drift against the endpoint's own baseline is the earliest signal — p95 rises before errors appear. Timeout rate is the most predictive of imminent failure, because timeouts mean requests are stalling inside the service, the external signature of pool or queue exhaustion. Error-rate deviation, especially any 5xx on a normally clean endpoint, is the confirmation."}},
+      {"@type":"Question","name":"How do I monitor API latency properly?","acceptedAnswer":{"@type":"Answer","text":"Record response time on every check and keep percentiles per endpoint — p50 for the typical case, p95 for the degradation-sensitive tail. Compare current values against a trailing baseline (one to two weeks) and alert when deviation is both proportionally and absolutely significant. Averages alone hide tail degradation; fixed thresholds cannot be fair to endpoints with different natural speeds."}},
+      {"@type":"Question","name":"What causes API downtime most often?","acceptedAnswer":{"@type":"Answer","text":"Common causes include resource exhaustion (connection pools, memory, worker queues) building up gradually, database performance degrading as data grows, downstream dependency failures propagating upward, expired TLS certificates, DNS misconfiguration, and regressions shipped in deployments. Most give measurable warning — latency drift, timeout onset, error trickles — before becoming outages, which is what per-endpoint baseline monitoring is designed to catch."}},
+      {"@type":"Question","name":"Should API monitoring assert response content?","acceptedAnswer":{"@type":"Answer","text":"Yes, for critical endpoints. Status-only checks miss the failure mode where an API returns 200 with a wrong, empty or stale body — often the most damaging failure because nothing anywhere signals an error. Asserting that a stable field or value exists in the response catches it from the outside."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> API failure detection</nav>
+    <div class="eyebrow">Reliability</div>
+    <h1>How to detect <span class="accent">API failures</span> before your customers do</h1>
+    <p class="lead">When an API breaks, its consumers know within one request. Whether you know depends entirely on what you were watching. Here is what to watch.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/api.svg" alt="API endpoint metrics trending toward failure" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>Detecting API failures before customers means monitoring each critical endpoint individually — availability, status codes, latency percentiles against a measured baseline, and timeout rate — and alerting on confirmed failures and significant deviations rather than waiting for a hard outage.</b> APIs rarely die suddenly. They degrade: p95 latency climbs, a trickle of 5xx starts on one route, timeouts creep upward as a pool saturates. Each stage is measurable from the outside, which means the difference between finding out from your monitoring and finding out from an angry integration partner is mostly a matter of instrumentation choices.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>APIs fail <b>per endpoint</b>, so they must be monitored per endpoint — <code>/health</code> says nothing about <code>/orders</code>.</li>
+      <li>Most API outages are preceded by a <b>measurable prodrome</b>: latency climb, error trickle, rising timeouts.</li>
+      <li>Baselines make degradation visible: <b>3× this endpoint's normal p95</b> is a signal no fixed threshold would catch fairly.</li>
+      <li>Assert <b>status and content</b>, because the worst API failure is a 200 with a wrong body.</li>
+      <li>Your customers effectively monitor your API continuously — the question is whether your tooling is faster than their patience.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#stakes">Why API failures are a special category</a></li>
+      <li><a href="#modes">The failure sequence: how APIs actually break</a></li>
+      <li><a href="#what">What to monitor, per endpoint</a></li>
+      <li><a href="#baseline">Judging by baseline, not threshold</a></li>
+      <li><a href="#respond">Wiring detection into response</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="stakes">Why API failures are a special category</h2>
+
+    <p>When a page breaks, one user has a bad session. When an API breaks, every consumer built on it breaks simultaneously — customer integrations, mobile apps, partner systems, your own frontend. The blast radius is multiplied by everything downstream, and so is the reputational cost: an integration partner who got paged because of <i>your</i> API remembers it at renewal time.</p>
+    <p>API consumers are also unforgiving reporters. Humans retry and shrug; software retries on a schedule, fails its own SLAs, and generates support escalations with timestamps attached. There is no ambiguity about when your API went bad — their logs have it to the second. The only open question is whether your monitoring had it first.</p>
+
+
+    <h2 id="modes">The failure sequence: how APIs actually break</h2>
+
+    <p>Hard failures — the API fully down — are the minority and the easy case; any uptime check catches them. The common sequence is gradual, and each stage is independently detectable:</p>
+    <ol>
+      <li><b>Latency drift.</b> A query slows as a table grows, a downstream dependency degrades, a pool starts queueing. p95 moves first, then p50. Nothing errors yet. This stage can last days — it is the cheapest possible moment to intervene.</li>
+      <li><b>Timeout onset.</b> The slowest requests start dying at the client deadline. Timeout rate is the single most predictive API metric: it means requests are stalling <i>inside</i> the service, which is how resource exhaustion looks from outside.</li>
+      <li><b>Error trickle.</b> 5xx begins on some inputs or some fraction of traffic — the pool rejects connections, a dependency circuit opens. Aggregate availability still looks fine; the affected route does not.</li>
+      <li><b>Saturation.</b> The failure generalises: most requests error or time out. This is the stage that gets called "the outage", and it is typically hours downstream of stage 1.</li>
+    </ol>
+    <p>Detection at stage 1–2 is <a href="/blog/proactive-application-monitoring">a warning to investigate</a>; at stage 3 it is an incident; at stage 4 it is public. The entire value of API monitoring design is moving detection leftward in that sequence.</p>
+
+
+    <h2 id="what">What to monitor, per endpoint</h2>
+
+    <p>Choose the endpoints that map to money and core journeys — auth, the main reads, the writes that matter, checkout — and give each:</p>
+    <ul>
+      <li><b>An outside-in check</b> every 1–5 minutes, traversing DNS, TLS and the real network path, because that is the path consumers use.</li>
+      <li><b>Status assertion.</b> Expected 200s should be 200; an auth-required endpoint probed without credentials should return exactly its 401 — a 500 from either is news.</li>
+      <li><b>Content assertion</b> where the response shape is stable: a JSON field that must exist, a value that must be present. This is the only outside-in catch for the 200-with-garbage failure mode.</li>
+      <li><b>Latency percentiles into a baseline.</b> The check is already timing the request; stored over a trailing window it defines this endpoint's normal, and "normal" is what makes drift computable.</li>
+      <li><b>Timeout tracking as a distinct series</b> — not folded into general errors, because it carries different information (stall vs refusal).</li>
+      <li><b>Confirmation before incident.</b> Two consecutive failures, not one — the network between your checker and your API has its own weather.</li>
+    </ul>
+
+
+    <h2 id="baseline">Judging by baseline, not threshold</h2>
+
+    <p>Fixed latency thresholds fail the fairness test across a real API surface. 400ms is an emergency for the autocomplete endpoint and a Tuesday for the report generator. Set the threshold loose enough for the slow endpoint and the fast one can triple silently; tight enough for the fast one and the slow one pages daily. The escape is per-endpoint baselines:</p>
+    <ul>
+      <li>Record each endpoint's p50/p95 over 1–2 weeks.</li>
+      <li>Alert on <b>ratio + absolute</b> deviation: e.g. p95 above 1.8× its own baseline <i>and</i> more than 150ms worse — the double condition kills both false-positive classes (naturally noisy fast endpoints; proportionally-large-but-tiny changes).</li>
+      <li>Watch <b>trend direction</b> across hours: five consecutive rising hours is a signal even before any ratio trips — that shape is <a href="/blog/backend-error-monitoring">resource pressure building</a>.</li>
+    </ul>
+    <p>Error rates get the same treatment: most endpoints' baseline error rate rounds to zero, so a floor matters (two failures in an hour is a pattern; one is weather), and the comparison is always against <i>this endpoint's</i> history, not the fleet average.</p>
+
+
+    <h2 id="respond">Wiring detection into response</h2>
+
+    <p>Detection is only half the mean-time-to-recovery equation. The handoff matters:</p>
+    <ul>
+      <li><b>Every API asset has an owner</b>, and the incident arrives assigned to them — not to a channel where it is everyone's job and therefore nobody's. <a href="/blog/reduce-mttd">MTTD</a> gains evaporate in assignment lag.</li>
+      <li><b>The incident carries its evidence:</b> failing stage (DNS/TLS/request/response), status codes, latency at detection, and what deployed recently. A responder who opens the page mid-context saves the first fifteen minutes of every investigation.</li>
+      <li><b>Deduplicate ruthlessly.</b> An API failure fans out — its consumers fail too. Forty alerts describing one root cause is how <a href="/blog/production-issues-monitoring-should-detect">on-call channels get muted</a>. One incident, with the fan-out recorded as impact.</li>
+      <li><b>Close the loop with uptime accounting</b> — checks stored per month become the availability number for SLA reporting, which is the same data doing commercial duty.</li>
+    </ul>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Monitor granularity</th><td>Per endpoint — the endpoints mapping to money and core user journeys</td></tr>
+      <tr><th>The failure sequence</th><td>Latency drift → timeout onset → 5xx trickle → saturation ("the outage")</td></tr>
+      <tr><th>Most predictive metric</th><td>Timeout rate — requests stalling inside the service signal resource exhaustion</td></tr>
+      <tr><th>Baseline rule</th><td>Alert at ratio + absolute deviation from the endpoint's own p95 (e.g. ≥1.8× and ≥150ms)</td></tr>
+      <tr><th>Confirmation</th><td>Two consecutive failed checks before an incident — single blips are network weather</td></tr>
+      <tr><th>Worst failure mode</th><td>HTTP 200 with a wrong body — caught only by content assertions</td></tr>
+      <tr><th>Check interval</th><td>1–5 minutes outside-in; 1 minute where a strict SLA applies</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>How does API monitoring work?</summary><p>API monitoring sends requests to each critical endpoint on a fixed interval from outside your infrastructure, validates the response status and optionally its content, records latency, and tracks failures. Failures are confirmed across consecutive checks before an incident is raised, and latency is compared against the endpoint's own measured baseline so degradation is caught before hard failure.</p></details>
+      <details><summary>Why isn't a /health endpoint enough?</summary><p>Health endpoints typically return a static success without exercising the database, dependencies or business logic, so they stay green through most real failures. Meaningful API monitoring checks the endpoints consumers actually call, with the assertions those calls depend on.</p></details>
+      <details><summary>What API metrics predict failure earliest?</summary><p>Latency percentile drift against the endpoint's own baseline is the earliest signal — p95 rises before errors appear. Timeout rate is the most predictive of imminent failure, because timeouts mean requests are stalling inside the service, the external signature of pool or queue exhaustion. Error-rate deviation, especially any 5xx on a normally clean endpoint, is the confirmation.</p></details>
+      <details><summary>How do I monitor API latency properly?</summary><p>Record response time on every check and keep percentiles per endpoint — p50 for the typical case, p95 for the degradation-sensitive tail. Compare current values against a trailing baseline (one to two weeks) and alert when deviation is both proportionally and absolutely significant. Averages alone hide tail degradation; fixed thresholds cannot be fair to endpoints with different natural speeds.</p></details>
+      <details><summary>What causes API downtime most often?</summary><p>Common causes include resource exhaustion (connection pools, memory, worker queues) building up gradually, database performance degrading as data grows, downstream dependency failures propagating upward, expired TLS certificates, DNS misconfiguration, and regressions shipped in deployments. Most give measurable warning — latency drift, timeout onset, error trickles — before becoming outages, which is what per-endpoint baseline monitoring is designed to catch.</p></details>
+      <details><summary>Should API monitoring assert response content?</summary><p>Yes, for critical endpoints. Status-only checks miss the failure mode where an API returns 200 with a wrong, empty or stale body — often the most damaging failure because nothing anywhere signals an error. Asserting that a stable field or value exists in the response catches it from the outside.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik monitors APIs endpoint by endpoint, exactly on this model. Each registered endpoint gets outside-in checks with status validation and optional content assertions, two-failure confirmation, and latency recorded into its own 14-day p50/p95/p99 baseline. Failures are classified by stage — DNS, TLS, request, response — so the incident says where in the path it died, and timeout-shaped failures are distinguished from refusals.</p>
+    <p>Latency drift against baseline, error-rate deviation and budget burn feed <a href="/blog/proactive-application-monitoring">early warnings</a> with risk, confidence and the evidence list — the stage-1-and-2 detection this article argues for. When an incident does open, it arrives assigned to the endpoint's owner with recent deploys correlated on the timeline, alerts exactly once, and the stored checks roll into monthly uptime and <a href="/blog/application-health-monitoring">error-budget health</a> for the SLA conversation later. Detection leftward, response pre-wired.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Errors" href="/blog/backend-error-monitoring">
+        <img class="thumb" src="/assets/images/blog/errors.svg" alt="Backend errors that break your product without crashing it" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Errors</span>
+        <h3>Backend errors that break your product without crashing it</h3>
+        <p>One route 500s, a pool saturates, a consumer dies — and the process stays healthy throughout.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/production-issues-monitoring-should-detect">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="10 production issues your monitoring should detect automatically" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>10 production issues your monitoring should detect automatically</h3>
+        <p>If a human has to notice any of these ten, the monitoring has a gap.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Incidents" href="/blog/reduce-mttd">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How to reduce MTTD (mean time to detect) application issues" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>How to reduce MTTD (mean time to detect) application issues</h3>
+        <p>Most incident time is spent not knowing. Six changes that cut detection from hours to minutes.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

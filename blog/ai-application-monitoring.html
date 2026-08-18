@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>How AI Helps Detect Application Problems Before They Become Incidents</title>
+<meta name="description" content="Where machine intelligence genuinely helps monitoring — baselines, anomaly detection, correlation, noise reduction — and where the marketing outruns the capability. An honest map.">
+<meta name="keywords" content="AI application monitoring, AI monitoring, AI incident detection, AI observability, anomaly detection, machine learning monitoring, AIOps, AI error detection">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/ai-application-monitoring">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="How AI helps detect application problems before they become incidents">
+<meta property="og:description" content="Learned baselines, anomaly detection, correlation — where machine intelligence genuinely improves monitoring, and where to keep your scepticism.">
+<meta property="og:url" content="https://www.merik.in/blog/ai-application-monitoring">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/observability.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Observability">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How AI helps detect application problems before they become incidents">
+<meta name="twitter:description" content="Learned baselines, anomaly detection, correlation — where machine intelligence genuinely improves monitoring, and where to keep your scepticism.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/ai-application-monitoring#post","headline":"How AI Helps Detect Application Problems Before They Become Incidents","description":"Where machine intelligence genuinely helps monitoring — baselines, anomaly detection, correlation, noise reduction — and where the marketing outruns the capability. An honest map.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/ai-application-monitoring","image":"https://www.merik.in/assets/images/blog/observability.svg","articleSection":"Observability","keywords":"AI application monitoring, AI monitoring, AI incident detection, AI observability, anomaly detection, machine learning monitoring, AIOps, AI error detection","wordCount":668,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"AI in monitoring","item":"https://www.merik.in/blog/ai-application-monitoring"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"How does AI detect application problems early?","acceptedAnswer":{"@type":"Answer","text":"By learning each monitored component's normal behaviour — latency percentiles, error rates, traffic patterns over a trailing window — and continuously comparing the present against it. Deviations (an error rate many times normal) and trends (latency rising steadily for hours) are flagged while the application still works, because deterioration usually precedes failure by hours."}},
+      {"@type":"Question","name":"Is AI monitoring actually machine learning or just statistics?","acceptedAnswer":{"@type":"Answer","text":"The foundational capabilities — baselines, deviation detection, trend analysis, fingerprint grouping — are well-understood statistics applied continuously at scale, and that is a strength: they are explainable and reliable. The accurate sense of \"learning\" is that the system derives normal from data rather than from hand-set thresholds. Treat unexplained \"AI magic\" claims as marketing until shown the evidence trail."}},
+      {"@type":"Question","name":"Can AI predict outages before they happen?","acceptedAnswer":{"@type":"Answer","text":"Partially, and honest tools say so. Failures preceded by measurable deterioration — latency drift, error creep, resource exhaustion, certificate expiry — are genuinely predictable with useful lead time. Failures with no prodrome, like sudden infrastructure loss or instantly-fatal config changes, are not. A large share of real incidents falls in the predictable class, which is why the capability matters despite its limits."}},
+      {"@type":"Question","name":"Can AI find the root cause of an incident?","acceptedAnswer":{"@type":"Answer","text":"It can narrow the search dramatically — which endpoint, since when, correlated with which deploy and which dependency's status — and present ranked suspects with evidence. The actual mechanism typically lives in code and logs, where humans confirm. Be wary of tools that announce root causes as verdicts; correlation presented as certainty is how monitoring loses trust."}},
+      {"@type":"Question","name":"What should risk and confidence mean in an AI warning?","acceptedAnswer":{"@type":"Answer","text":"Risk expresses how bad the evidence looks — how far outside normal, how many signals agree. Confidence expresses how much evidence there is — how much history backs the baseline, how much current data supports the reading. Keeping them separate matters: 78% risk on two hours of history is a different claim from 78% on two weeks, and collapsing them into one score hides exactly what a responder needs to weigh."}},
+      {"@type":"Question","name":"How do I evaluate an AI monitoring product's claims?","acceptedAnswer":{"@type":"Answer","text":"Ask three questions. What does it learn from, and how much history does it need? What evidence accompanies each finding — can you see why it fired? And how does it handle being wrong — does it admit self-resolved warnings and measure its own hit rate? Confident vagueness on any of the three predicts alert fatigue and eventual muting."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> AI in monitoring</nav>
+    <div class="eyebrow">Observability</div>
+    <h1>How <span class="accent">AI helps detect</span> application problems before they become incidents</h1>
+    <p class="lead">Strip the buzzword and a real thing remains: machines are genuinely better than humans at learning "normal" and noticing deviation at scale. Here is the honest map of where that helps — and where the marketing outruns it.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/observability.svg" alt="Statistical models finding anomalies in telemetry" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>AI helps monitoring in four proven ways: learning each component's normal behaviour instead of relying on hand-set thresholds, detecting anomalies and trends within it, correlating related signals into single findings, and grouping duplicate events to cut noise.</b> None of this requires — or is improved by — mystique: most of it is well-understood statistics applied continuously at a scale no human team can match. The honest boundaries matter as much as the capabilities, because monitoring is a domain where overclaiming ("AI predicts all outages", "AI finds root causes") produces tools people learn to ignore.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>The foundational win is <b>learned baselines</b>: machines tirelessly maintaining "normal" per endpoint, which hand-set thresholds cannot do at scale.</li>
+      <li><b>Anomaly and trend detection</b> on those baselines catches the prodrome of failure — latency drift, error creep — hours before thresholds trip.</li>
+      <li><b>Correlation and grouping</b> are where intelligence most visibly improves daily life: one warning instead of twenty alerts.</li>
+      <li>Honest systems expose <b>evidence and confidence</b>; a score that cannot explain itself will be ignored, and should be.</li>
+      <li>Sceptical questions for any "AI monitoring" claim: <b>learned from what data? evidenced how? wrong how often, and does it say so?</b></li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#baselines">Capability 1: learning normal (the unglamorous foundation)</a></li>
+      <li><a href="#detection">Capability 2: anomaly and trend detection</a></li>
+      <li><a href="#correlation">Capability 3: correlation, grouping, and the war on noise</a></li>
+      <li><a href="#boundaries">The honest boundaries</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="baselines">Capability 1: learning normal (the unglamorous foundation)</h2>
+
+    <p>The oldest monitoring problem is thresholds. "Alert if latency &gt; 500ms" is wrong for the endpoint whose normal is 900ms and useless for the one whose normal is 80ms; multiply by every endpoint, hour and seasonality, and hand-maintained thresholds collapse under their own falseness. The machine-learning answer — in the modest, accurate sense of <i>learning from data</i> — is to compute each monitor's own baseline continuously: latency percentiles, error rates, volumes, over a trailing window, excluding the period being judged.</p>
+    <p>This is statistics, not sorcery, and that is the point: it is <i>reliable</i>. A system that knows p95 for <code>/api/orders</code> has been 420ms for two weeks can say "1,400ms is 3.3× normal" with a straight face. Every capability that follows stands on this one, and its quality depends on data discipline — enough history, honest exclusion windows, per-monitor granularity — <a href="/blog/proactive-application-monitoring">the baseline mechanics</a> matter more than the algorithm's brand name.</p>
+
+
+    <h2 id="detection">Capability 2: anomaly and trend detection</h2>
+
+    <p>With baselines in place, detection becomes deviation arithmetic — and machines excel at running it everywhere, always:</p>
+    <ul>
+      <li><b>Point anomalies:</b> this hour's error rate is 8× this endpoint's normal — with guards (ratio <i>and</i> absolute floors, minimum sample sizes) that keep small numbers from lying.</li>
+      <li><b>Trends:</b> latency rising monotonically across six hours — individually innocent readings whose <i>shape</i> is the signal. This is the pattern humans reliably miss live and spot instantly in the postmortem chart; machines just read the chart continuously.</li>
+      <li><b>Deviation-from-pattern:</b> traffic collapsing at an hour that is normally busy — where the absence of activity is the anomaly.</li>
+    </ul>
+    <p>The catch — the honest catch — is the false-positive economy. Statistical deviations vastly outnumber real problems, so raw anomaly detection produces noise, and noisy tools get muted. Which is why detection alone is not the product; the next capability is.</p>
+
+
+    <h2 id="correlation">Capability 3: correlation, grouping, and the war on noise</h2>
+
+    <p>The intelligence users actually feel is synthesis:</p>
+    <ul>
+      <li><b>Signal correlation.</b> Latency drift + error creep + budget burn on one asset is one problem with three symptoms — so it must become <b>one</b> warning carrying three pieces of evidence. <a href="/blog/production-issues-monitoring-should-detect">Twenty alerts for one cause</a> is the failure mode that kills monitoring adoption.</li>
+      <li><b>Event grouping.</b> Ten thousand browser errors differing only in user IDs are one bug; fingerprint grouping (normalise, hash, count) makes both storage and judgement tractable. <a href="/blog/javascript-console-error-monitoring">Console monitoring</a> is unusable without it.</li>
+      <li><b>Change correlation.</b> Anomaly at 14:32, deploy at 14:28: the juxtaposition is investigative gold — <i>presented as context</i>. An honest system says "strong temporal correlation with this deploy"; a dishonest one says "root cause: this deploy" and is eventually wrong loudly enough to lose the room.</li>
+      <li><b>Dependency reasoning.</b> Payment provider down + forty dependent services failing = one story, suppressed pages for the forty, attribution for the one.</li>
+    </ul>
+
+
+    <h2 id="boundaries">The honest boundaries</h2>
+
+    <p>Where current capability ends, stated plainly:</p>
+    <ul>
+      <li><b>Prediction is partial.</b> Failures preceded by measurable deterioration — drift, creep, exhaustion — are genuinely predictable, and that class is large. Failures without prodrome (the fibre cut, the instant-crash config push) are not. "Predict outages before they happen" is true for the first class and marketing for the second; honest tools say which.</li>
+      <li><b>Root cause is a hypothesis, not an output.</b> Telemetry correlation narrows the search powerfully — this endpoint, since this deploy, alongside this dependency — but the <i>mechanism</i> lives in code and logs, where humans (increasingly with LLM assistance reading those artefacts) finish the job. A system that names suspects with evidence is honest; one that issues verdicts is guessing with confidence.</li>
+      <li><b>Uncertainty must be worn openly.</b> The most trust-preserving output shape: risk (how bad the evidence looks) and confidence (how much evidence there is) as <i>separate numbers</i>, the evidence itself listed, and self-resolution when the prediction fizzles — a system that admits its misses is one whose hits mean something.</li>
+    </ul>
+    <p>Buyer's checklist, compressed: learned from what data, over what window? What evidence accompanies each finding? What is the false-positive experience — and does the tool measure its own hit rate? Vague answers to those three questions predict the tool's Slack channel getting muted within a quarter. <a href="/blog/reactive-vs-proactive-monitoring">The proactive shift</a> only pays if the warnings stay credible.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Proven capability 1</th><td>Learned baselines per monitor — replacing unmaintainable hand-set thresholds</td></tr>
+      <tr><th>Proven capability 2</th><td>Anomaly + trend detection on baselines: point deviations, monotonic drifts, pattern breaks</td></tr>
+      <tr><th>Proven capability 3</th><td>Correlation and grouping: one cause → one warning; duplicates → counters; deploys as context</td></tr>
+      <tr><th>Boundary 1</th><td>Prediction covers deterioration-preceded failures only — not no-prodrome failures</td></tr>
+      <tr><th>Boundary 2</th><td>Telemetry yields suspects with evidence, not root-cause verdicts</td></tr>
+      <tr><th>Trust mechanics</th><td>Risk and confidence separate, evidence listed, misses admitted via self-resolution</td></tr>
+      <tr><th>Buyer's questions</th><td>Learned from what? Evidenced how? Wrong how often — and does it say so?</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>How does AI detect application problems early?</summary><p>By learning each monitored component's normal behaviour — latency percentiles, error rates, traffic patterns over a trailing window — and continuously comparing the present against it. Deviations (an error rate many times normal) and trends (latency rising steadily for hours) are flagged while the application still works, because deterioration usually precedes failure by hours.</p></details>
+      <details><summary>Is AI monitoring actually machine learning or just statistics?</summary><p>The foundational capabilities — baselines, deviation detection, trend analysis, fingerprint grouping — are well-understood statistics applied continuously at scale, and that is a strength: they are explainable and reliable. The accurate sense of "learning" is that the system derives normal from data rather than from hand-set thresholds. Treat unexplained "AI magic" claims as marketing until shown the evidence trail.</p></details>
+      <details><summary>Can AI predict outages before they happen?</summary><p>Partially, and honest tools say so. Failures preceded by measurable deterioration — latency drift, error creep, resource exhaustion, certificate expiry — are genuinely predictable with useful lead time. Failures with no prodrome, like sudden infrastructure loss or instantly-fatal config changes, are not. A large share of real incidents falls in the predictable class, which is why the capability matters despite its limits.</p></details>
+      <details><summary>Can AI find the root cause of an incident?</summary><p>It can narrow the search dramatically — which endpoint, since when, correlated with which deploy and which dependency's status — and present ranked suspects with evidence. The actual mechanism typically lives in code and logs, where humans confirm. Be wary of tools that announce root causes as verdicts; correlation presented as certainty is how monitoring loses trust.</p></details>
+      <details><summary>What should risk and confidence mean in an AI warning?</summary><p>Risk expresses how bad the evidence looks — how far outside normal, how many signals agree. Confidence expresses how much evidence there is — how much history backs the baseline, how much current data supports the reading. Keeping them separate matters: 78% risk on two hours of history is a different claim from 78% on two weeks, and collapsing them into one score hides exactly what a responder needs to weigh.</p></details>
+      <details><summary>How do I evaluate an AI monitoring product's claims?</summary><p>Ask three questions. What does it learn from, and how much history does it need? What evidence accompanies each finding — can you see why it fired? And how does it handle being wrong — does it admit self-resolved warnings and measure its own hit rate? Confident vagueness on any of the three predicts alert fatigue and eventual muting.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's early-warning engine is built on the honest three: baselines (p50/p95/p99 and error rate per monitor, 14-day window, current hour excluded), deviation and trend detection with ratio-plus-absolute guards, and correlation — every signal for an asset folded into <b>at most one</b> warning, with deploys from GitHub/Vercel webhooks shown as temporal context and vendor outages suppressing the pile-on. Grouping runs the same way on browser errors: fingerprints and counters, not forty thousand rows.</p>
+    <p>The boundaries are respected in the product's own language: risk and confidence are separate numbers, the evidence list is always attached, warnings that fizzle resolve themselves and say so, and warnings that come true link to the incident they predicted — so the hit rate is a number you can check, not a claim you have to take. No verdicts, no mystique: <a href="/blog/proactive-application-monitoring">measured normal, honest deviation</a>, and one credible warning at a time.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Observability" href="/blog/reactive-vs-proactive-monitoring">
+        <img class="thumb" src="/assets/images/blog/observability.svg" alt="Reactive vs proactive monitoring: what&#x27;s the difference?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Observability</span>
+        <h3>Reactive vs proactive monitoring: what's the difference?</h3>
+        <p>One tells you it broke; the other tells you it's breaking. That word is worth hours.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Errors" href="/blog/javascript-console-error-monitoring">
+        <img class="thumb" src="/assets/images/blog/errors.svg" alt="How to monitor JavaScript console errors in production" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Errors</span>
+        <h3>How to monitor JavaScript console errors in production</h3>
+        <p>Capture, group and alert on the errors in your users' consoles — without drowning in noise.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Incidents" href="/blog/prevent-small-bugs-becoming-incidents">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How proactive monitoring stops small bugs becoming major incidents" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>How proactive monitoring stops small bugs becoming major incidents</h3>
+        <p>Small error → repeated error → degradation → outage. Cutting the chain at its cheapest link.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

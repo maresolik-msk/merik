@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>What Is Proactive Application Monitoring? (Plain-English Guide)</title>
+<meta name="description" content="Proactive application monitoring detects errors, failures and abnormal behaviour before users report them. What it is, how it differs from reactive monitoring, what to watch, and how to start.">
+<meta name="keywords" content="proactive application monitoring, application monitoring, proactive monitoring, application health monitoring, detect issues before users, monitoring baseline, early warning monitoring">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/proactive-application-monitoring">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="What is proactive application monitoring?">
+<meta property="og:description" content="How teams detect application problems before users report them — baselines, anomaly detection and early warnings, explained without jargon.">
+<meta property="og:url" content="https://www.merik.in/blog/proactive-application-monitoring">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/monitoring.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Monitoring">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What is proactive application monitoring?">
+<meta name="twitter:description" content="How teams detect application problems before users report them — baselines, anomaly detection and early warnings, explained without jargon.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/proactive-application-monitoring#post","headline":"What Is Proactive Application Monitoring? (Plain-English Guide)","description":"Proactive application monitoring detects errors, failures and abnormal behaviour before users report them. What it is, how it differs from reactive monitoring, what to watch, and how to start.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/proactive-application-monitoring","image":"https://www.merik.in/assets/images/blog/monitoring.svg","articleSection":"Monitoring","keywords":"proactive application monitoring, application monitoring, proactive monitoring, application health monitoring, detect issues before users, monitoring baseline, early warning monitoring","wordCount":1022,"timeRequired":"PT7M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Proactive application monitoring","item":"https://www.merik.in/blog/proactive-application-monitoring"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What is proactive application monitoring?","acceptedAnswer":{"@type":"Answer","text":"Proactive application monitoring is the continuous observation of an application's availability, response times, error rates and frontend behaviour to detect abnormal patterns before they become user-reported incidents. It works by measuring what normal behaviour looks like for each monitored component and raising an early warning when current behaviour deviates significantly from that baseline."}},
+      {"@type":"Question","name":"How is proactive monitoring different from normal uptime monitoring?","acceptedAnswer":{"@type":"Answer","text":"Uptime monitoring is binary and reactive: it tells you when a check fails outright. Proactive monitoring also watches degradation — latency rising against its own history, error rates creeping up, resources trending toward exhaustion — and warns while the application is still technically up. Uptime monitoring catches the outage; proactive monitoring often catches the hour before it."}},
+      {"@type":"Question","name":"What is a monitoring baseline?","acceptedAnswer":{"@type":"Answer","text":"A baseline is the measured normal behaviour of a monitored component, typically expressed as latency percentiles (p50, p95, p99), error rate and request volume over a trailing window such as 14 days. Current behaviour is judged against the baseline, so alerts reflect what is abnormal for that specific endpoint rather than a generic threshold."}},
+      {"@type":"Question","name":"Can proactive monitoring predict every outage?","acceptedAnswer":{"@type":"Answer","text":"No, and honest tooling does not claim to. Some failures give no warning — a fibre cut, a bad config push that fails instantly. Proactive monitoring targets the substantial class of incidents that are preceded by measurable deterioration: rising latency, climbing error rates, resource exhaustion, expiring certificates. Those it can catch early; sudden failures still need fast reactive detection."}},
+      {"@type":"Question","name":"How long before proactive monitoring becomes useful?","acceptedAnswer":{"@type":"Answer","text":"Uptime and certificate checks are useful immediately. Baseline-based early warnings need enough history to define normal — typically a few hundred checks per monitor, which at a five-minute interval is roughly a day for a first usable baseline and about two weeks for a stable one."}},
+      {"@type":"Question","name":"Do small teams need proactive monitoring?","acceptedAnswer":{"@type":"Answer","text":"Small teams arguably need it more: they have no ops rotation catching things at 3am and no support tier absorbing user complaints. Outside-in checks, latency baselines and frontend error collection cover most of the early-warning surface with near-zero maintenance, which is exactly the profile a small engineering team needs."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Proactive application monitoring</nav>
+    <div class="eyebrow">Monitoring</div>
+    <h1>What is <span class="accent">proactive</span> application monitoring?</h1>
+    <p class="lead">Most teams find out about production problems from a user. Proactive monitoring exists so the tool finds out first — and tells you while the problem is still small.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/monitoring.svg" alt="Dashboard showing an early warning before an outage" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 7 min read</p>
+    <p class="lede"><b>Proactive application monitoring is the practice of continuously observing an application's behaviour — availability, response times, error rates, frontend errors — and detecting abnormal patterns before they become user-reported incidents.</b> Instead of waiting for something to fail outright, a proactive system learns what normal looks like for each part of the application and raises an early warning when behaviour drifts away from it: latency climbing, errors creeping up, a certificate about to expire. The goal is to shrink the gap between "something started going wrong" and "someone who can fix it knows".</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Proactive monitoring detects <b>deviation from measured normal</b>, not just outright failure — a 4× latency rise is a signal even while every request still succeeds.</li>
+      <li>Reactive monitoring answers "is it down?"; proactive monitoring answers <b>"is it going wrong?"</b> — a different and earlier question.</li>
+      <li>It depends on <b>baselines</b>: without knowing that an endpoint normally answers in 180ms, you cannot know that 800ms is a problem.</li>
+      <li>Good proactive systems send <b>fewer alerts, earlier</b> — one warning with evidence, not twenty notifications for one underlying cause.</li>
+      <li>You do not need a platform team to start: uptime checks, latency baselines and frontend error collection cover most of the early-warning surface for a small team.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#definition">The definition, unpacked</a></li>
+      <li><a href="#signals">What a proactive system actually watches</a></li>
+      <li><a href="#baselines">Baselines: how "normal" gets measured</a></li>
+      <li><a href="#warnings">From anomaly to early warning</a></li>
+      <li><a href="#start">How a small team starts, in order</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="definition">The definition, unpacked</h2>
+
+    <p>Three words in the definition carry the weight:</p>
+    <ul>
+      <li><b>Continuously.</b> Spot checks — opening the site in the morning, glancing at a dashboard on Fridays — sample a tiny fraction of your application's life. Problems do not schedule themselves for business hours. Continuous means an automated check runs every few minutes whether anyone is watching or not.</li>
+      <li><b>Abnormal.</b> Not "above a threshold somebody typed into a config file two years ago" — abnormal <i>for this application</i>. An API that has always answered in 900ms is healthy at 900ms. One that answered in 180ms yesterday is in trouble at 700ms, even though 700ms would look fine on a generic dashboard.</li>
+      <li><b>Before.</b> The whole economic case. A problem caught while it is a trend costs an investigation. The same problem caught as an outage costs an incident call, an apology, and some fraction of user trust that never fully returns.</li>
+    </ul>
+    <p>The contrast is <a href="/blog/reactive-vs-proactive-monitoring">reactive monitoring</a>: a check fails, an alert fires, a human responds. Reactive monitoring is necessary — you always want to know about a hard outage — but it is structurally late, because by the time a check fails outright, users are already failing too.</p>
+
+
+    <h2 id="signals">What a proactive system actually watches</h2>
+
+    <p>Proactive detection is only as good as the signals feeding it. In practice the useful ones for a web application or API are:</p>
+    <ul>
+      <li><b>Availability</b> — is the endpoint answering at all, from outside your own network, the way a user reaches it?</li>
+      <li><b>Response time</b> — not just the average but the percentiles. The 95th percentile (p95) is where degradation shows first, because the slowest requests degrade before the typical one does.</li>
+      <li><b>Error rate</b> — the ratio of failed requests to total. Two failures an hour on an endpoint that normally never fails is a louder signal than the raw number suggests.</li>
+      <li><b>Frontend errors</b> — JavaScript exceptions, unhandled promise rejections, failed network calls in real users' browsers. These are invisible to server-side checks: <a href="/blog/frontend-error-monitoring">the page serves a 200 and breaks after it arrives</a>.</li>
+      <li><b>Certificates and DNS</b> — the boring failures with a known date attached. A TLS certificate expiring is the single most preventable outage in the industry.</li>
+      <li><b>What changed</b> — deployments and commits. Most incidents follow a change; a monitoring system that knows a deploy happened four minutes before latency doubled can hand you the first place to look.</li>
+    </ul>
+
+
+    <h2 id="baselines">Baselines: how "normal" gets measured</h2>
+
+    <p>The core mechanism is simple to state: <b>record enough history to know what normal looks like, then compare the present against it.</b></p>
+    <p>A baseline for one API endpoint might read: p50 latency 180ms, p95 latency 420ms, error rate 0.3%, measured over the last two weeks. With that in hand, the present becomes judgeable. Is this hour's p95 of 470ms a problem? No — within ordinary variation. Is 1,400ms? Yes — 3.3× the measured normal, and worth a human's attention even though nothing has failed yet.</p>
+    <p>Two details separate baselines that work from baselines that cry wolf:</p>
+    <ol>
+      <li><b>Exclude the window being judged.</b> If the last hour's degraded numbers are baked into "normal", the degradation disappears into its own average.</li>
+      <li><b>Require both a ratio and an absolute change.</b> A 30ms endpoint jumping to 90ms is 3× on paper and nothing in the world; no user has ever noticed 60ms. A useful rule demands the rise be both proportionally large and materially large.</li>
+    </ol>
+    <p>This is also why proactive monitoring cannot be configured on day one and needs a learning period: until a monitor has meaningful history — a few hundred data points at minimum — any judgement about "abnormal" is a guess, and an honest system stays quiet rather than guessing.</p>
+
+
+    <h2 id="warnings">From anomaly to early warning</h2>
+
+    <p>Detecting an anomaly is the easy half. The hard half is deciding what deserves a human's attention, because the fastest way to make monitoring useless is to make it noisy. A system that pages someone for every statistical blip gets muted within a fortnight, and a muted system catches nothing.</p>
+    <p>Mature proactive systems apply three disciplines:</p>
+    <ul>
+      <li><b>Correlation.</b> If latency is up, errors are up, and the error budget is burning, that is one problem exhibiting three symptoms — so it should be one warning carrying three pieces of evidence, not three alerts. (This principle scales: twenty correlated signals should still be one warning.)</li>
+      <li><b>Risk and confidence, separately.</b> Risk expresses how bad the evidence looks; confidence expresses how much evidence there is. "78% risk at 91% confidence" and "78% risk at 40% confidence" are different statements, and collapsing them into one number hides exactly the distinction a responder needs.</li>
+      <li><b>Honest self-resolution.</b> A warning about a deviation that recovers on its own should close itself and say so. Predictions are sometimes wrong; a system that pretends otherwise teaches people to distrust it.</li>
+    </ul>
+    <p>The output, done well, reads like a briefing rather than an alarm: what is drifting, how far outside normal, what evidence supports it, what probably breaks next, and where to start looking. For the escalation logic behind this, see <a href="/blog/prevent-small-bugs-becoming-incidents">how small bugs become major incidents</a>.</p>
+
+
+    <h2 id="start">How a small team starts, in order</h2>
+
+    <p>Proactive monitoring has a reputation for requiring a platform team and a six-figure observability budget. The first 80% does not. In priority order:</p>
+    <ol>
+      <li><b>Uptime checks on everything user-facing</b>, from outside your infrastructure, every few minutes. This is the floor.</li>
+      <li><b>Latency recording on those same checks</b> — the check is already making the request; keeping the response time costs nothing and becomes your baseline data.</li>
+      <li><b>Certificate expiry checks</b> — a solved problem that still causes outages weekly across the industry.</li>
+      <li><b>Frontend error collection</b> — a small script that reports JavaScript errors and failed requests from real browsers. This is the only way to see the failures that happen after the page loads.</li>
+      <li><b>Deploy visibility</b> — wire your CI to tell the monitoring system when something shipped, so anomalies and changes can be read side by side.</li>
+      <li><b>Baselines and early warnings</b> — once checks have run for a couple of weeks, there is enough history to judge "abnormal" honestly.</li>
+    </ol>
+    <p>Notice what is absent: log aggregation, distributed tracing, agents on every server. Those are powerful and belong to a later stage of maturity — <a href="/blog/logs-vs-monitoring">logs answer a different question</a>. A <a href="/blog/application-monitoring-for-startups">startup-sized team</a> gets most of the early-warning value from the six steps above.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>What it is</th><td>Continuous detection of abnormal application behaviour before it becomes a user-facing incident</td></tr>
+      <tr><th>Core mechanism</th><td>Measured baselines (latency percentiles, error rate) compared against current behaviour</td></tr>
+      <tr><th>Key signals</th><td>Availability, p95/p99 latency, error rate, frontend errors, certificate expiry, deployments</td></tr>
+      <tr><th>Differs from reactive</th><td>Reactive fires after a failure; proactive warns on deviation while requests still succeed</td></tr>
+      <tr><th>Needs to work</th><td>A learning period of check history — judging "abnormal" requires knowing "normal"</td></tr>
+      <tr><th>Anti-noise rule</th><td>Correlated symptoms of one problem produce one warning with evidence, never one alert per signal</td></tr>
+      <tr><th>First steps</th><td>Outside-in uptime checks → latency baselines → SSL checks → frontend error collection</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What is proactive application monitoring?</summary><p>Proactive application monitoring is the continuous observation of an application's availability, response times, error rates and frontend behaviour to detect abnormal patterns before they become user-reported incidents. It works by measuring what normal behaviour looks like for each monitored component and raising an early warning when current behaviour deviates significantly from that baseline.</p></details>
+      <details><summary>How is proactive monitoring different from normal uptime monitoring?</summary><p>Uptime monitoring is binary and reactive: it tells you when a check fails outright. Proactive monitoring also watches degradation — latency rising against its own history, error rates creeping up, resources trending toward exhaustion — and warns while the application is still technically up. Uptime monitoring catches the outage; proactive monitoring often catches the hour before it.</p></details>
+      <details><summary>What is a monitoring baseline?</summary><p>A baseline is the measured normal behaviour of a monitored component, typically expressed as latency percentiles (p50, p95, p99), error rate and request volume over a trailing window such as 14 days. Current behaviour is judged against the baseline, so alerts reflect what is abnormal for that specific endpoint rather than a generic threshold.</p></details>
+      <details><summary>Can proactive monitoring predict every outage?</summary><p>No, and honest tooling does not claim to. Some failures give no warning — a fibre cut, a bad config push that fails instantly. Proactive monitoring targets the substantial class of incidents that are preceded by measurable deterioration: rising latency, climbing error rates, resource exhaustion, expiring certificates. Those it can catch early; sudden failures still need fast reactive detection.</p></details>
+      <details><summary>How long before proactive monitoring becomes useful?</summary><p>Uptime and certificate checks are useful immediately. Baseline-based early warnings need enough history to define normal — typically a few hundred checks per monitor, which at a five-minute interval is roughly a day for a first usable baseline and about two weeks for a stable one.</p></details>
+      <details><summary>Do small teams need proactive monitoring?</summary><p>Small teams arguably need it more: they have no ops rotation catching things at 3am and no support tier absorbing user complaints. Outside-in checks, latency baselines and frontend error collection cover most of the early-warning surface with near-zero maintenance, which is exactly the profile a small engineering team needs.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's Digital Operations module is built around exactly this loop. You register a website or API, and it is checked from the outside every few minutes — availability, response time, HTTP status, and daily certificate expiry for HTTPS. Each monitor's own history becomes its baseline: p50/p95/p99 latency and normal error rate, measured over 14 days, recomputed hourly.</p>
+    <p>When the last hour drifts well outside that normal — latency several times its baseline, checks failing intermittently, browser errors spiking — Merik raises <b>one early warning per asset</b>, with a risk score, a separate confidence score, and the evidence list that produced them. If a deploy landed just before (via a GitHub or Vercel webhook), it is shown as correlated context, never as an accusation. Warnings that recover close themselves; warnings that come true are linked to the incident they predicted, so you can see how often the system earns its keep. Incidents are auto-assigned to the asset's owner, alerted once by email or Slack, and roll up into <a href="/blog/application-health-monitoring">a measured health score</a> and monthly SLA reports.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Observability" href="/blog/reactive-vs-proactive-monitoring">
+        <img class="thumb" src="/assets/images/blog/observability.svg" alt="Reactive vs proactive monitoring: what&#x27;s the difference?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Observability</span>
+        <h3>Reactive vs proactive monitoring: what's the difference?</h3>
+        <p>One tells you it broke; the other tells you it's breaking. That word is worth hours.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/application-health-monitoring">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Application health monitoring: the complete guide" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Application health monitoring: the complete guide</h3>
+        <p>Every layer of application health, and how to roll them into one honest score.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Incidents" href="/blog/detect-bugs-before-users-report-them">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="Why waiting for users to report bugs is too late" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>Why waiting for users to report bugs is too late</h3>
+        <p>The first report ends a long silence — days of failures and quiet exits. Detect first.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>How to Reduce MTTD (Mean Time to Detect) for Application Issues</title>
+<meta name="description" content="MTTD is the silent half of incident duration — the gap between a problem starting and anyone knowing. What drives detection lag and the six changes that cut it from hours to minutes.">
+<meta name="keywords" content="MTTD, mean time to detect, reduce MTTD, incident detection, incident response metrics, MTTR, application monitoring, detection lag">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/reduce-mttd">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="How to reduce MTTD for application issues">
+<meta property="og:description" content="Most incident time is spent not knowing. The six changes that cut mean time to detect from hours to minutes.">
+<meta property="og:url" content="https://www.merik.in/blog/reduce-mttd">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/incidents.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Incidents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to reduce MTTD for application issues">
+<meta name="twitter:description" content="Most incident time is spent not knowing. The six changes that cut mean time to detect from hours to minutes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/reduce-mttd#post","headline":"How to Reduce MTTD (Mean Time to Detect) for Application Issues","description":"MTTD is the silent half of incident duration — the gap between a problem starting and anyone knowing. What drives detection lag and the six changes that cut it from hours to minutes.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/reduce-mttd","image":"https://www.merik.in/assets/images/blog/incidents.svg","articleSection":"Incidents","keywords":"MTTD, mean time to detect, reduce MTTD, incident detection, incident response metrics, MTTR, application monitoring, detection lag","wordCount":658,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Reducing MTTD","item":"https://www.merik.in/blog/reduce-mttd"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What is MTTD?","acceptedAnswer":{"@type":"Answer","text":"MTTD — mean time to detect — is the average time between a problem beginning in production and the team becoming aware of it. It sits before acknowledgement, diagnosis and repair in the incident timeline, and for teams without systematic monitoring it is typically the longest phase, measured in hours or days."}},
+      {"@type":"Question","name":"How is MTTD different from MTTR?","acceptedAnswer":{"@type":"Answer","text":"MTTR (mean time to resolve/repair) usually measures from detection or acknowledgement to resolution — the visible, worked part of an incident. MTTD measures the invisible part before it: how long the problem ran with nobody knowing. Damage accrues through both, but MTTD's damage accumulates with zero countervailing effort, which is why cutting it is the cheapest reliability win available."}},
+      {"@type":"Question","name":"What is a good MTTD?","acceptedAnswer":{"@type":"Answer","text":"For hard failures, minutes: outside-in checks at a five-minute interval with two-failure confirmation bound detection at roughly ten minutes, and one-minute checks at about two. For degradation-class problems, good means detecting during the deterioration phase — before outright failure — which requires baseline-deviation alerting rather than hard thresholds."}},
+      {"@type":"Question","name":"How do I reduce MTTD fastest?","acceptedAnswer":{"@type":"Answer","text":"Close blind spots first: add browser error collection, individual checks on revenue-path endpoints, and liveness signals for background jobs — each converts a detect-by-accident failure class into detect-in-minutes. Then make every signal push-based, alert on deviation from baselines, correlate signals so alerts stay credible, and route findings to named owners. Blind-spot closure alone typically cuts average MTTD by more than any tooling upgrade."}},
+      {"@type":"Question","name":"Does alert fatigue affect MTTD?","acceptedAnswer":{"@type":"Answer","text":"Directly. A noisy channel gets muted, and a muted channel gives every subsequent incident effectively infinite detection time regardless of how fast the underlying detector fired. Correlation (one cause, one alert), confirmation before alerting, and severity-based routing are MTTD investments as much as courtesy."}},
+      {"@type":"Question","name":"How should teams measure MTTD?","acceptedAnswer":{"@type":"Answer","text":"Per incident, reconstruct the true onset from telemetry — the first anomalous check or the error spike's leading edge — and measure to the moment a responsible human knew. Track the average, but also the detection-source ratio: what share of incidents your own systems caught first versus users. That ratio is the clearest single indicator of monitoring maturity."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Reducing MTTD</nav>
+    <div class="eyebrow">Incidents</div>
+    <h1>How to reduce <span class="accent">MTTD</span> — mean time to detect — for application issues</h1>
+    <p class="lead">Teams obsess over how fast they fix. The clock that usually dominates an incident is the one nobody watches: how long the problem ran before anyone knew it existed.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/incidents.svg" alt="An incident timeline dominated by detection lag" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 6 min read</p>
+    <p class="lede"><b>MTTD — mean time to detect — is the average gap between a problem beginning in production and the team knowing about it. It is reduced by closing detection blind spots (frontend errors, per-endpoint failures, silent jobs), shortening check intervals with confirmation, alerting on deviation from baselines rather than hard failure, correlating signals so alerts stay credible, and routing findings to a named owner.</b> For teams that rely on user reports or log archaeology, MTTD is measured in hours to days — usually the largest single component of incident duration, and the cheapest to cut.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>MTTD is the <b>silent half of incident cost</b>: damage accrues identically whether or not you know — knowing is what lets it stop.</li>
+      <li>The biggest MTTD driver is not slow tooling but <b>blind spots</b>: failure classes with no automatic detection at all.</li>
+      <li>Baseline-deviation alerting cuts MTTD below zero in effect — <b>detecting deterioration before the failure</b> it precedes.</li>
+      <li>Alert credibility is an MTTD input: a muted channel has <b>infinite detection time</b>, however fast the detector.</li>
+      <li>Detection ends when a <b>responsible human knows</b> — routing and ownership lag are part of MTTD, not after it.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#why">Why MTTD dominates incident cost</a></li>
+      <li><a href="#drivers">What actually drives detection lag</a></li>
+      <li><a href="#cuts">The six changes that cut MTTD</a></li>
+      <li><a href="#measure">Measuring it honestly</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="why">Why MTTD dominates incident cost</h2>
+
+    <p>Decompose incident duration: time to detect, then time to acknowledge, diagnose, fix, verify. Postmortems lavish attention on the later phases — the diagnosis that took an hour, the fix that needed a rollback. But for any team without systematic detection, the first phase quietly dwarfs them: a partial failure that runs from Friday evening to Monday's first complaint has an MTTD of sixty hours attached to a two-hour fix.</p>
+    <p>And detection lag is pure loss. During diagnosis and repair, at least the damage is being worked on; during the not-knowing, <a href="/blog/silent-application-failures">failed conversions, lost data and eroding trust</a> accumulate at full rate with zero countervailing effort. Cutting an hour of MTTD is worth exactly as much as cutting an hour of repair — and it is almost always cheaper, because detection improves by configuration while repair improves by engineering.</p>
+
+
+    <h2 id="drivers">What actually drives detection lag</h2>
+
+    <p>Four causes, in descending order of typical impact:</p>
+    <ol>
+      <li><b>Blind spots.</b> Whole failure classes with no automatic detector: frontend errors nobody collects, endpoints nobody checks individually, background jobs with no liveness signal, degradation below hard-failure thresholds. Here MTTD equals "whenever a human stumbles on it" — <a href="/blog/production-issues-monitoring-should-detect">the ten-issue checklist</a> is effectively a blind-spot census.</li>
+      <li><b>Passive detection.</b> The signal exists — in logs, in a dashboard — but reaches no one until queried. <a href="/blog/logs-vs-monitoring">Recorded is not detected</a>; a chart nobody is looking at has the same MTTD as no chart.</li>
+      <li><b>Threshold lag.</b> Detection waits for outright failure while the problem spends hours as measurable deterioration first. Hard-threshold alerting concedes all of that lead time by design.</li>
+      <li><b>Credibility and routing decay.</b> The alert fired — into a channel muted after months of noise, or addressed to everyone and therefore no one. Detection is not complete until a responsible human knows; sociology is part of the pipeline.</li>
+    </ol>
+
+
+    <h2 id="cuts">The six changes that cut MTTD</h2>
+
+    <ol>
+      <li><b>Close the blind spots.</b> Browser error collection, per-endpoint checks on money paths, liveness signals for background work, certificate monitoring. Each converts a detect-by-accident class into a detect-in-minutes class — the largest single MTTD improvements available, and mostly hours of setup.</li>
+      <li><b>Make detection push, not pull.</b> Every signal must evaluate itself continuously and notify on conclusion. Dashboards are for investigation, not detection.</li>
+      <li><b>Check at the right frequency, with confirmation.</b> Five-minute intervals with two-failure confirmation bound hard-failure MTTD at ~10 minutes; one-minute intervals buy ~2 minutes where SLAs demand it. Confirmation is what makes frequency affordable — without it, tighter intervals just page faster on blips.</li>
+      <li><b>Alert on deviation, not just failure.</b> <a href="/blog/proactive-application-monitoring">Baseline-based detection</a> moves the clock before the failure: latency at 3× normal or errors at 8× baseline is detection of the incident's prologue. This is where MTTD stops shrinking toward zero and effectively goes negative.</li>
+      <li><b>Correlate before notifying.</b> One cause, one alert, evidence attached. Credibility is the multiplier on everything above: <a href="/blog/reactive-vs-proactive-monitoring">a fast detector feeding a muted channel</a> detects nothing.</li>
+      <li><b>Route to a named owner.</b> Every monitored asset has an owner; findings arrive assigned, severity decides urgency. The gap between "alert fired somewhere" and "the right person knows" is MTTD too — often the most embarrassing slice of it.</li>
+    </ol>
+
+
+    <h2 id="measure">Measuring it honestly</h2>
+
+    <p>MTTD only improves if the start of the clock is honest: <i>when the problem began</i>, not when the alert fired. Reconstruct onset from telemetry — the first anomalous check, the error spike's leading edge — and log detection time per incident alongside how it was detected (check, warning, user report). Three practices keep the number meaningful:</p>
+      <ul>
+      <li><b>Track the detection source ratio.</b> The share of incidents first known from your own systems versus from users is the single most legible reliability KPI a team can show — and the one <a href="/blog/detect-bugs-before-users-report-them">user-report-dependent teams</a> improve most dramatically.</li>
+      <li><b>Review the misses.</b> Every incident detected late gets one question in the postmortem: what signal existed earlier, and why did nothing fire? The answer is next sprint's monitoring backlog.</li>
+      <li><b>Watch for the plateau.</b> Once hard failures detect in minutes, remaining MTTD lives in the deterioration phase — which is the cue to invest in baselines and early warning, not more check frequency.</li>
+    </ul>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Definition</th><td>Mean gap between a problem beginning in production and the team knowing about it</td></tr>
+      <tr><th>Typical unmonitored MTTD</th><td>Hours to days — until a user report or accidental discovery</td></tr>
+      <tr><th>Largest driver</th><td>Blind spots: failure classes with no automatic detector at all</td></tr>
+      <tr><th>Bounding formula</th><td>Check interval × confirmation count — e.g. 5 min × 2 ≈ 10-minute worst case for hard failures</td></tr>
+      <tr><th>Going below zero</th><td>Baseline-deviation alerting detects the deterioration phase before failure</td></tr>
+      <tr><th>Detection endpoint</th><td>A responsible human knows — routing and credibility lag count as MTTD</td></tr>
+      <tr><th>Best single KPI</th><td>Share of incidents first detected by your own systems vs by users</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What is MTTD?</summary><p>MTTD — mean time to detect — is the average time between a problem beginning in production and the team becoming aware of it. It sits before acknowledgement, diagnosis and repair in the incident timeline, and for teams without systematic monitoring it is typically the longest phase, measured in hours or days.</p></details>
+      <details><summary>How is MTTD different from MTTR?</summary><p>MTTR (mean time to resolve/repair) usually measures from detection or acknowledgement to resolution — the visible, worked part of an incident. MTTD measures the invisible part before it: how long the problem ran with nobody knowing. Damage accrues through both, but MTTD's damage accumulates with zero countervailing effort, which is why cutting it is the cheapest reliability win available.</p></details>
+      <details><summary>What is a good MTTD?</summary><p>For hard failures, minutes: outside-in checks at a five-minute interval with two-failure confirmation bound detection at roughly ten minutes, and one-minute checks at about two. For degradation-class problems, good means detecting during the deterioration phase — before outright failure — which requires baseline-deviation alerting rather than hard thresholds.</p></details>
+      <details><summary>How do I reduce MTTD fastest?</summary><p>Close blind spots first: add browser error collection, individual checks on revenue-path endpoints, and liveness signals for background jobs — each converts a detect-by-accident failure class into detect-in-minutes. Then make every signal push-based, alert on deviation from baselines, correlate signals so alerts stay credible, and route findings to named owners. Blind-spot closure alone typically cuts average MTTD by more than any tooling upgrade.</p></details>
+      <details><summary>Does alert fatigue affect MTTD?</summary><p>Directly. A noisy channel gets muted, and a muted channel gives every subsequent incident effectively infinite detection time regardless of how fast the underlying detector fired. Correlation (one cause, one alert), confirmation before alerting, and severity-based routing are MTTD investments as much as courtesy.</p></details>
+      <details><summary>How should teams measure MTTD?</summary><p>Per incident, reconstruct the true onset from telemetry — the first anomalous check or the error spike's leading edge — and measure to the moment a responsible human knew. Track the average, but also the detection-source ratio: what share of incidents your own systems caught first versus users. That ratio is the clearest single indicator of monitoring maturity.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik attacks every term in the MTTD equation. Blind spots: browser errors via merik.js, per-endpoint checks with assertions, SSL expiry, vendor status — the classes teams usually discover by accident, detected automatically. Frequency and confirmation: checks every few minutes, two failures before an incident, so hard-failure detection is bounded in minutes without blip noise. Deviation: 14-day baselines per monitor turn deterioration into <a href="/blog/proactive-application-monitoring">early warnings</a> — detection before the failure phase begins.</p>
+    <p>Credibility and routing are enforced by design: correlated signals become one warning or one incident, alerts send once, severity gates what may interrupt outside working hours, and every asset has an owner who gets the assignment automatically. The scoreboard is built in too — incidents record how they were detected, and warnings link to the incidents they predicted, so the "caught by us vs caught by users" ratio is a number you watch improve, not a feeling.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Reliability" href="/blog/api-failure-detection">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="How to detect API failures before your customers do" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>How to detect API failures before your customers do</h3>
+        <p>APIs degrade before they die — latency drift, timeouts, error trickles. Monitoring that listens.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/application-monitoring-for-startups">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Application monitoring for startups: what to monitor first" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Application monitoring for startups: what to monitor first</h3>
+        <p>The monitoring that pays for itself this week, and the monitoring that can wait a year.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Incidents" href="/blog/prevent-small-bugs-becoming-incidents">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How proactive monitoring stops small bugs becoming major incidents" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>How proactive monitoring stops small bugs becoming major incidents</h3>
+        <p>Small error → repeated error → degradation → outage. Cutting the chain at its cheapest link.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

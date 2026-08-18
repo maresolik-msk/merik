@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Application Health Monitoring: The Complete Guide (2026)</title>
+<meta name="description" content="A complete guide to application health monitoring — availability, latency, error rates, frontend health, API health, health scores, alerting and early warnings, with a practical rollout plan.">
+<meta name="keywords" content="application health monitoring, application health, application monitoring, software health monitoring, health score, application availability, error budget, application health check">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/application-health-monitoring">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Application health monitoring: the complete guide">
+<meta property="og:description" content="Every layer of application health — availability, latency, errors, frontend, APIs — and how to turn them into one honest health score.">
+<meta property="og:url" content="https://www.merik.in/blog/application-health-monitoring">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/monitoring.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Monitoring">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Application health monitoring: the complete guide">
+<meta name="twitter:description" content="Every layer of application health — availability, latency, errors, frontend, APIs — and how to turn them into one honest health score.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/application-health-monitoring#post","headline":"Application Health Monitoring: The Complete Guide (2026)","description":"A complete guide to application health monitoring — availability, latency, error rates, frontend health, API health, health scores, alerting and early warnings, with a practical rollout plan.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/application-health-monitoring","image":"https://www.merik.in/assets/images/blog/monitoring.svg","articleSection":"Monitoring","keywords":"application health monitoring, application health, application monitoring, software health monitoring, health score, application availability, error budget, application health check","wordCount":1143,"timeRequired":"PT8M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Application health monitoring","item":"https://www.merik.in/blog/application-health-monitoring"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What is application health monitoring?","acceptedAnswer":{"@type":"Answer","text":"Application health monitoring is the continuous measurement of every layer an application's users depend on — availability, response times, error rates, frontend behaviour, APIs and third-party dependencies — combined into an explainable picture of whether the application is working and which layer is degrading when it is not."}},
+      {"@type":"Question","name":"What is a good application health score?","acceptedAnswer":{"@type":"Answer","text":"A health score is only meaningful if it is derived from something verifiable. The most defensible construction is error-budget remaining: with a 99.9% monthly availability target, a score of 90 means only 10% of the month's allowed failure has been consumed. On that scale, anything above ~85 is comfortable, 50–85 deserves investigation, and below 50 means the month's target is in genuine danger."}},
+      {"@type":"Question","name":"What is an error budget?","acceptedAnswer":{"@type":"Answer","text":"An error budget is the amount of failure an availability target permits. A 99.9% monthly target allows 0.1% of requests or checks to fail — about 43 minutes of downtime. Teams spend the budget on incidents and (deliberately) on risky changes; when it is exhausted, the month's target is missed. Health expressed as budget remaining is explainable in one sentence, which arbitrary weighted scores are not."}},
+      {"@type":"Question","name":"What is burn rate in monitoring?","acceptedAnswer":{"@type":"Answer","text":"Burn rate is the speed at which an error budget is being consumed, expressed as a multiple of the rate that would exactly exhaust the budget at period end. A burn rate of 1 means on-track to just miss the target; 14× sustained for an hour means roughly 2% of a monthly budget gone in that hour — an emergency signal even before users notice."}},
+      {"@type":"Question","name":"Should health checks run inside or outside my infrastructure?","acceptedAnswer":{"@type":"Answer","text":"Outside. A check running inside your network shares your network's fate: it can report healthy while DNS, TLS or the load balancer is failing for everyone else. Outside-in checks traverse the same path as users and catch the failures internal checks are structurally blind to. Internal checks are a useful supplement, not a substitute."}},
+      {"@type":"Question","name":"How is frontend health different from uptime?","acceptedAnswer":{"@type":"Answer","text":"Uptime asks whether the server answered; frontend health asks whether the delivered page actually worked in the browser. A deploy can ship JavaScript that throws on load — every uptime check passes, and every user meets a broken page. Measuring frontend health requires collecting errors from real browsers, not probing the server harder."}},
+      {"@type":"Question","name":"How often should application health be reviewed?","acceptedAnswer":{"@type":"Answer","text":"Automated evaluation should be continuous, with warnings surfacing in real time. Human review works best monthly: uptime against target per asset, the incident list with causes, and which early warnings did or did not come true. The monthly review is also what an SLA report to a client is built from."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Application health monitoring</nav>
+    <div class="eyebrow">Monitoring</div>
+    <h1>Application health monitoring: <span class="accent">the complete guide</span></h1>
+    <p class="lead">"Is the application healthy?" is a simple question that most dashboards cannot answer honestly. This guide covers every layer of the answer — and how to roll them into one number that means something.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/monitoring.svg" alt="Layers of application health rolling up into one score" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 8 min read</p>
+    <p class="lede"><b>Application health monitoring is the ongoing measurement of every layer a user depends on — availability, response times, error rates, frontend behaviour, APIs and third-party dependencies — combined into an honest, explainable picture of whether the application is working.</b> The key word is <i>explainable</i>: a health score is only useful if you can say why it is 73 and not 95, and what would move it. This guide walks through each layer, how to measure it, and how mature teams roll the layers up using error budgets rather than arbitrary weightings.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Application health is <b>layered</b>: availability, latency, errors, frontend behaviour, API health and dependencies can each fail independently.</li>
+      <li>Measure from the <b>outside in</b> — a check that runs inside your own network shares your network's failures and misses what users see.</li>
+      <li>Percentiles beat averages: <b>p95 latency degrades first</b>, long before the mean moves.</li>
+      <li>An honest health score is a <b>derived number with an explanation</b> — the best-understood method is the error budget: how much of your allowed failure you have consumed.</li>
+      <li>A health system that cannot say <b>why</b> a score dropped will be ignored within a month.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#layers">The six layers of application health</a></li>
+      <li><a href="#availability">Availability: measured from where users are</a></li>
+      <li><a href="#performance">Performance: percentiles, not averages</a></li>
+      <li><a href="#errors-frontend">Error health and frontend health</a></li>
+      <li><a href="#apis-deps">API health and dependency health</a></li>
+      <li><a href="#score">Rolling it up: the honest health score</a></li>
+      <li><a href="#rollout">A rollout plan that takes an afternoon</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="layers">The six layers of application health</h2>
+
+    <p>"The app is up" collapses six distinct questions into one. A complete health picture keeps them separate, because they fail separately:</p>
+    <ol>
+      <li><b>Availability</b> — does the application answer at all, from where users are?</li>
+      <li><b>Performance</b> — how fast does it answer, and is that changing?</li>
+      <li><b>Error health</b> — what fraction of requests fail, and is the mix of failures changing?</li>
+      <li><b>Frontend health</b> — does the delivered page actually work in real browsers, after it loads?</li>
+      <li><b>API health</b> — are the programmatic interfaces (your own and the ones you consume) meeting their contracts?</li>
+      <li><b>Dependency health</b> — are the third parties you cannot control (payments, email, hosting, CDN) currently healthy?</li>
+    </ol>
+    <p>Most monitoring setups cover layer 1 and stop. Most <i>incidents</i> live in layers 2–6: the site is up and slow, up and erroring, up and broken in the browser, or up and failing because a payment provider is down. That mismatch — monitoring layer 1 while failing in layers 2–6 — is why <a href="/blog/application-up-but-users-see-errors">teams with green dashboards still get complaint emails</a>.</p>
+
+
+    <h2 id="availability">Availability: measured from where users are</h2>
+
+    <p>Availability sounds binary and is not. The honest measurement has three properties:</p>
+    <ul>
+      <li><b>Outside-in.</b> The check must traverse the same path a user does — DNS, TLS, CDN, load balancer, application. An internal health endpoint that returns 200 while DNS is broken is telling the truth about the wrong question.</li>
+      <li><b>Frequent enough to matter.</b> A five-minute interval means a five-minute blind spot; for most applications that is the right cost/coverage trade, tightening to one minute for anything with a strict SLA.</li>
+      <li><b>Confirmed before declared.</b> Networks blip. A single failed check from one location is weak evidence; two consecutive failures is a pattern. Confirmation converts availability monitoring from a noise source into a signal.</li>
+    </ul>
+    <p>Availability should also be <i>recorded</i>, not just alerted on — the percentage over a month is the number an SLA conversation runs on, and it cannot be reconstructed after the fact if the checks were not stored.</p>
+
+
+    <h2 id="performance">Performance: percentiles, not averages</h2>
+
+    <p>Averages are where performance problems hide. If 95 requests take 200ms and 5 take 4 seconds, the average is a comfortable 390ms while one user in twenty is having a miserable time. Percentiles keep the miserable users visible:</p>
+    <ul>
+      <li><b>p50 (median)</b> — the typical experience.</li>
+      <li><b>p95</b> — the experience of your unluckiest 5%. This is the early-warning line: p95 degrades before p50 because contention, queueing and slow paths hit the tail first.</li>
+      <li><b>p99</b> — the worst realistic experience; noisy for low-traffic endpoints but essential at scale.</li>
+    </ul>
+    <p>The other half of performance health is <b>trend</b>. A p95 of 600ms is a fact; a p95 that has gone 200 → 250 → 310 → 440 → 650ms over five hours is a story — the shape a memory leak, a filling connection pool or an unindexed query growing with data makes. Health monitoring that only looks at the current value misses the story. <a href="/blog/proactive-application-monitoring">Baseline comparison</a> is what turns the story into a warning.</p>
+
+
+    <h2 id="errors-frontend">Error health and frontend health</h2>
+
+    <p><b>Error rate</b> — failed requests over total — is the most direct health signal, with two subtleties. First, the baseline matters: 2% errors is catastrophic for a checkout API and normal for an endpoint probed by scrapers. Second, the <i>mix</i> matters: a shift from occasional 404s to any 5xx at all is a state change even if the total rate barely moves. Watch the rate against its own history, and watch 5xx separately from everything else — <a href="/blog/backend-error-monitoring">server-side failures are their own category</a>.</p>
+    <p><b>Frontend health</b> is the layer server-side monitoring cannot see at all. The server can deliver a perfect 200 whose JavaScript then throws on load, leaving a page that renders but does not work. The measurement is client-side: a lightweight script in the page reporting uncaught exceptions, unhandled promise rejections, and failed network calls back to your monitoring. The unit that matters is not the raw error count — busy sites always have some — but the count <i>relative to that site's usual hour</i>. Forty errors an hour every hour is a known bug; forty against a usual two is <a href="/blog/javascript-console-error-monitoring">a deploy gone wrong</a>.</p>
+
+
+    <h2 id="apis-deps">API health and dependency health</h2>
+
+    <p><b>Your own APIs</b> deserve per-endpoint health, not one aggregate. "The API is 99.5% available" can hide a checkout endpoint at 94% behind a healthy search endpoint at 99.9%. Check the endpoints that map to money and user journeys individually, with expected-status and expected-content assertions, so a 200 returning an error page is caught for what it is. <a href="/blog/api-failure-detection">API failure detection</a> covers this layer in depth.</p>
+    <p><b>Dependencies</b> — payment providers, email services, hosting, CDN — are health you inherit but cannot fix. Monitoring them does two jobs. First, explanation: when your checkout fails because the payment provider is down, the incident should say so instead of sending your team hunting through their own code. Second, noise control: forty client sites failing because one CDN is down should be one story, not forty pages. Most major providers publish machine-readable status feeds; a health system should be consuming them.</p>
+
+
+    <h2 id="score">Rolling it up: the honest health score</h2>
+
+    <p>Leadership wants one number. The temptation is to invent a weighting — availability 40%, performance 30%, errors 30% — and the problem is that the weights are arbitrary, so the number is unexplainable, so it gets ignored.</p>
+    <p>The method that survives scrutiny is the <b>error budget</b>, from the SRE tradition. It works like this:</p>
+    <ol>
+      <li>Every service has a target — say 99.9% availability over a month. That target implies an <i>allowed</i> amount of failure: 0.1% of checks, roughly 43 minutes.</li>
+      <li>The error budget is how much of that allowance remains. Failed 20 minutes' worth so far this month? You have consumed ~47% of budget.</li>
+      <li><b>Health = budget remaining.</b> A score of 53 means "53% of this month's allowed failure is still unspent" — a sentence anyone can verify from the raw checks.</li>
+    </ol>
+    <p>The same construction gives you <b>burn rate</b> — how fast budget is being consumed right now versus the rate that would exactly exhaust it at month-end. Burn rate is the best severity signal available: 14× burn sustained for an hour is an emergency regardless of what the current health number says, because it tells you where the number is <i>going</i>. The complete reliability picture — budgets, burn, warnings and incident flow — is covered in <a href="/blog/proactive-application-reliability">the proactive reliability guide</a>.</p>
+
+
+    <h2 id="rollout">A rollout plan that takes an afternoon</h2>
+
+    <p>For a team starting from nothing:</p>
+    <ol>
+      <li><b>Inventory</b> — list every user-facing thing: sites, apps, APIs, per client if you run client infrastructure. Assign each an owner. Unowned monitoring is decoration.</li>
+      <li><b>Outside-in checks</b> on each, every 1–5 minutes, with confirmation before alerting.</li>
+      <li><b>Certificate monitoring</b> on everything HTTPS, warning at least two weeks out.</li>
+      <li><b>Frontend error collection</b> on the highest-traffic pages first.</li>
+      <li><b>Declare targets</b> — an SLA tier per asset, even informally. Targets are what make health computable.</li>
+      <li><b>Let baselines accumulate</b> for two weeks, then turn on deviation-based early warnings.</li>
+      <li><b>Review monthly</b> — uptime vs target per asset, incidents and their causes, warnings that did or did not come true. Feed <a href="/blog/saas-monitoring-checklist">the checklist</a> back into coverage.</li>
+    </ol>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>The six layers</th><td>Availability, performance, error health, frontend health, API health, dependency health</td></tr>
+      <tr><th>Availability rule</th><td>Outside-in checks, 1–5 minute interval, confirmed by consecutive failures before alerting</td></tr>
+      <tr><th>Performance rule</th><td>Track p50/p95/p99 percentiles and their trend — never the average alone</td></tr>
+      <tr><th>Frontend rule</th><td>Client-side error reporting judged against that site's own usual rate</td></tr>
+      <tr><th>Honest score</th><td>Error budget remaining: health = unspent fraction of the failure your SLA target allows</td></tr>
+      <tr><th>Severity signal</th><td>Burn rate — how fast the budget is being consumed vs the break-even rate</td></tr>
+      <tr><th>Time to first value</th><td>Checks and SSL monitoring same-day; baseline-driven warnings after ~2 weeks of history</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What is application health monitoring?</summary><p>Application health monitoring is the continuous measurement of every layer an application's users depend on — availability, response times, error rates, frontend behaviour, APIs and third-party dependencies — combined into an explainable picture of whether the application is working and which layer is degrading when it is not.</p></details>
+      <details><summary>What is a good application health score?</summary><p>A health score is only meaningful if it is derived from something verifiable. The most defensible construction is error-budget remaining: with a 99.9% monthly availability target, a score of 90 means only 10% of the month's allowed failure has been consumed. On that scale, anything above ~85 is comfortable, 50–85 deserves investigation, and below 50 means the month's target is in genuine danger.</p></details>
+      <details><summary>What is an error budget?</summary><p>An error budget is the amount of failure an availability target permits. A 99.9% monthly target allows 0.1% of requests or checks to fail — about 43 minutes of downtime. Teams spend the budget on incidents and (deliberately) on risky changes; when it is exhausted, the month's target is missed. Health expressed as budget remaining is explainable in one sentence, which arbitrary weighted scores are not.</p></details>
+      <details><summary>What is burn rate in monitoring?</summary><p>Burn rate is the speed at which an error budget is being consumed, expressed as a multiple of the rate that would exactly exhaust the budget at period end. A burn rate of 1 means on-track to just miss the target; 14× sustained for an hour means roughly 2% of a monthly budget gone in that hour — an emergency signal even before users notice.</p></details>
+      <details><summary>Should health checks run inside or outside my infrastructure?</summary><p>Outside. A check running inside your network shares your network's fate: it can report healthy while DNS, TLS or the load balancer is failing for everyone else. Outside-in checks traverse the same path as users and catch the failures internal checks are structurally blind to. Internal checks are a useful supplement, not a substitute.</p></details>
+      <details><summary>How is frontend health different from uptime?</summary><p>Uptime asks whether the server answered; frontend health asks whether the delivered page actually worked in the browser. A deploy can ship JavaScript that throws on load — every uptime check passes, and every user meets a broken page. Measuring frontend health requires collecting errors from real browsers, not probing the server harder.</p></details>
+      <details><summary>How often should application health be reviewed?</summary><p>Automated evaluation should be continuous, with warnings surfacing in real time. Human review works best monthly: uptime against target per asset, the incident list with causes, and which early warnings did or did not come true. The monthly review is also what an SLA report to a client is built from.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik computes health exactly the way this guide describes, because the guide describes what we built. Every registered asset gets outside-in checks with confirmation, daily SSL expiry checks, and latency percentile baselines measured over 14 days. Its health score is <b>error budget remaining</b> against the SLA tier you declared — a 61 means 39% of the month's allowed failure is spent, and the number is traceable to individual checks. Burn rate over one hour, six hours and three days sets incident severity, so a Sev1 means the budget is actually haemorrhaging, not that someone guessed "critical" at registration time.</p>
+    <p>Frontend health comes from the merik.js snippet — browser errors, grouped and counted against that site's own usual hour. Dependency health comes from live vendor status feeds, so a Stripe outage explains your checkout incident instead of hiding behind it. And every layer rolls up into <a href="/blog/proactive-application-monitoring">early warnings</a> when it drifts, an auto-assigned incident when it breaks, and a printable monthly SLA report when a client asks how the month went.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Monitoring" href="/blog/proactive-application-monitoring">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="What is proactive application monitoring?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>What is proactive application monitoring?</h3>
+        <p>Detecting problems before users report them — baselines, anomalies and early warnings, explained.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/saas-monitoring-checklist">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="What should you monitor in a SaaS application?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>What should you monitor in a SaaS application?</h3>
+        <p>The complete checklist — uptime, APIs, frontend errors, certificates, dependencies, deploys.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/proactive-application-reliability">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="The complete guide to proactive application reliability" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>The complete guide to proactive application reliability</h3>
+        <p>Observe, baseline, warn, respond, learn — the full loop that prevents incidents instead of narrating them.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

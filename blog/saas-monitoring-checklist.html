@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>What Should You Monitor in a SaaS Application? The Complete Checklist</title>
+<meta name="description" content="A practical SaaS monitoring checklist — uptime, APIs, frontend errors, certificates, performance baselines, dependencies and deployments — with priorities and the reasoning behind each item.">
+<meta name="keywords" content="SaaS monitoring, SaaS application monitoring, what to monitor SaaS, SaaS monitoring checklist, SaaS monitoring tools, application health monitoring, monitor web application">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/saas-monitoring-checklist">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="What should you monitor in a SaaS application?">
+<meta property="og:description" content="The complete monitoring checklist for SaaS teams — what to watch, in what order, and why each item earns its place.">
+<meta property="og:url" content="https://www.merik.in/blog/saas-monitoring-checklist">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/monitoring.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-08-18">
+<meta property="article:modified_time" content="2026-08-18">
+<meta property="article:section" content="Monitoring">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What should you monitor in a SaaS application?">
+<meta name="twitter:description" content="The complete monitoring checklist for SaaS teams — what to watch, in what order, and why each item earns its place.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/saas-monitoring-checklist#post","headline":"What Should You Monitor in a SaaS Application? The Complete Checklist","description":"A practical SaaS monitoring checklist — uptime, APIs, frontend errors, certificates, performance baselines, dependencies and deployments — with priorities and the reasoning behind each item.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/saas-monitoring-checklist","image":"https://www.merik.in/assets/images/blog/monitoring.svg","articleSection":"Monitoring","keywords":"SaaS monitoring, SaaS application monitoring, what to monitor SaaS, SaaS monitoring checklist, SaaS monitoring tools, application health monitoring, monitor web application","wordCount":972,"timeRequired":"PT7M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"SaaS monitoring checklist","item":"https://www.merik.in/blog/saas-monitoring-checklist"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What should a SaaS company monitor first?","acceptedAnswer":{"@type":"Answer","text":"In order: outside-in availability checks on every user-facing hostname; per-endpoint checks on the APIs that map to login, core data and billing; frontend error collection in real browsers; TLS certificate expiry; latency baselines; third-party dependency status; and deployment events. This ordering follows how often each layer fails and how invisible each failure is without monitoring."}},
+      {"@type":"Question","name":"Is a /health endpoint enough to monitor an API?","acceptedAnswer":{"@type":"Answer","text":"No. Health endpoints typically return a static 200 without exercising the database, queues or authentication, so they stay green through real failures. Monitor the specific endpoints users depend on, with expected status and content assertions and latency recording per endpoint."}},
+      {"@type":"Question","name":"Do I need to monitor infrastructure metrics like CPU and memory?","acceptedAnswer":{"@type":"Answer","text":"If you run your own servers, yes, as a supporting layer. If you are on managed platforms — serverless, managed databases, Vercel-style hosting — the provider monitors the machines, and your effort is better spent on behavioural monitoring: availability, latency, errors and frontend health, which reflect what users actually experience."}},
+      {"@type":"Question","name":"How do I monitor third-party services my SaaS depends on?","acceptedAnswer":{"@type":"Answer","text":"Most major providers publish machine-readable status feeds (the Statuspage format is a de-facto standard). Consume them automatically and map each of your services to the providers it depends on, so an incident on your side is automatically explained when the cause is theirs — and so one provider outage produces one story instead of dozens of independent alerts."}},
+      {"@type":"Question","name":"What monitoring interval should a SaaS use?","acceptedAnswer":{"@type":"Answer","text":"Five minutes is the standard trade-off for most surfaces, giving worst-case detection latency of about ten minutes with confirmation. Tighten to one minute for anything carrying a strict contractual SLA. Certificate checks only need to run daily."}},
+      {"@type":"Question","name":"Should deployments be part of monitoring?","acceptedAnswer":{"@type":"Answer","text":"Yes — it is the highest-value correlation available. Most production degradation follows a change, so recording deploy events into the same timeline as your checks lets any anomaly be read next to what shipped just before it. The monitoring should present the deploy as correlated context to investigate, not as an automatic verdict of blame."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> SaaS monitoring checklist</nav>
+    <div class="eyebrow">Monitoring</div>
+    <h1>What should you monitor in a <span class="accent">SaaS application</span>?</h1>
+    <p class="lead">Not everything — the right things, in the right order. A checklist built from how SaaS applications actually fail.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/monitoring.svg" alt="Checklist of SaaS monitoring layers" width="640" height="384">
+    <p class="post-meta">Published 18 August 2026 · Updated 18 August 2026 · Merik team · 7 min read</p>
+    <p class="lede"><b>A SaaS application needs monitoring at seven points: public availability, API endpoint health, frontend errors in real browsers, TLS certificates and DNS, performance against measured baselines, third-party dependencies, and deployments.</b> That ordering is deliberate — it follows both how often each layer fails and how invisible the failure is without monitoring. This checklist works through each item with the reasoning attached, so you can adapt it to your product rather than following it blindly.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Monitor what users <b>experience</b>, not what infrastructure <b>reports</b> — the gap between those two is where complaints come from.</li>
+      <li>Every user-facing surface gets an <b>outside-in availability check</b>; every critical API endpoint gets its own, with status and content assertions.</li>
+      <li><b>Frontend error collection</b> is mandatory for SaaS: single-page apps fail in the browser far more often than at the server.</li>
+      <li>Certificates, DNS and domain expiry are <b>calendar failures</b> — entirely preventable, still embarrassingly common.</li>
+      <li>Deployment events belong <b>in your monitoring timeline</b>: most degradations follow a change.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#principle">The organising principle: follow the user's path</a></li>
+      <li><a href="#uptime">1. Public availability — every surface, outside-in</a></li>
+      <li><a href="#api">2. API endpoints — individually, with assertions</a></li>
+      <li><a href="#frontend">3. Frontend errors — the SaaS-specific blind spot</a></li>
+      <li><a href="#certs">4. Certificates, DNS and domains — the calendar failures</a></li>
+      <li><a href="#performance">5. Performance — against baselines, not thresholds</a></li>
+      <li><a href="#deps-deploys">6 & 7. Dependencies and deployments</a></li>
+      <li><a href="#skip">What you can defer (and when to stop deferring)</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="principle">The organising principle: follow the user's path</h2>
+
+    <p>The failures that cost a SaaS business money are the ones users hit: cannot log in, cannot load the dashboard, cannot pay, cannot invite a teammate. So the monitoring checklist starts from the user's path inward — not from the infrastructure outward.</p>
+    <p>This inverts how many teams naturally think. Infrastructure metrics (CPU, memory, disk) are easy to collect and comfortable to watch, but they are proxies. CPU at 90% might be fine; CPU at 20% might accompany a total outage caused by a bad deploy. The user's path — DNS resolves, TLS handshake succeeds, page loads, scripts run, API calls return, payment completes — is the ground truth. Everything on the checklist below maps to a step on that path.</p>
+
+
+    <h2 id="uptime">1. Public availability — every surface, outside-in</h2>
+
+    <p>Every hostname a user or customer touches gets an availability check from outside your infrastructure: the marketing site, the app itself, the API base, the status page, per-customer subdomains if you issue them, and each customer site if you are an agency running client properties.</p>
+    <ul>
+      <li><b>Interval:</b> 1–5 minutes. Five is fine for most; one for anything with a contractual SLA.</li>
+      <li><b>Confirmation:</b> require two consecutive failures before declaring an outage — single blips are usually the network between the checker and you, not you.</li>
+      <li><b>Record everything:</b> the uptime percentage you quote a customer at renewal is built from stored checks, and cannot be reconstructed later.</li>
+    </ul>
+
+
+    <h2 id="api">2. API endpoints — individually, with assertions</h2>
+
+    <p>One check on <code>/api/health</code> is not API monitoring. Health endpoints exercise almost nothing — they typically return a static 200 without touching the database, the queue or auth. Meanwhile the endpoints that matter fail individually: <a href="/blog/api-failure-detection">a slow query degrades <code>/api/orders</code></a> while everything else stays fast.</p>
+    <p>Monitor the handful of endpoints that map to money and core journeys — login, the main data reads, checkout/billing — each with:</p>
+    <ul>
+      <li>an <b>expected status</b> (a 200 that should be a 200, a 401 for an auth-required endpoint probed without credentials);</li>
+      <li>an <b>expected content assertion</b> where possible, so an error page returning 200 is caught;</li>
+      <li><b>latency recording</b>, feeding the baseline that makes degradation detectable.</li>
+    </ul>
+
+
+    <h2 id="frontend">3. Frontend errors — the SaaS-specific blind spot</h2>
+
+    <p>Modern SaaS frontends are applications in their own right: a framework bundle, client-side routing, dozens of API calls after first paint. Which means they fail after the server's job is done — an uncaught exception on route change, an unhandled promise rejection in a data fetch, a third-party script that breaks checkout. Server-side monitoring sees none of it; <a href="/blog/frontend-error-monitoring">the 200 was delivered</a>.</p>
+    <p>The fix is a small reporting script in the page: uncaught errors, unhandled rejections, failed network calls, grouped by error signature and judged against the site's own normal rate. Privacy matters here — the collector should strip query strings, tokens and anything personal, because <a href="/blog/javascript-console-error-monitoring">error messages love to smuggle secrets</a>.</p>
+
+
+    <h2 id="certs">4. Certificates, DNS and domains — the calendar failures</h2>
+
+    <p>Three failure modes have a date printed on them in advance:</p>
+    <ul>
+      <li><b>TLS certificate expiry</b> — check daily, warn at 14+ days. Auto-renewal (Let's Encrypt et al.) fails silently more often than anyone likes to admit; the warning window is what turns "renewal broke" from an outage into a chore.</li>
+      <li><b>DNS changes</b> — verify your critical hostnames resolve to what you expect; hijacks and fat-fingered zone edits both present as "site gone".</li>
+      <li><b>Domain expiry</b> — the rarest and most catastrophic. Calendar it twice.</li>
+    </ul>
+    <p>These checks cost nearly nothing and prevent the most preventable class of outage in the industry.</p>
+
+
+    <h2 id="performance">5. Performance — against baselines, not thresholds</h2>
+
+    <p>The performance question for SaaS is not "is it fast?" but "is it as fast as it usually is?" — because <i>usually</i> is what users are habituated to, and deviation from it is what they feel. The checks you are already running collect latency for free; keep the percentiles (p50/p95) per endpoint over a trailing window, and alert on significant deviation from that measured normal rather than on a fixed number.</p>
+    <p>Fixed thresholds fail in both directions: 500ms is an emergency for an autocomplete endpoint and irrelevant for a report generator. <a href="/blog/proactive-application-monitoring">Baseline comparison</a> is the same rule applied fairly to both. Watch the trend as well as the level — a steady climb across hours is the signature of a leak or a filling pool, and it is visible long before any threshold trips.</p>
+
+
+    <h2 id="deps-deploys">6 & 7. Dependencies and deployments</h2>
+
+    <p><b>Dependencies:</b> your SaaS runs on other people's services — payments, email delivery, hosting, CDN, auth providers. When one of them breaks, your symptoms are indistinguishable from your own outage until someone thinks to check. Consume their status feeds automatically, map which of your services depend on which provider, and let the monitoring system say "checkout is failing <i>because Stripe is down</i>" — a sentence that saves an hour of misdirected debugging and stops forty duplicate alerts.</p>
+    <p><b>Deployments:</b> the single highest-value correlation in monitoring. Most production degradation follows a change. Wire CI (GitHub, Vercel, or whatever ships your code) to record deployments into the monitoring timeline, so "latency doubled at 14:32" can be read next to "deploy landed 14:28". Correlation is not causation — the monitoring should present it as context, not verdict — but it is the correct first place to look, every time. <a href="/blog/reduce-mttd">MTTD</a> drops sharply when the change log and the anomaly log are the same timeline.</p>
+
+
+    <h2 id="skip">What you can defer (and when to stop deferring)</h2>
+
+    <p>A deliberately honest section, because checklist articles love to demand everything at once:</p>
+    <ul>
+      <li><b>Log aggregation</b> — defer until you are debugging <i>why</i> often enough to justify the cost. <a href="/blog/logs-vs-monitoring">Logs answer a different question</a> than monitoring.</li>
+      <li><b>Distributed tracing</b> — defer until you have enough services that "which hop is slow?" is a real question.</li>
+      <li><b>Infrastructure metrics</b> — if you are on managed platforms (Vercel, managed Postgres, serverless), the provider watches the boxes; you watch the behaviour.</li>
+      <li><b>Synthetic multi-step journeys</b> — genuinely valuable for flows like signup→checkout, but build the seven layers above first; a browser-automation suite is a maintenance commitment.</li>
+    </ul>
+    <p>The checklist above is a solid afternoon of setup for a typical SaaS and covers the failure modes that actually generate support tickets. <a href="/blog/application-monitoring-for-startups">The startup edition</a> cuts it down further for two-person teams.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Layer 1</th><td>Outside-in availability checks on every user-facing hostname, 1–5 min, confirmed before alerting</td></tr>
+      <tr><th>Layer 2</th><td>Per-endpoint API checks with expected status/content and latency recording</td></tr>
+      <tr><th>Layer 3</th><td>Frontend error collection from real browsers, grouped and baselined</td></tr>
+      <tr><th>Layer 4</th><td>Daily TLS expiry checks (warn ≥14 days), DNS verification, domain expiry</td></tr>
+      <tr><th>Layer 5</th><td>Latency percentiles vs measured baseline — never fixed thresholds alone</td></tr>
+      <tr><th>Layer 6</th><td>Dependency status feeds mapped to the services that rely on them</td></tr>
+      <tr><th>Layer 7</th><td>Deployment events recorded into the monitoring timeline</td></tr>
+      <tr><th>Safe to defer</th><td>Log aggregation, tracing, box-level metrics on managed infra, synthetic journeys</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What should a SaaS company monitor first?</summary><p>In order: outside-in availability checks on every user-facing hostname; per-endpoint checks on the APIs that map to login, core data and billing; frontend error collection in real browsers; TLS certificate expiry; latency baselines; third-party dependency status; and deployment events. This ordering follows how often each layer fails and how invisible each failure is without monitoring.</p></details>
+      <details><summary>Is a /health endpoint enough to monitor an API?</summary><p>No. Health endpoints typically return a static 200 without exercising the database, queues or authentication, so they stay green through real failures. Monitor the specific endpoints users depend on, with expected status and content assertions and latency recording per endpoint.</p></details>
+      <details><summary>Do I need to monitor infrastructure metrics like CPU and memory?</summary><p>If you run your own servers, yes, as a supporting layer. If you are on managed platforms — serverless, managed databases, Vercel-style hosting — the provider monitors the machines, and your effort is better spent on behavioural monitoring: availability, latency, errors and frontend health, which reflect what users actually experience.</p></details>
+      <details><summary>How do I monitor third-party services my SaaS depends on?</summary><p>Most major providers publish machine-readable status feeds (the Statuspage format is a de-facto standard). Consume them automatically and map each of your services to the providers it depends on, so an incident on your side is automatically explained when the cause is theirs — and so one provider outage produces one story instead of dozens of independent alerts.</p></details>
+      <details><summary>What monitoring interval should a SaaS use?</summary><p>Five minutes is the standard trade-off for most surfaces, giving worst-case detection latency of about ten minutes with confirmation. Tighten to one minute for anything carrying a strict contractual SLA. Certificate checks only need to run daily.</p></details>
+      <details><summary>Should deployments be part of monitoring?</summary><p>Yes — it is the highest-value correlation available. Most production degradation follows a change, so recording deploy events into the same timeline as your checks lets any anomaly be read next to what shipped just before it. The monitoring should present the deploy as correlated context to investigate, not as an automatic verdict of blame.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's Digital Operations module covers this checklist as its core loop: register each site, app or API as an asset (per client, if you run client properties), and it gets outside-in availability checks with two-failure confirmation, per-endpoint latency recording, daily SSL expiry checks on HTTPS targets, and a 14-day latency/error baseline that makes deviation detectable. The merik.js snippet adds frontend error collection with grouping and privacy redaction built in.</p>
+    <p>Dependencies are first-class: mark which vendors each asset hard-depends on, and a Stripe or Cloudflare outage suppresses the pile-on while recording the incident. GitHub and Vercel webhooks put deploys on the same timeline as anomalies. Everything rolls up into <a href="/blog/application-health-monitoring">an error-budget health score</a>, early warnings when behaviour drifts, and a monthly SLA report per client — the checklist, running itself.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Monitoring" href="/blog/application-health-monitoring">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Application health monitoring: the complete guide" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Application health monitoring: the complete guide</h3>
+        <p>Every layer of application health, and how to roll them into one honest score.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/api-failure-detection">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="How to detect API failures before your customers do" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>How to detect API failures before your customers do</h3>
+        <p>APIs degrade before they die — latency drift, timeouts, error trickles. Monitoring that listens.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/application-monitoring-for-startups">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Application monitoring for startups: what to monitor first" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Application monitoring for startups: what to monitor first</h3>
+        <p>The monitoring that pays for itself this week, and the monitoring that can wait a year.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></div>
+        <p class="desc">Merik is the all-in-one workforce platform for employee management, attendance, leave, payroll and daily task tracking.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>
