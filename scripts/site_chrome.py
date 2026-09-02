@@ -47,7 +47,7 @@ def header(current=""):
     )
     return f"""<header>
   <div class="wrap nav">
-    <a href="/" class="brand"{' aria-current="page"' if current == "home" else ''}><img src="/assets/images/logo-96.png" alt="Merik logo" width="30" height="30"><span>Merik</span></a>
+    <a href="/" class="brand"{' aria-current="page"' if current == "home" else ''}><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></a>
     <nav class="nav-links" id="navLinks" aria-label="Main">
 {links}
       <div class="nav-cta">

@@ -27,6 +27,9 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdro
 .nav{display:flex;align-items:center;justify-content:space-between;height:68px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink);letter-spacing:-.4px}
 .brand img,.logo{height:30px;width:auto;display:block}
+/* the nav brand is the full MERIK wordmark, so it carries the name itself and
+   sits shorter than the square mark the footer still pairs with a label. */
+header .brand img{height:24px}
 .nav-links{display:flex;align-items:center;gap:30px}
 .nav-links a.link{font-weight:500;font-size:15px;color:var(--muted)}
 .nav-links a.link:hover,.nav-links a.link[aria-current="page"]{color:var(--ink)}
