@@ -127,10 +127,11 @@ Deno.serve(async (req) => {
 
     return json({});
   } catch (e) {
-    // Auth surfaces this shape to the caller and writes it to the auth log, so
-    // the next failure says what broke instead of "unexpected_failure".
+    // Auth hooks report failure IN BAND: HTTP 200 carrying an error object. A
+    // non-2xx status is swallowed as "Unexpected status code returned from
+    // hook", which loses the only sentence that says what actually broke.
     const message = (e as Error).message;
     console.error("auth-email:", message);
-    return json({ error: { http_code: 500, message } }, 500);
+    return json({ error: { http_code: 500, message: `auth-email: ${message}` } });
   }
 });
