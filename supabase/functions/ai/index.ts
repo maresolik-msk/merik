@@ -291,6 +291,28 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // Triage sits here, with the superadmin actions, and not with the tenant
+    // features below — because a super admin has no org, and every gate down
+    // there is org-shaped: the per-workspace grant and the monthly cap are both
+    // meaningless for a Merik-internal tool. It still answers to the two gates
+    // that are not: the master switch and its own feature flag.
+    if (action === "health_triage") {
+      if (!isSuper) throw new Error("Superadmin only");
+      feature = "health_triage";
+      const { data: st } = await admin
+        .from("ai_settings").select("enabled, features, active_key_id").eq("id", true).maybeSingle();
+      if (!st?.enabled) throw new Error("AI is currently switched off for Merik");
+      if (st.features?.health_triage !== true) throw new Error("The health triage feature is switched off");
+      const cfg = await activeProvider(admin, st);
+      const { result, usage } = await healthTriage(admin, cfg, body);
+      await admin.from("ai_usage").insert({
+        org_id: null, user_id: userId, feature,
+        model: `${cfg.provider}:${cfg.model}`,
+        input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, ok: true,
+      });
+      return json({ ok: true, ...result });
+    }
+
     // === Feature actions (fully gated) ======================================
     const spec = FEATURES[action];
     if (!spec) throw new Error(`Unknown action: ${action}`);
@@ -454,4 +476,116 @@ Return JSON with exactly these keys: estimated_minutes (integer), confidence ("h
   const user = JSON.stringify({ new_task: task, my_history: past });
   const { json: suggestion, usage } = await callLLM(cfg, { system, user, maxTokens: 1500 });
   return { result: { suggestion }, usage };
+}
+
+// ---------------------------------------------------------------------------
+// Feature: health triage — reads one product warning and drafts what to check.
+//
+// Superadmin only, and Merik-internal: the subject is Merik's own bug, not a
+// tenant's data. What leaves the building is the error text that the browser
+// already redacted before storing it, plus counts.
+//
+// Deliberately NOT sent: workspace names or ids. The model cannot do anything
+// useful with "which tenant" that "how many tenants" does not already give it,
+// and naming a client to a third-party API to answer a question that does not
+// need the name is a bad trade at any price.
+//
+// A draft, like every other AI feature here. It never changes the warning's
+// state, never marks anything fixed, and says so on the page.
+// ---------------------------------------------------------------------------
+// Naming this ReturnType<typeof createClient> gives a differently-parameterised
+// client than the call site actually holds, and every use of it fails to check —
+// the same trap probe/index.ts documents above serviceClient. This feature needs
+// exactly one capability from the client, so that is all it asks for.
+interface TriageDb { from(table: string): any }
+
+interface TriageWarning {
+  fingerprint: string; kind: string; risk: number; confidence: number;
+  tenants: number; occurrences: number; regressed: boolean;
+  sample_message: string | null; sample_source: string | null;
+  first_build: string | null; last_build: string | null;
+  detected_at: string; evidence: unknown;
+}
+interface TriageEvent {
+  kind: string; count: number | null; message: string | null; source: string | null;
+  page: string | null; actor_role: string | null; browser: string | null;
+  build: string | null; first_seen: string; last_seen: string;
+}
+
+async function healthTriage(admin: TriageDb, cfg: ProviderCfg, body: any) {
+  const warningId = String(body.warning_id || "");
+  if (!warningId) throw new Error("warning_id is required");
+
+  // Fetched here rather than accepted from the caller. The browser sends an id;
+  // everything that reaches the prompt is read from the database by this
+  // function, so a caller cannot smuggle text into the model's input.
+  const { data: wRow } = await admin
+    .from("product_warnings").select("*").eq("id", warningId).maybeSingle();
+  if (!wRow) throw new Error("Warning not found");
+  const w = wRow as unknown as TriageWarning;
+
+  const { data: ev } = await admin
+    .from("product_events")
+    .select("kind, count, message, source, page, actor_role, browser, build, first_seen, last_seen")
+    .eq("fingerprint", w.fingerprint)
+    .order("last_seen", { ascending: false })
+    .limit(40);
+
+  const rows = (ev ?? []) as unknown as TriageEvent[];
+  const byPage: Record<string, number> = {};
+  const byRole: Record<string, number> = {};
+  const byBrowser: Record<string, number> = {};
+  for (const r of rows) {
+    if (r.page) byPage[r.page] = (byPage[r.page] ?? 0) + (r.count ?? 1);
+    if (r.actor_role) byRole[r.actor_role] = (byRole[r.actor_role] ?? 0) + (r.count ?? 1);
+    if (r.browser) byBrowser[r.browser] = (byBrowser[r.browser] ?? 0) + (r.count ?? 1);
+  }
+  const top = (o: Record<string, number>) =>
+    Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} (${v})`).join(", ") || "unknown";
+
+  const evidence = (Array.isArray(w.evidence) ? w.evidence as Array<Record<string, unknown>> : [])
+    .map((e) => `- ${e.label}: ${e.detail}`).join("\n");
+
+  const user = [
+    `Error: ${tidy(w.sample_message, 300) ?? "unknown"}`,
+    `Source: ${tidy(w.sample_source, 200) ?? "unknown"}`,
+    `Kind: ${w.kind} (risk ${w.risk}/100, confidence ${w.confidence}/100)`,
+    `Workspaces affected: ${w.tenants}`,
+    `Occurrences: ${w.occurrences}`,
+    `First seen: ${w.detected_at} in build ${w.first_build ?? "unknown"}`,
+    `Most recent build: ${w.last_build ?? "unknown"}`,
+    w.regressed ? "This was marked fixed once before and has come back." : "",
+    `Pages: ${top(byPage)}`,
+    `Roles hitting it: ${top(byRole)}`,
+    `Browsers: ${top(byBrowser)}`,
+    evidence ? `Why it was flagged:\n${evidence}` : "",
+  ].filter(Boolean).join("\n");
+
+  const system = [
+    "You triage errors in Merik, a multi-tenant HR and operations web app.",
+    "The whole front end is one file, app/index.html: plain JavaScript, no framework,",
+    "talking to Supabase (Postgres with row-level security, plus Deno edge functions).",
+    "A 'db' error is usually an RLS policy or a constraint, not a browser problem.",
+    "A 'view' error means a page's render function threw.",
+    "A 'function' error means an edge function returned non-2xx.",
+    "",
+    "Reply with JSON only: {summary, likely_cause, where_to_look, checks, confidence}.",
+    "summary: one sentence a busy person can act on.",
+    "likely_cause: your best explanation, hedged honestly.",
+    "where_to_look: the file, function or policy to open first.",
+    "checks: 2-4 concrete things to verify, most discriminating first.",
+    "confidence: 'low' | 'medium' | 'high'.",
+    "",
+    "Never invent a file name, line number, table or policy that is not in the evidence.",
+    "If the evidence does not support a cause, say so in likely_cause and set confidence low.",
+    "This is a draft for a human engineer. Do not claim anything is fixed.",
+  ].join("\n");
+
+  // callLLM already parses — it appends its own "JSON only" instruction and
+  // returns the object, the same as every other feature here.
+  const { json: draft, usage } = await callLLM(cfg, { system, user, maxTokens: 700 });
+  return {
+    result: { draft, fingerprint: w.fingerprint, source_rows: rows.length },
+    usage,
+  };
 }
