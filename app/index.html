@@ -4870,7 +4870,8 @@ const suStat=(ic,bg,col,label,val,sub)=>`<div class="card" style="margin:0;flex:
 const AI_FEATURES=[
   ['performance_summary','Performance summaries','Drafts a monthly review from an employee\'s task log. Admin edits &amp; approves before anything is saved.'],
   ['quote_draft','Quote drafting','Turns a project brief into line items, priced against that client\'s past quotes.'],
-  ['task_time_suggest','Task time suggestions','Estimate from the employee\'s own history. Task Insights already has a free built-in estimator; leave this off unless it clearly beats it.']];
+  ['task_time_suggest','Task time suggestions','Estimate from the employee\'s own history. Task Insights already has a free built-in estimator; leave this off unless it clearly beats it.'],
+  ['health_triage','Product health triage','Drafts what to check for a Product Health warning. Merik-only — no tenant can reach it. Switching this on sends the redacted error text of Merik\'s own bugs to the active provider.']];
 // [id, label, example model, needs base_url]
 const AI_PROVIDERS=[
   ['anthropic','Claude (Anthropic)','claude-opus-4-8',false],
@@ -4937,8 +4938,10 @@ async function suai(){
 }
 let AI_STATE=null;
 /* ============================== PRODUCT HEALTH ================================
-   The read side of the product_events table: what is breaking inside Merik,
-   ranked by how many tenants it reaches.
+   Two halves. The warnings at the top are Merik's judgement — one card per issue
+   the scorer thinks is worth a decision, ranked by risk. The table underneath is
+   the raw material, every error grouped by fingerprint, for when the judgement is
+   wrong or the thing you are chasing never crossed the bar.
 
    Ranked by tenants and not by occurrence count, because those two orders
    disagree in exactly the case that matters. One person hammering a broken
@@ -4958,18 +4961,85 @@ const PH_KIND={
   function:['stOL','Function',  'An edge function returned an error to the browser.'],
   db:       ['stL','Database',  'A read or write the database refused.'],
 };
+// The warning kinds the scorer assigns, in the order it prefers them. Regression
+// leads because it is the only label that also tells you the likely fix.
+const PHW_KIND={
+  regression:['stA', 'fa-code-branch',    'Regression'],
+  blocking:  ['stUL','fa-ban',            'Blocking'],
+  reach:     ['stOL','fa-people-group',   'Widespread'],
+  spike:     ['stL', 'fa-arrow-trend-up', 'Spike'],
+  persistent:['stH', 'fa-hourglass-half', 'Persistent'],
+};
 function phRange(d){PH_RANGE=d;suhealth()}
+async function phRescan(){
+  const{data,error}=await sb.rpc('rescan_product_health');
+  if(error)return toast('Rescan failed: '+error.message,'err');
+  toast(data?`Rescan done — ${data} warning${data===1?'':'s'} updated`:'Rescan done — nothing new','ok');
+  suhealth();
+}
+/* Judging a warning is the only signal that says whether the scoring was any
+   good, and it is what stops the same issue being re-raised every fifteen
+   minutes. fixed_in_build is stamped from the build the super admin is looking
+   at, which is what later lets the scorer notice the fix did not hold.
+   ponytail: the resolution text is generated. A free-text note would be worth
+   more to whoever reads this in six months — add it with the row's own field. */
+async function phwSet(id,state){
+  const note={fixed:'marked fixed in '+PH_BUILD,ignored:'ignored by super admin',
+              acknowledged:null}[state];
+  const patch={state};
+  if(note)patch.resolution=note;
+  if(state==='fixed')patch.fixed_in_build=PH_BUILD;
+  const{error}=await sb.from('product_warnings').update(patch).eq('id',id);
+  if(error)return toast(saveErr(error),'err');
+  toast(state==='fixed'?'Marked fixed. If it comes back in a later build, Merik will say so.'
+       :state==='ignored'?'Ignored — it will not be raised again.':'Acknowledged.','ok');
+  suhealth();
+}
+/* AI triage. The gateway is handed an id and nothing else — it reads the warning
+   and its events itself — so nothing on this page can smuggle text into the
+   prompt. The reply is a draft under the warning: it never changes the state,
+   never marks anything fixed, and says as much on screen. */
+async function phTriage(id){
+  const box=$('tri_'+id); if(!box)return;
+  box.innerHTML=`<div class="tl-sub" style="margin-top:10px"><i class="fa-solid fa-circle-notch fa-spin"></i> Reading the evidence…</div>`;
+  const r=await aiCall({action:'health_triage',warning_id:id});
+  if(!r.ok){box.innerHTML=`<div class="warnbar" style="margin-top:10px"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i> ${esc(r.error)}</div>`;return}
+  const d=(r.data&&r.data.draft)||{};
+  const checks=Array.isArray(d.checks)?d.checks:[];
+  box.innerHTML=`<div style="margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <span class="badge stH"><i class="fa-solid fa-wand-magic-sparkles"></i> Draft</span>
+      ${d.confidence?`<span class="tl-sub">model's own confidence: ${esc(d.confidence)}</span>`:''}
+      <span class="tl-sub">· read ${r.data.source_rows||0} event rows · nothing has been changed</span></div>
+    ${d.summary?`<div style="font-weight:600;color:var(--ink)">${esc(d.summary)}</div>`:''}
+    ${d.likely_cause?`<div class="tl-sub" style="margin-top:5px"><b>Likely cause:</b> ${esc(d.likely_cause)}</div>`:''}
+    ${d.where_to_look?`<div class="tl-sub" style="margin-top:3px"><b>Look at:</b> ${esc(d.where_to_look)}</div>`:''}
+    ${checks.length?`<ul class="tl-sub" style="margin:6px 0 0 18px">${checks.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>`:''}
+  </div>`;
+}
+const phBar=(pct,col)=>`<div style="height:5px;background:var(--line);border-radius:3px;overflow:hidden;width:70px">
+  <div style="height:100%;width:${Math.max(2,pct)}%;background:${col}"></div></div>`;
+
 async function suhealth(){
   const since=new Date(Date.now()-PH_RANGE*864e5).toISOString();
-  const [{data:rows,error},{data:orgs}]=await Promise.all([
+  // Triage is the only thing here that costs money, and it needs a provider key
+  // Merik may not have. Read the switch rather than render a button that can only
+  // ever fail — a control that always errors reads as a broken page, not as a
+  // feature waiting to be turned on.
+  const [{data:rows,error},{data:orgs},{data:warns,error:werr},{data:fbRows},{data:aiSet}]=await Promise.all([
     sb.from('product_events')
       .select('org_id,fingerprint,kind,count,message,source,page,actor_role,browser,build,first_seen,last_seen')
       .gte('hour',since).order('last_seen',{ascending:false}).limit(5000),
-    sb.from('orgs').select('id,name')]);
+    sb.from('orgs').select('id,name'),
+    sb.from('product_warnings').select('*').order('risk',{ascending:false}).limit(300),
+    sb.from('feedback').select('id,org_id,category,message,status,created_at')
+      .gte('created_at',new Date(Date.now()-30*864e5).toISOString()).limit(300),
+    sb.from('ai_settings').select('enabled, features').eq('id',true).maybeSingle()]);
   if(error)return M(pgh('Product Health','What is breaking inside Merik.')+
     `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i>
      Couldn't read product events. Has the <code>20260908_product_health</code> migration been applied to Supabase?</div>`);
   const orgName={};(orgs||[]).forEach(o=>orgName[o.id]=o.name);
+  const triageOn=!!(aiSet&&aiSet.enabled&&aiSet.features&&aiSet.features.health_triage===true);
 
   // One row per fingerprint, from the per-tenant per-hour rows underneath it.
   const byFp=new Map();
@@ -4992,33 +5062,96 @@ async function suhealth(){
   const list=[...byFp.values()].sort((a,b)=>
     b.tenants.size-a.tenants.size || b.total-a.total || (a.last<b.last?1:-1));
 
+  const W=warns||[];
+  const live=W.filter(w=>w.state==='open'||w.state==='acknowledged');
+  const fixed=W.filter(w=>w.state==='fixed');
+  // Did the fix hold? A fix "came back" when a later warning for the same issue
+  // was raised with regressed set. This is the only honest score this feature has.
+  const cameBack=f=>W.some(r=>r.fingerprint===f.fingerprint&&r.regressed&&
+                              (!f.resolved_at||r.detected_at>f.resolved_at));
+  const held=fixed.filter(f=>!cameBack(f)).length, broke=fixed.length-held;
+
   const dayAgo=new Date(Date.now()-864e5).toISOString();
   const fresh=list.filter(g=>g.first>=dayAgo).length;
   const allTenants=new Set();list.forEach(g=>g.tenants.forEach(t=>allTenants.add(t)));
   const occurrences=list.reduce((n,g)=>n+g.total,0);
-  const worst=list[0];
   const rangeBtn=(d,l)=>`<button class="btn sm ${PH_RANGE===d?'':'sec'}" onclick="phRange(${d})">${l}</button>`;
 
   M(pgh('Product Health','Errors reported by the Merik app itself, across every tenant. Nothing here is visible to tenants.',
-        rangeBtn(1,'24 hours')+' '+rangeBtn(7,'7 days')+' '+rangeBtn(30,'30 days'))+
+        rangeBtn(1,'24 hours')+' '+rangeBtn(7,'7 days')+' '+rangeBtn(30,'30 days')+
+        ' <button class="btn sm sec" onclick="phRescan()"><i class="fa-solid fa-rotate-right"></i> Rescan</button>')+
   `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-bug"></i>','#FADBD8','var(--red)','Distinct issues',list.length,occurrences+' occurrences')}
-   ${suStat('<i class="fa-solid fa-building"></i>','#FFF6E5','var(--amber)','Tenants affected',allTenants.size,'of '+((orgs||[]).length)+' workspaces')}
-   ${suStat('<i class="fa-solid fa-bolt"></i>','var(--brand-soft)','var(--brand)','New in 24h',fresh,fresh?'first seen since yesterday':'nothing new')}
-   ${suStat('<i class="fa-solid fa-fire"></i>','#D5F5E3','var(--green)','Widest reach',worst?worst.tenants.size||'—':'—',worst?phShort(worst.message,42):'all clear')}
+   ${suStat('<i class="fa-solid fa-triangle-exclamation"></i>','#FADBD8','var(--red)','Open warnings',live.length,
+            live.length?live.filter(w=>w.state==='open').length+' awaiting a decision':'nothing needs a decision')}
+   ${suStat('<i class="fa-solid fa-bug"></i>','#FFF6E5','var(--amber)','Distinct issues',list.length,occurrences+' occurrences')}
+   ${suStat('<i class="fa-solid fa-building"></i>','var(--brand-soft)','var(--brand)','Tenants affected',allTenants.size,'of '+((orgs||[]).length)+' workspaces')}
+   ${suStat('<i class="fa-solid fa-shield-halved"></i>','#D5F5E3','var(--green)','Fixes that held',fixed.length?held+' / '+fixed.length:'—',broke?broke+' came back':(fresh+' new in 24h'))}
   </div>`+
+  (werr?`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i>
+    Warnings couldn't be read. Has the <code>20260908_product_health_signals</code> migration been applied?</div>`:'')+
+  // ---------------------------------------------------------------- warnings ---
+  (live.length?`<div class="pghead"><div><h2 style="font-size:17px">Needs a decision</h2>
+    <div class="sub">Ranked by risk. Risk is how bad the evidence looks; confidence is how much evidence there is — they are deliberately two numbers.</div></div></div>`+
+   live.map(w=>{
+     const[cls,icon,label]=PHW_KIND[w.kind]||['stL','fa-circle-dot',w.kind];
+     const ev=Array.isArray(w.evidence)?w.evidence:[];
+     // Feedback from a workspace this issue is hitting, since it started. A
+     // person writing in and a stack trace are usually the same event twice.
+     const hit=byFp.get(w.fingerprint);
+     const near=(fbRows||[]).filter(f=>f.org_id&&hit&&hit.tenants.has(f.org_id)&&f.created_at>=w.detected_at);
+     return `<div class="card" style="border-left:3px solid ${w.risk>=70?'var(--red)':w.risk>=50?'var(--amber)':'var(--line)'}">
+      <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start">
+       <div style="flex:1;min-width:260px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+         <span class="badge ${cls}"><i class="fa-solid ${icon}"></i> ${label}</span>
+         ${w.regressed?'<span class="badge stA" title="This was marked fixed once and came back in a later build">came back</span>':''}
+         ${w.state==='acknowledged'?'<span class="badge stH">acknowledged</span>':''}
+        </div>
+        <div style="font-weight:700;color:var(--ink);margin-top:6px">${esc(w.title)}</div>
+        ${w.impact?`<div class="tl-sub" style="margin-top:3px">${esc(w.impact)}</div>`:''}
+        ${w.sample_source?`<div class="tl-sub" style="font-family:monospace;margin-top:3px">${esc(w.sample_source)}</div>`:''}
+       </div>
+       <div style="min-width:150px">
+        <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)">
+         <span style="width:70px">Risk ${w.risk}</span>${phBar(w.risk,w.risk>=70?'var(--red)':'var(--amber)')}</div>
+        <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:4px">
+         <span style="width:70px">Confidence ${w.confidence}</span>${phBar(w.confidence,'var(--brand)')}</div>
+       </div>
+      </div>
+      ${ev.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        ${ev.map(e=>`<span class="badge stL" title="${esc(e.label||'')}">${esc(e.detail||e.label||'')}</span>`).join('')}</div>`:''}
+      ${w.recommendation?`<div style="margin-top:10px;padding:10px;background:var(--surface);border-radius:8px;font-size:13px;color:var(--body)">
+        <i class="fa-solid fa-lightbulb" style="color:var(--amber)"></i> ${esc(w.recommendation)}</div>`:''}
+      ${near.length?`<div class="tl-sub" style="margin-top:8px"><i class="fa-solid fa-comment-dots"></i>
+        ${near.length} feedback message${near.length===1?'':'s'} from affected workspaces since this started —
+        ${near.slice(0,2).map(f=>'&ldquo;'+esc(String(f.message||'').slice(0,70))+'&rdquo;').join(' ')}</div>`:''}
+      <div id="tri_${esc(w.id)}"></div>
+      <div class="noprint" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+       ${w.state==='open'?`<button class="btn sm sec" onclick="phwSet(${escArg(w.id)},'acknowledged')">Acknowledge</button>`:''}
+       ${triageOn?`<button class="btn sm sec" onclick="phTriage(${escArg(w.id)})"><i class="fa-solid fa-wand-magic-sparkles"></i> Triage</button>`:''}
+       <button class="btn sm" onclick="phwSet(${escArg(w.id)},'fixed')"><i class="fa-solid fa-check"></i> Mark fixed</button>
+       <button class="btn sm warn" onclick="phwSet(${escArg(w.id)},'ignored')">Ignore</button>
+       <span class="tl-sub" style="align-self:center">first seen ${agoTxt(w.detected_at)} · ${w.occurrences} occurrences${w.last_build?' · build '+esc(w.last_build):''}</span>
+      </div></div>`}).join(''):
+   (W.length?`<div class="card"><div class="tl-sub"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i>
+     No open warnings. ${fixed.length?held+' of '+fixed.length+' past fixes have held.':''}</div></div>`:''))+
+  // ------------------------------------------------------------------ issues ---
   (list.length?'':`<div class="card"><div class="empty"><i class="fa-regular fa-circle-check ill" style="color:var(--green)"></i>
     <h3>Nothing reported</h3><p>No errors in the last ${PH_RANGE===1?'24 hours':PH_RANGE+' days'}.
     Either Merik is behaving, or the app hasn't been redeployed with reporting switched on yet.</p></div></div>`)+
-  (list.length?`<div class="card" style="overflow:auto;padding:0"><table>
+  (list.length?`<div class="pghead"><div><h2 style="font-size:17px">Everything reported</h2>
+   <div class="sub">Every error group in the window, including the ones that never crossed the warning threshold.</div></div></div>
+   <div class="card" style="overflow:auto;padding:0"><table>
    <tr><th>Issue</th><th>Type</th><th>Tenants</th><th>Times</th><th>Where</th><th>Who</th><th>Build</th><th>Last seen</th></tr>
    ${list.map(g=>{
      const[cls,label,blurb]=PH_KIND[g.kind]||['stL',g.kind,''];
      const names=[...g.tenants].map(id=>orgName[id]||'(deleted)').sort();
      const who=[...g.roles].join(', ')||'—';
      const isNew=g.first>=dayAgo;
+     const flagged=live.some(w=>w.fingerprint===g.fp);
      return `<tr>
       <td style="max-width:420px"><b>${esc(g.message||'—')}</b>${isNew?' <span class="badge stP">new</span>':''}
+       ${flagged?' <span class="badge stA">warned</span>':''}
        ${g.source?`<div class="tl-sub" style="font-family:monospace;word-break:break-all">${esc(g.source)}</div>`:''}</td>
       <td><span class="badge ${cls}" title="${esc(blurb)}">${label}</span></td>
       <td>${g.tenants.size?`<span title="${esc(names.join(', '))}">${g.tenants.size}</span>`:'<span class="tl-sub">—</span>'}
@@ -5031,9 +5164,10 @@ async function suhealth(){
      </tr>`}).join('')}</table></div>`:'')+
   `<div class="card"><h2 style="font-size:16px;margin:0 0 4px">What this does and doesn't hold</h2>
    <div class="tl-sub">Error messages are redacted in the user's browser before they are sent — email addresses,
-   tokens, anything key-shaped and any query string are stripped, and no stack traces, form values or
-   response bodies are ever collected. What is stored is the message, the file and line, which page the
-   person was on and which role they had. Kept for 90 days, then deleted.</div></div>`);
+   tokens, anything key-shaped, any query string and the row values Postgres quotes back in a constraint error
+   are all stripped, and no stack traces, form values or response bodies are ever collected. What is stored is
+   the message, the file and line, which page the person was on and which role they had. Kept for 90 days,
+   then deleted.</div></div>`);
 }
 const phShort=(s,n)=>{s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s};
 
