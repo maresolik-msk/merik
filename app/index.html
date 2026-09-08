@@ -5022,18 +5022,24 @@ const phBar=(pct,col)=>`<div style="height:5px;background:var(--line);border-rad
 
 async function suhealth(){
   const since=new Date(Date.now()-PH_RANGE*864e5).toISOString();
-  const [{data:rows,error},{data:orgs},{data:warns,error:werr},{data:fbRows}]=await Promise.all([
+  // Triage is the only thing here that costs money, and it needs a provider key
+  // Merik may not have. Read the switch rather than render a button that can only
+  // ever fail — a control that always errors reads as a broken page, not as a
+  // feature waiting to be turned on.
+  const [{data:rows,error},{data:orgs},{data:warns,error:werr},{data:fbRows},{data:aiSet}]=await Promise.all([
     sb.from('product_events')
       .select('org_id,fingerprint,kind,count,message,source,page,actor_role,browser,build,first_seen,last_seen')
       .gte('hour',since).order('last_seen',{ascending:false}).limit(5000),
     sb.from('orgs').select('id,name'),
     sb.from('product_warnings').select('*').order('risk',{ascending:false}).limit(300),
     sb.from('feedback').select('id,org_id,category,message,status,created_at')
-      .gte('created_at',new Date(Date.now()-30*864e5).toISOString()).limit(300)]);
+      .gte('created_at',new Date(Date.now()-30*864e5).toISOString()).limit(300),
+    sb.from('ai_settings').select('enabled, features').eq('id',true).maybeSingle()]);
   if(error)return M(pgh('Product Health','What is breaking inside Merik.')+
     `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i>
      Couldn't read product events. Has the <code>20260908_product_health</code> migration been applied to Supabase?</div>`);
   const orgName={};(orgs||[]).forEach(o=>orgName[o.id]=o.name);
+  const triageOn=!!(aiSet&&aiSet.enabled&&aiSet.features&&aiSet.features.health_triage===true);
 
   // One row per fingerprint, from the per-tenant per-hour rows underneath it.
   const byFp=new Map();
@@ -5122,7 +5128,7 @@ async function suhealth(){
       <div id="tri_${esc(w.id)}"></div>
       <div class="noprint" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
        ${w.state==='open'?`<button class="btn sm sec" onclick="phwSet(${escArg(w.id)},'acknowledged')">Acknowledge</button>`:''}
-       <button class="btn sm sec" onclick="phTriage(${escArg(w.id)})"><i class="fa-solid fa-wand-magic-sparkles"></i> Triage</button>
+       ${triageOn?`<button class="btn sm sec" onclick="phTriage(${escArg(w.id)})"><i class="fa-solid fa-wand-magic-sparkles"></i> Triage</button>`:''}
        <button class="btn sm" onclick="phwSet(${escArg(w.id)},'fixed')"><i class="fa-solid fa-check"></i> Mark fixed</button>
        <button class="btn sm warn" onclick="phwSet(${escArg(w.id)},'ignored')">Ignore</button>
        <span class="tl-sub" style="align-self:center">first seen ${agoTxt(w.detected_at)} · ${w.occurrences} occurrences${w.last_build?' · build '+esc(w.last_build):''}</span>
