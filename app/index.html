@@ -507,6 +507,11 @@ const PH_REDACT=[
   [/\b(bearer|token|key|secret|password|authorization)\b\s*[:=]\s*\S+/gi,'$1=<redacted>'],
   [/\b[A-Za-z0-9_-]{32,}\b/g,'<redacted>'],
   [/\b(?:\d[ -]?){13,19}\b/g,'<redacted>'],
+  // Postgres quotes the offending ROW back at you, and Merik's rows are payslips
+  // and performance reviews. Neither a name nor a salary looks like a secret to
+  // any rule above. Which constraint failed survives; the values do not.
+  [/(failing row contains\s*)\([^)]*\)/gi,'$1(<redacted>)'],
+  [/(key\s*\([^)]*\)\s*=\s*)\([^)]*\)/gi,'$1(<redacted>)'],
 ];
 const phRedact=s=>PH_REDACT.reduce((o,[re,to])=>o.replace(re,to),String(s??''));
 // Hash input only. The stored message is the redacted original, because a

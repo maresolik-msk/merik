@@ -28,6 +28,27 @@ Deno.test("things shaped like credentials never reach the database", () => {
   assertEquals(redact("email jo@acme.com bounced"), "email <email> bounced");
 });
 
+Deno.test("Postgres quotes the row back, and Merik's rows are payslips", () => {
+  const out = redact(
+    'new row for relation "payslips" violates check constraint "payslips_net_check" ' +
+      "DETAIL: Failing row contains (a1b2, Priya Raman, 1450000, 92000, 2026-08-31).",
+  );
+  assert(!out.includes("Priya Raman"), out);
+  assert(!out.includes("1450000"), out);
+  assert(!out.includes("92000"), out);
+  // The half worth keeping: which constraint rejected the write.
+  assert(out.includes("payslips_net_check"), out);
+});
+
+Deno.test("a unique violation names the column, never the value", () => {
+  const out = redact(
+    'duplicate key value violates unique constraint "employees_email_key" ' +
+      "DETAIL: Key (email)=(priya.raman@acme.co) already exists.",
+  );
+  assert(!out.includes("priya.raman"), out);
+  assert(out.includes("employees_email_key"), out);
+});
+
 Deno.test("the same bug with different ids is one group", () => {
   const a = fingerprint("error", "user 4821 not found", "/app.js");
   const b = fingerprint("error", "user 9317 not found", "/app.js");

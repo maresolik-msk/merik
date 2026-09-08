@@ -54,6 +54,15 @@ const REDACTIONS: Array<[RegExp, string]> = [
   [/\b[A-Za-z0-9_-]{32,}\b/g, '<redacted>'],
   // Card-shaped digit runs. Rare in an error message and catastrophic in a log.
   [/\b(?:\d[ -]?){13,19}\b/g, '<redacted>'],
+  // Postgres quotes the offending ROW back at you, and Merik's rows are payslips
+  // and performance reviews. "Failing row contains (a1b2, Priya Raman, 1450000,
+  // 92000, …)" defeats every rule above it — a name is words and a salary is a
+  // five-digit number, so neither looks like a secret to a pattern. Which
+  // constraint failed is the useful half and it survives; the values do not.
+  [/(failing row contains\s*)\([^)]*\)/gi, '$1(<redacted>)'],
+  // The same disclosure in the unique-violation shape: Key (email)=(a@b.com).
+  // The column name is the diagnostic, the value is the disclosure.
+  [/(key\s*\([^)]*\)\s*=\s*)\([^)]*\)/gi, '$1(<redacted>)'],
 ];
 
 /** Strip anything that looks like a secret or a person. Applied to every field. */
