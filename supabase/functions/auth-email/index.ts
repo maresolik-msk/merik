@@ -17,7 +17,9 @@
 //   SEND_EMAIL_HOOK_SECRET   v1,whsec_…  from the hook config
 //   SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_FROM   same values as send-email
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import { verifySignature } from "./verify.ts";
+import { serverReport } from "../_shared/report.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -132,6 +134,21 @@ Deno.serve(async (req) => {
     // hook", which loses the only sentence that says what actually broke.
     const message = (e as Error).message;
     console.error("auth-email:", message);
+    // A failing auth hook is the highest-stakes silent failure in the product:
+    // nobody can sign in and nobody can reset a password, and the only trace is
+    // a log line in a dashboard nobody is subscribed to. Record it where it gets
+    // read — built here rather than at module scope, and wrapped, because an
+    // exception on the way to reporting an exception would take out sign-in for
+    // everybody to no purpose.
+    try {
+      const url = Deno.env.get("SUPABASE_URL");
+      const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (url && key) {
+        await serverReport(createClient(url, key), {
+          kind: "error", message, source: "auth-email:send",
+        });
+      }
+    } catch (_) { /* reporting never gets to break the hook */ }
     return json({ error: { http_code: 500, message: `auth-email: ${message}` } });
   }
 });

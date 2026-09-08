@@ -22,6 +22,7 @@
 // Certificate-message parse (and TLS 1.3 encrypts that message, so it would have
 // to negotiate 1.2).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { withReporting } from '../_shared/report.ts';
 import { connect as tlsConnect } from 'node:tls';
 import { nextState, type MonitorState, type StateRow } from './state.ts';
 import {
@@ -388,7 +389,11 @@ async function pooled<T>(items: T[], limit: number, fn: (item: T) => Promise<voi
   await Promise.all(workers);
 }
 
-Deno.serve(async (req) => {
+// Wrapped so a throw in here is recorded instead of vanishing. pg_cron calls
+// this through net.http_post, which reads no response and reports nothing: until
+// now the probe could stop checking every client site in the product and the
+// first sign of it would be a client asking about the hole in their uptime graph.
+Deno.serve(withReporting(serviceClient(), 'probe', async (req) => {
   const secret = Deno.env.get('PROBE_SECRET');
   if (!secret) return json({ ok: false, error: 'PROBE_SECRET not configured' }, 500);
   if (req.headers.get('x-probe-secret') !== secret) return json({ ok: false }, 401);
@@ -592,7 +597,7 @@ Deno.serve(async (req) => {
   const alerted = await flushAlerts(admin, now);
 
   return json({ ok: true, checked: results.length, opened, resolved, alerted, inconclusive });
-});
+}));
 
 // ============================================================ early warnings ---
 //

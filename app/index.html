@@ -467,6 +467,128 @@ const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>
 // Interpolating text into a JS string inside an on*="" attribute: use this,
 // not esc(). It emits its own quotes — write ${escArg(x)}, never '${escArg(x)}'.
 const escArg=s=>esc(JSON.stringify(String(s??'')));
+/* =============================== PRODUCT HEALTH ================================
+   Merik has watched its clients' sites since the Digital Operations work. This is
+   the same instrument turned around and pointed at Merik. A view that throws, an
+   edge function that 500s, a write RLS refuses — all of it used to end at
+   console.error in one person's browser, which meant the first Merik heard of a
+   bug was an email, if that person bothered to send one.
+
+   Three rules this code must not break, because every entry point is a catch
+   block that is already handling somebody's bad day:
+
+     1. It never throws. A reporter that can fail turns a rendering bug into a
+        blank screen, which is strictly worse than the bug.
+     2. It never reports itself. PH_OFF latches on any failure inside the
+        reporter, so a broken flush cannot generate errors about being broken —
+        the loop that fills the table with its own noise.
+     3. It never sends anything a person can be identified by. phRedact() runs
+        here, in the browser, before the text leaves the machine. Redacting on
+        the server would mean the salary was already on the wire.
+
+   The redaction, normalisation and hashing below are ports of
+   supabase/functions/collect/group.ts, which has the tests (group.test.ts). The
+   two must stay in step: same rules, same fingerprints, one mental model for
+   "an error group" whether it came from a client's site or from Merik itself. */
+
+// Bump on every release. This column is what makes "started after Tuesday's
+// deploy" an answer instead of a guess, and it is worth nothing if it is stale.
+const PH_BUILD='2026-09-08';
+const PH_MAX=40;              // groups held at once; an error storm folds into counts
+const PH_BUF='merik.ph';      // survives a reload, and a crash while signed out
+const PH_FLUSH_MS=20000;
+let PH_Q=[], PH_OFF=false, PH_TIMER=null;
+
+const PH_REDACT=[
+  [/([?#])[^\s"']*/g,'$1…'],
+  [/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/g,'<email>'],
+  [/\bey[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.?[A-Za-z0-9_-]*/g,'<jwt>'],
+  [/\b(?:bearer|basic)\s+[\w.~+/=-]+/gi,'<redacted>'],
+  [/\b(bearer|token|key|secret|password|authorization)\b\s*[:=]\s*\S+/gi,'$1=<redacted>'],
+  [/\b[A-Za-z0-9_-]{32,}\b/g,'<redacted>'],
+  [/\b(?:\d[ -]?){13,19}\b/g,'<redacted>'],
+];
+const phRedact=s=>PH_REDACT.reduce((o,[re,to])=>o.replace(re,to),String(s??''));
+// Hash input only. The stored message is the redacted original, because a
+// normalised one is unreadable to the person who has to fix it.
+const phNorm=s=>String(s??'').toLowerCase()
+  .replace(/https?:\/\/[^\s"')]+/g,'<url>')
+  .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,'<uuid>')
+  .replace(/0x[0-9a-f]+/g,'<hex>').replace(/\d+/g,'<n>').replace(/\s+/g,' ').trim();
+// FNV-1a, 32-bit. Not cryptographic and does not need to be — it groups error
+// messages, and SubtleCrypto would make every call site async for a value whose
+// worst failure is two unrelated errors sharing a row.
+function phHash(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return(h>>>0).toString(16).padStart(8,'0')}
+const phFp=(kind,msg,src)=>phHash(kind+'|'+phNorm(msg)+'|'+phNorm(src));
+const phTrim=(s,n)=>{const c=phRedact(s).replace(/\s+/g,' ').trim().slice(0,n);return c||null};
+function phBrowser(){const u=navigator.userAgent||'';
+  return /edg\//i.test(u)?'Edge':/opr\//i.test(u)?'Opera':/chrome\//i.test(u)?'Chrome'
+    :/safari\//i.test(u)&&!/chrome/i.test(u)?'Safari':/firefox\//i.test(u)?'Firefox':'Other'}
+
+/* The only entry point. Call it from anywhere an error is already being handled;
+   it returns nothing and cannot interrupt what you were doing.
+     kind — 'error' (uncaught) | 'rejection' | 'view' (a page failed to render)
+            | 'function' (an edge function failed) | 'db' (a query was refused)
+     src  — where it came from: a file:line, or the function/table name. */
+function report(kind,message,src,page){
+  if(PH_OFF)return;
+  try{
+    const msg=phTrim(message,300); if(!msg)return;
+    const source=phTrim(src,300);
+    const fp=phFp(kind,msg,source||'');
+    const hit=PH_Q.find(r=>r.fingerprint===fp);
+    // Folding here is what bounds the queue: a render loop throwing a thousand
+    // times is one row with count 1000, not a thousand rows and a dropped tail.
+    if(hit){hit.count++}
+    else if(PH_Q.length<PH_MAX){
+      PH_Q.push({fingerprint:fp,kind,count:1,message:msg,source,
+        page:phTrim(page||(typeof VIEW!=='undefined'?VIEW:null)||'',60),
+        browser:phBrowser(),build:PH_BUILD});
+    }
+    phSave();
+    if(!PH_TIMER)PH_TIMER=setTimeout(phFlush,PH_FLUSH_MS);
+  }catch(_){PH_OFF=true}
+}
+// Mirrored to sessionStorage on every change, so an error that kills the tab —
+// or one thrown on the login screen, before there is a session to send it with —
+// is still there to be sent on the next load.
+function phSave(){try{sessionStorage.setItem(PH_BUF,JSON.stringify(PH_Q))}catch(_){}}
+function phLoad(){try{const q=JSON.parse(sessionStorage.getItem(PH_BUF)||'[]');
+  if(Array.isArray(q))PH_Q=q.slice(0,PH_MAX)}catch(_){}}
+async function phFlush(){
+  PH_TIMER=null;
+  // No session means no profile to attribute the row to, and the RPC would 401.
+  // Leave the queue where it is; login flushes it.
+  if(PH_OFF||!PH_Q.length||!ME)return;
+  const batch=PH_Q; PH_Q=[]; phSave();
+  try{
+    const{error}=await sb.rpc('report_product_events',{p_rows:batch});
+    // A failure here is almost always the migration not being applied yet. Latch
+    // off rather than retry: this is telemetry, and it does not get to spend the
+    // user's battery or fill their console arguing about it.
+    if(error){PH_OFF=true;console.warn('product health off:',error.message)}
+  }catch(e){PH_OFF=true}
+}
+phLoad();
+// An uncaught error anywhere in the app. Capture-phase, because a failed
+// <img>/<script> raises an error event on the element rather than on window and
+// only the capture phase sees it.
+window.addEventListener('error',e=>{
+  if(e&&e.target&&e.target!==window&&(e.target.src||e.target.href))
+    return report('error','failed to load '+((e.target.tagName||'resource').toLowerCase()),e.target.src||e.target.href);
+  report('error',(e&&(e.message||(e.error&&e.error.message)))||'script error',
+    e&&e.filename?e.filename+':'+(e.lineno||0):null);
+},true);
+window.addEventListener('unhandledrejection',e=>{
+  const r=e&&e.reason;
+  report('rejection',(r&&(r.message||(typeof r==='string'?r:'')))||'unhandled promise rejection',
+    r&&r.stack?String(r.stack).split('\n')[1]:null);
+});
+// Last chance before the tab goes. Not sendBeacon: the RPC needs the session's
+// Authorization header, which beacon cannot carry — so this is best-effort, and
+// sessionStorage is what actually guarantees the events survive.
+window.addEventListener('pagehide',()=>{if(PH_Q.length&&ME)phFlush()});
+
 const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2});
 // LOCAL date, not UTC. toISOString() gave the UTC day while the times we stamp
 // (toTimeString) and the dates we print are local — so between midnight and
@@ -504,6 +626,7 @@ function kpis(arr){return `<div class="kpi" style="margin-bottom:16px">${arr.map
 // that changed underneath the tab.
 function saveErr(error){
   const m=error?.message||'Something went wrong.';
+  report('db',m,error?.code||null);
   return /row-level security/i.test(m)
     ? "You don't have permission to save this. Your sign-in may have changed in another tab — sign out and back in, then try again."
     : m;
@@ -782,6 +905,9 @@ let BOOTING=false;
 async function boot(){
   if(BOOTING)return;BOOTING=true;
   try{await bootInner()}finally{BOOTING=false}
+  // Errors queued while signed out (a failed login, a crash on the auth screen)
+  // have had nowhere to go until now.
+  if(ME)phFlush();
 }
 async function bootInner(){
   const {data:{session}}=await sb.auth.getSession();
@@ -929,7 +1055,7 @@ const ADMIN_GROUPS=[
  ['Settings',[['orgset','<i class="fa-solid fa-gear"></i>','Company Settings'],['adminfb','<i class="fa-solid fa-comment-dots"></i>','Feedback']]]];
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
- [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview'],['suanalytics','<i class="fa-solid fa-chart-line"></i>','Analytics']]],
+ [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview'],['suanalytics','<i class="fa-solid fa-chart-line"></i>','Analytics'],['suhealth','<i class="fa-solid fa-heart-pulse"></i>','Product Health']]],
  ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots"></i>','Feedback'],['suann','<i class="fa-solid fa-bullhorn"></i>','Announcements'],['suai','<i class="fa-solid fa-robot"></i>','AI Control']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
@@ -1017,7 +1143,7 @@ function filterNav(q){
 }
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
-const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,warns,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
+const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,suhealth,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,warns,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
 function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();
   document.querySelectorAll('#side a').forEach(a=>{a.classList.remove('act');a.removeAttribute('aria-current')});
   const el=$('nav-'+v);
@@ -1030,6 +1156,7 @@ function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW
   M(viewLoading());                                  // instant feedback, every view
   Promise.resolve().then(fn).catch(err=>{
     console.error(err);
+    report('view',err&&err.message||'view failed',err&&err.stack?String(err.stack).split('\n')[1]:null,v);
     M(`<div class="empty"><i class="fa-solid fa-triangle-exclamation ill" style="color:var(--red)"></i>
       <h3>This page didn't load</h3><p>${esc(err&&err.message||'Something went wrong.')}</p>
       <button class="btn sec" onclick="go('${v}')"><i class="fa-solid fa-rotate-right"></i> Try again</button></div>`)});
@@ -1268,7 +1395,13 @@ async function empDetail(eid){
   </div>`;
   document.querySelectorAll('.modal').forEach(m=>m.remove());document.body.appendChild(div);
 }
-async function fnMsg(err){let m=err.message;try{const j=await err.context.json();m=j.error||m}catch(_){}return m}
+async function fnMsg(err){let m=err.message;try{const j=await err.context.json();m=j.error||m}catch(_){}
+  // Every edge-function failure passes through here on its way to a toast, so
+  // this one line covers all twelve functions without editing any of them — and
+  // it records the failure as the user actually experienced it, which is the
+  // version worth having.
+  try{report('function',m,err&&err.context&&err.context.url?String(err.context.url).split('/').pop():null)}catch(_){}
+  return m}
 function fileToBase64(file){
   return new Promise((resolve,reject)=>{
     const r=new FileReader();
@@ -4798,6 +4931,107 @@ async function suai(){
    <td class="noprint"><button class="btn sm ${on?'sec':''}" onclick="suaiOrg('${o.id}',${on?'false':'true'})">${on?'Disable':'Enable'}</button></td></tr>`}).join('')||'<tr><td colspan="4" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
 }
 let AI_STATE=null;
+/* ============================== PRODUCT HEALTH ================================
+   The read side of the product_events table: what is breaking inside Merik,
+   ranked by how many tenants it reaches.
+
+   Ranked by tenants and not by occurrence count, because those two orders
+   disagree in exactly the case that matters. One person hammering a broken
+   button all afternoon is a thousand occurrences and one tenant; a bug that hit
+   nine workspaces twice each is eighteen occurrences and the thing to fix first.
+
+   Aggregated in the browser rather than in a view or an RPC. The rows are
+   already grouped by fingerprint and bucketed by hour, so a fortnight of them is
+   a few thousand at worst — small enough that a second database object earns
+   nothing, and this way the grouping rules stay next to the rendering that
+   depends on them. */
+let PH_RANGE=1;
+const PH_KIND={
+  error:    ['stA','Uncaught',  'JavaScript threw and nothing caught it.'],
+  rejection:['stA','Rejection', 'A promise rejected with nobody listening.'],
+  view:     ['stUL','Page',     'A page failed to render — the user saw "This page didn\'t load".'],
+  function:['stOL','Function',  'An edge function returned an error to the browser.'],
+  db:       ['stL','Database',  'A read or write the database refused.'],
+};
+function phRange(d){PH_RANGE=d;suhealth()}
+async function suhealth(){
+  const since=new Date(Date.now()-PH_RANGE*864e5).toISOString();
+  const [{data:rows,error},{data:orgs}]=await Promise.all([
+    sb.from('product_events')
+      .select('org_id,fingerprint,kind,count,message,source,page,actor_role,browser,build,first_seen,last_seen')
+      .gte('hour',since).order('last_seen',{ascending:false}).limit(5000),
+    sb.from('orgs').select('id,name')]);
+  if(error)return M(pgh('Product Health','What is breaking inside Merik.')+
+    `<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i>
+     Couldn't read product events. Has the <code>20260908_product_health</code> migration been applied to Supabase?</div>`);
+  const orgName={};(orgs||[]).forEach(o=>orgName[o.id]=o.name);
+
+  // One row per fingerprint, from the per-tenant per-hour rows underneath it.
+  const byFp=new Map();
+  (rows||[]).forEach(r=>{
+    let g=byFp.get(r.fingerprint);
+    if(!g){g={fp:r.fingerprint,kind:r.kind,message:r.message,source:r.source,total:0,
+              tenants:new Set(),internal:false,pages:new Set(),roles:new Set(),
+              builds:new Set(),first:r.first_seen,last:r.last_seen};
+           byFp.set(r.fingerprint,g)}
+    g.total+=r.count||0;
+    // A null org is Merik itself — the super admin console, or a browser that
+    // had not signed in yet. Worth showing, never worth counting as a client.
+    if(r.org_id)g.tenants.add(r.org_id); else g.internal=true;
+    if(r.page)g.pages.add(r.page);
+    if(r.actor_role)g.roles.add(r.actor_role);
+    if(r.build)g.builds.add(r.build);
+    if(r.first_seen<g.first)g.first=r.first_seen;
+    if(r.last_seen>g.last)g.last=r.last_seen;
+  });
+  const list=[...byFp.values()].sort((a,b)=>
+    b.tenants.size-a.tenants.size || b.total-a.total || (a.last<b.last?1:-1));
+
+  const dayAgo=new Date(Date.now()-864e5).toISOString();
+  const fresh=list.filter(g=>g.first>=dayAgo).length;
+  const allTenants=new Set();list.forEach(g=>g.tenants.forEach(t=>allTenants.add(t)));
+  const occurrences=list.reduce((n,g)=>n+g.total,0);
+  const worst=list[0];
+  const rangeBtn=(d,l)=>`<button class="btn sm ${PH_RANGE===d?'':'sec'}" onclick="phRange(${d})">${l}</button>`;
+
+  M(pgh('Product Health','Errors reported by the Merik app itself, across every tenant. Nothing here is visible to tenants.',
+        rangeBtn(1,'24 hours')+' '+rangeBtn(7,'7 days')+' '+rangeBtn(30,'30 days'))+
+  `<div class="kpi" style="margin-bottom:16px">
+   ${suStat('<i class="fa-solid fa-bug"></i>','#FADBD8','var(--red)','Distinct issues',list.length,occurrences+' occurrences')}
+   ${suStat('<i class="fa-solid fa-building"></i>','#FFF6E5','var(--amber)','Tenants affected',allTenants.size,'of '+((orgs||[]).length)+' workspaces')}
+   ${suStat('<i class="fa-solid fa-bolt"></i>','var(--brand-soft)','var(--brand)','New in 24h',fresh,fresh?'first seen since yesterday':'nothing new')}
+   ${suStat('<i class="fa-solid fa-fire"></i>','#D5F5E3','var(--green)','Widest reach',worst?worst.tenants.size||'—':'—',worst?phShort(worst.message,42):'all clear')}
+  </div>`+
+  (list.length?'':`<div class="card"><div class="empty"><i class="fa-regular fa-circle-check ill" style="color:var(--green)"></i>
+    <h3>Nothing reported</h3><p>No errors in the last ${PH_RANGE===1?'24 hours':PH_RANGE+' days'}.
+    Either Merik is behaving, or the app hasn't been redeployed with reporting switched on yet.</p></div></div>`)+
+  (list.length?`<div class="card" style="overflow:auto;padding:0"><table>
+   <tr><th>Issue</th><th>Type</th><th>Tenants</th><th>Times</th><th>Where</th><th>Who</th><th>Build</th><th>Last seen</th></tr>
+   ${list.map(g=>{
+     const[cls,label,blurb]=PH_KIND[g.kind]||['stL',g.kind,''];
+     const names=[...g.tenants].map(id=>orgName[id]||'(deleted)').sort();
+     const who=[...g.roles].join(', ')||'—';
+     const isNew=g.first>=dayAgo;
+     return `<tr>
+      <td style="max-width:420px"><b>${esc(g.message||'—')}</b>${isNew?' <span class="badge stP">new</span>':''}
+       ${g.source?`<div class="tl-sub" style="font-family:monospace;word-break:break-all">${esc(g.source)}</div>`:''}</td>
+      <td><span class="badge ${cls}" title="${esc(blurb)}">${label}</span></td>
+      <td>${g.tenants.size?`<span title="${esc(names.join(', '))}">${g.tenants.size}</span>`:'<span class="tl-sub">—</span>'}
+       ${g.internal?'<div class="tl-sub">+ Merik</div>':''}</td>
+      <td>${g.total}</td>
+      <td>${[...g.pages].map(p=>esc(p)).join(', ')||'—'}</td>
+      <td>${esc(who)}</td>
+      <td style="white-space:nowrap">${[...g.builds].map(b=>esc(b)).join(', ')||'—'}</td>
+      <td style="white-space:nowrap" title="${esc(g.last)}">${agoTxt(g.last)}<div class="tl-sub">first ${agoTxt(g.first)}</div></td>
+     </tr>`}).join('')}</table></div>`:'')+
+  `<div class="card"><h2 style="font-size:16px;margin:0 0 4px">What this does and doesn't hold</h2>
+   <div class="tl-sub">Error messages are redacted in the user's browser before they are sent — email addresses,
+   tokens, anything key-shaped and any query string are stripped, and no stack traces, form values or
+   response bodies are ever collected. What is stored is the message, the file and line, which page the
+   person was on and which role they had. Kept for 90 days, then deleted.</div></div>`);
+}
+const phShort=(s,n)=>{s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s};
+
 // Call the `ai` edge function and surface its REAL error. supabase-js hides a
 // non-2xx body inside error.context (a Response); without this you only get the
 // useless "Edge Function returned a non-2xx status code".
