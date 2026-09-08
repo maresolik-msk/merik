@@ -454,6 +454,14 @@ let ME=null; // {user, profile, employee}
 // Read the recovery marker synchronously at load: supabase-js consumes and
 // clears the URL hash, so checking later is a race against its own listener.
 let RECOVERING=/type=recovery/.test(location.hash);
+// Same window: an expired or bounced link comes back as #error=... and nothing
+// else. Read it here too, or the user lands on a blank login screen with no clue
+// why the mail they just clicked did nothing.
+const AUTH_LINK_ERR=(()=>{const h=new URLSearchParams(location.hash.slice(1));
+  if(!h.get('error'))return null;
+  return h.get('error_code')==='otp_expired'
+    ? 'That reset link has expired or was already used. Request a new one below.'
+    : (h.get('error_description')||'That link could not be used.').replace(/\+/g,' ');})();
 const $=id=>document.getElementById(id);
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Interpolating text into a JS string inside an on*="" attribute: use this,
@@ -780,7 +788,7 @@ async function bootInner(){
   // A recovery link signs the user in with a real session — boot straight to the
   // dashboard and they'd never get to set the password they came here to set.
   if(RECOVERING&&session){renderNewPassword();return}
-  if(!session){ME=null;renderLogin();return}
+  if(!session){ME=null;renderLogin();if(AUTH_LINK_ERR)authMsg('lerr','err',AUTH_LINK_ERR);return}
   const {data:prof}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
   // Merik super admin is product-level: no tenant org, goes straight to the product console.
   if(prof?.role==='superadmin'){ME={user:session.user,profile:prof,employee:null,org:{name:'Merik'}};renderShell();return}
