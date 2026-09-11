@@ -41,7 +41,7 @@
 {
   "@context":"https://schema.org",
   "@graph":[
-    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/application-up-but-users-see-errors#post","headline":"Your Application Is Up. So Why Are Users Still Having Problems?","description":"Uptime says 100%, users say broken — both are telling the truth. The gap between server health and user experience, where it comes from, and how to monitor what users actually get.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/application-up-but-users-see-errors","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"application reliability, silent failures, user experience monitoring, production monitoring, app up but not working, uptime vs user experience, monitoring gaps","wordCount":653,"timeRequired":"PT5M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/application-up-but-users-see-errors#post","headline":"Your Application Is Up. So Why Are Users Still Having Problems?","description":"Uptime says 100%, users say broken — both are telling the truth. The gap between server health and user experience, where it comes from, and how to monitor what users actually get.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/application-up-but-users-see-errors","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"application reliability, silent failures, user experience monitoring, production monitoring, app up but not working, uptime vs user experience, monitoring gaps","wordCount":676,"timeRequired":"PT5M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
     {"@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
       {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
@@ -158,6 +158,7 @@
       <li><b>Error telemetry sliced by environment</b> for segment breakage — browser-family context on collected errors turns "works on my machine" into "fails specifically on X", which is a fixable statement.</li>
     </ol>
     <p>Teams that add these layers consistently report the same experience: the first week is uncomfortable — the gap was bigger than assumed — and every week after is calmer, because <a href="/blog/application-health-monitoring">"healthy" finally means what users mean by it</a>.</p>
+    <p>When the gap is caused by a provider rather than your own code, <a href="/blog/third-party-dependency-outages">is it us or them?</a> covers the first ten minutes.</p>
 
 
     <h2 id="facts">Quick reference</h2>
@@ -207,11 +208,11 @@
         <h3>The hidden cost of silent application failures</h3>
         <p>The failures nobody notices are the ones that compound. What silence costs, and how to end it.</p></div>
       </a>
-      <a class="blog-card" data-cat="Incidents" href="/blog/broken-user-flows">
-        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How to detect broken user flows before customers complain" width="400" height="240" loading="lazy">
+      <a class="blog-card" data-cat="Incidents" href="/blog/third-party-dependency-outages">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="Is it us or them? Handling third-party outages in a small team" width="400" height="240" loading="lazy">
         <div class="bc-body"><span class="tag2">Incidents</span>
-        <h3>How to detect broken user flows before customers complain</h3>
-        <p>A flow is only as healthy as its weakest step — and the weakest step hides in healthy components.</p></div>
+        <h3>Is it us or them? Handling third-party outages in a small team</h3>
+        <p>The first ten minutes, what not to do, honest communication, and shrinking the blast radius.</p></div>
       </a>
     </div>
   </div>

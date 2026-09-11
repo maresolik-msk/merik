@@ -41,7 +41,7 @@
 {
   "@context":"https://schema.org",
   "@graph":[
-    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/production-issues-monitoring-should-detect#post","headline":"10 Production Issues Your Monitoring Should Detect Automatically","description":"From API failures and JavaScript errors to expiring certificates and dead background jobs — the ten production issues a monitoring setup should catch without a human watching.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/production-issues-monitoring-should-detect","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"production issues, production monitoring, detect production problems, monitoring checklist, application monitoring, common production failures, automatic incident detection","wordCount":747,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/production-issues-monitoring-should-detect#post","headline":"10 Production Issues Your Monitoring Should Detect Automatically","description":"From API failures and JavaScript errors to expiring certificates and dead background jobs — the ten production issues a monitoring setup should catch without a human watching.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/production-issues-monitoring-should-detect","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"production issues, production monitoring, detect production problems, monitoring checklist, application monitoring, common production failures, automatic incident detection","wordCount":761,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
     {"@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
       {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
@@ -142,6 +142,7 @@
 
     <p>A subtle failure mode of checklist-driven monitoring: implement all ten detectors independently and a single incident lights up half of them — the dependency outage (9) causes API failures (2), error spikes (4), frontend errors (6) and a latency climb (5), producing five streams of notifications about one fact.</p>
     <p>Teams rationally respond to that noise by muting things, and a muted channel catches nothing. So the checklist has an eleventh, structural requirement: <b>correlation</b>. Signals that share a cause should merge into one incident carrying all the evidence; suppression should apply when a hard dependency is publicly down; and severity should decide loudness, so <a href="/blog/application-monitoring-for-startups">a small team's on-call</a> is interrupted only by things worth interrupting for. Detection coverage gets you to "the machine noticed"; correlation gets you to "and it told us exactly once, with the story assembled" — which is the actual goal. The economics of that gap are covered in <a href="/blog/reduce-mttd">reducing MTTD</a>.</p>
+    <p>Two of the ten have their own guides: <a href="/blog/ssl-certificate-expiry-monitoring">certificate expiry</a> and <a href="/blog/did-the-deploy-break-production">deploy-caused regressions</a>.</p>
 
 
     <h2 id="facts">Quick reference</h2>
@@ -191,11 +192,11 @@
         <h3>Frontend errors: why users see problems before your team does</h3>
         <p>The server said 200. The page broke anyway. Seeing the failures uptime checks can't.</p></div>
       </a>
-      <a class="blog-card" data-cat="Monitoring" href="/blog/saas-monitoring-checklist">
-        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="What should you monitor in a SaaS application?" width="400" height="240" loading="lazy">
-        <div class="bc-body"><span class="tag2">Monitoring</span>
-        <h3>What should you monitor in a SaaS application?</h3>
-        <p>The complete checklist — uptime, APIs, frontend errors, certificates, dependencies, deploys.</p></div>
+      <a class="blog-card" data-cat="Reliability" href="/blog/ssl-certificate-expiry-monitoring">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="SSL certificate expiry monitoring in the age of 47-day certificates" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>SSL certificate expiry monitoring in the age of 47-day certificates</h3>
+        <p>200-day certificates now, 47 by 2029. Renewal fails silently; monitoring catches it.</p></div>
       </a>
     </div>
   </div>

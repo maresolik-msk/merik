@@ -41,7 +41,7 @@
 {
   "@context":"https://schema.org",
   "@graph":[
-    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/reduce-mttd#post","headline":"How to Reduce MTTD (Mean Time to Detect) for Application Issues","description":"MTTD is the silent half of incident duration — the gap between a problem starting and anyone knowing. What drives detection lag and the six changes that cut it from hours to minutes.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/reduce-mttd","image":"https://www.merik.in/assets/images/blog/incidents.svg","articleSection":"Incidents","keywords":"MTTD, mean time to detect, reduce MTTD, incident detection, incident response metrics, MTTR, application monitoring, detection lag","wordCount":658,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/reduce-mttd#post","headline":"How to Reduce MTTD (Mean Time to Detect) for Application Issues","description":"MTTD is the silent half of incident duration — the gap between a problem starting and anyone knowing. What drives detection lag and the six changes that cut it from hours to minutes.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/reduce-mttd","image":"https://www.merik.in/assets/images/blog/incidents.svg","articleSection":"Incidents","keywords":"MTTD, mean time to detect, reduce MTTD, incident detection, incident response metrics, MTTR, application monitoring, detection lag","wordCount":683,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
     {"@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
       {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
@@ -153,6 +153,7 @@
       <li><b>Review the misses.</b> Every incident detected late gets one question in the postmortem: what signal existed earlier, and why did nothing fire? The answer is next sprint's monitoring backlog.</li>
       <li><b>Watch for the plateau.</b> Once hard failures detect in minutes, remaining MTTD lives in the deterioration phase — which is the cue to invest in baselines and early warning, not more check frequency.</li>
     </ul>
+    <p>Detection time is only as good as the team's willingness to read the alert — <a href="/blog/alert-fatigue-small-teams">alert fatigue</a> is the failure mode that undoes everything above.</p>
 
 
     <h2 id="facts">Quick reference</h2>
@@ -203,11 +204,11 @@
         <h3>Application monitoring for startups: what to monitor first</h3>
         <p>The monitoring that pays for itself this week, and the monitoring that can wait a year.</p></div>
       </a>
-      <a class="blog-card" data-cat="Incidents" href="/blog/prevent-small-bugs-becoming-incidents">
-        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How proactive monitoring stops small bugs becoming major incidents" width="400" height="240" loading="lazy">
+      <a class="blog-card" data-cat="Incidents" href="/blog/alert-fatigue-small-teams">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="Alert fatigue: why you ignore your own monitoring" width="400" height="240" loading="lazy">
         <div class="bc-body"><span class="tag2">Incidents</span>
-        <h3>How proactive monitoring stops small bugs becoming major incidents</h3>
-        <p>Small error → repeated error → degradation → outage. Cutting the chain at its cheapest link.</p></div>
+        <h3>Alert fatigue: why you ignore your own monitoring</h3>
+        <p>Five causes, six rules, and the two numbers that say whether your alerts are worth reading.</p></div>
       </a>
     </div>
   </div>

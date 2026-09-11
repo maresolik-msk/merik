@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Is It Us or Them? Handling Third-Party Outages (AWS, Cloudflare, Stripe) in a Small Team</title>
+<meta name="description" content="Late 2025 showed how much of the web fails together when one provider does. How a small team answers &quot;is it us or them?&quot; in the first ten minutes, what to do and not do during a dependency outage, how to communicate it, and how to reduce the blast radius before the next one.">
+<meta name="keywords" content="third party outage what to do, is it us or them outage, AWS outage impact small business, Cloudflare outage November 2025, dependency outage monitoring, vendor status page monitoring, Stripe outage handling, upstream provider outage incident response">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/third-party-dependency-outages">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Is it us or them? Third-party outages in a small team">
+<meta property="og:description" content="The first ten minutes, what not to do, how to communicate it, and how to shrink the blast radius before the next one.">
+<meta property="og:url" content="https://www.merik.in/blog/third-party-dependency-outages">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/incidents.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-09-10">
+<meta property="article:modified_time" content="2026-09-11">
+<meta property="article:section" content="Incidents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Is it us or them? Third-party outages in a small team">
+<meta name="twitter:description" content="The first ten minutes, what not to do, how to communicate it, and how to shrink the blast radius before the next one.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/third-party-dependency-outages#post","headline":"Is It Us or Them? Handling Third-Party Outages (AWS, Cloudflare, Stripe) in a Small Team","description":"Late 2025 showed how much of the web fails together when one provider does. How a small team answers \"is it us or them?\" in the first ten minutes, what to do and not do during a dependency outage, how to communicate it, and how to reduce the blast radius before the next one.","datePublished":"2026-09-10","dateModified":"2026-09-11","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/third-party-dependency-outages","image":"https://www.merik.in/assets/images/blog/incidents.svg","articleSection":"Incidents","keywords":"third party outage what to do, is it us or them outage, AWS outage impact small business, Cloudflare outage November 2025, dependency outage monitoring, vendor status page monitoring, Stripe outage handling, upstream provider outage incident response","wordCount":607,"timeRequired":"PT5M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Third-party outages","item":"https://www.merik.in/blog/third-party-dependency-outages"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"How do I know if an outage is my application or a third-party provider?","acceptedAnswer":{"@type":"Answer","text":"Check whether the incident started at the same time as trouble reported by a provider you depend on, whether other properties of yours that share that provider are also affected, and whether you deployed in the last hour. Monitoring that shows vendor status feeds on the same timeline as your incidents answers the first question at a glance; without it, the answer comes from status pages and news while the clock runs."}},
+      {"@type":"Question","name":"What should I do during an AWS or Cloudflare outage?","acceptedAnswer":{"@type":"Answer","text":"Confirm it is the provider, post a status update saying what users see and that the cause is upstream, and then wait. Do not deploy, do not restart services at random, and do not attempt an unrehearsed switch of providers. Most self-inflicted damage during dependency outages comes from trying to fix something that was never yours."}},
+      {"@type":"Question","name":"Should I tell users the outage is caused by a third party?","acceptedAnswer":{"@type":"Answer","text":"Yes, plainly and without blame: name the provider, say what users will see, say no action is needed from them, and say when you will update next. It is still your incident to your users, so do not hide behind the provider — but honesty about the cause is what keeps their trust."}},
+      {"@type":"Question","name":"Do third-party outages count against my SLA?","acceptedAnswer":{"@type":"Answer","text":"That depends on your terms. Many agreements exclude upstream provider outages, some do not. Whichever it is, the monthly report should mark the incident as dependency-caused with the provider named, so the client can see the distinction — and so the decision about what counts was made in the contract rather than in the argument."}},
+      {"@type":"Question","name":"How can a small team reduce the impact of provider outages?","acceptedAnswer":{"@type":"Answer","text":"Write down every provider you depend on and what fails when it does; monitor their status as components of your own system; build degrade-not-die paths for the ones that matter most, such as queuing checkouts when payments are down; rehearse one failover a year; and know where several of your dependencies are actually one vendor."}},
+      {"@type":"Question","name":"What were the big outages in late 2025?","acceptedAnswer":{"@type":"Answer","text":"In October 2025 a failure in AWS's us-east-1 region took a large number of services offline for hours, and in November 2025 a Cloudflare configuration change caused widespread errors across sites using its network. In both cases many affected teams spent the early part of the incident investigating their own systems before the upstream cause was clear."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Third-party outages</nav>
+    <div class="eyebrow">Incidents</div>
+    <h1>Is it us or them? Handling <span class="accent">third-party outages</span> in a small team</h1>
+    <p class="lead">In late 2025, a single cloud region and then a single CDN's configuration change each took a large slice of the internet's applications down for hours. Most of the affected teams spent the first half hour debugging their own code.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/incidents.svg" alt="An incident timeline with a vendor status feed showing the upstream cause" width="640" height="384">
+    <p class="post-meta">Published 10 September 2026 · Updated 11 September 2026 · Merik team · 5 min read</p>
+    <p class="lede"><b>When an application fails because a provider it depends on has failed, the most valuable thing a small team can do in the first ten minutes is establish that fact — because it changes every subsequent action: do not deploy, do not restart, do communicate, and do wait.</b> The way to establish it is to have the provider's status on the same timeline as your own incident, automatically, so the incident opens with "Cloudflare reports a widespread outage since 11:20" attached. The AWS us-east-1 failure in October 2025 and the Cloudflare outage in November 2025 each showed the pattern: thousands of applications down, most of their teams initially convinced it was something they had shipped.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>The first question is not "what broke?" but <b>"is it us or them?"</b> — and it should be answered by data, not by checking Twitter.</li>
+      <li>Put <b>vendor status feeds on your incident timeline</b> so an incident that coincides with a provider outage says so when it opens.</li>
+      <li>During a dependency outage: <b>do not deploy, do not restart, do communicate</b>. Most self-inflicted damage happens while trying to fix what was not yours.</li>
+      <li>It is still <b>your incident to your users</b>. Attribute it honestly; do not hide behind it.</li>
+      <li>Afterwards, map the dependencies. <b>Every provider you rely on is a component you do not monitor</b> unless you make it one.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#first-ten">The first ten minutes</a></li>
+      <li><a href="#what-not-to-do">What not to do during a dependency outage</a></li>
+      <li><a href="#communicate">Communicating it honestly</a></li>
+      <li><a href="#noise">Suppressing the noise without hiding the signal</a></li>
+      <li><a href="#blast-radius">Reducing the blast radius before the next one</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="first-ten">The first ten minutes</h2>
+
+    <ol>
+      <li><b>Check the correlation.</b> Did the incident start within minutes of a provider reporting trouble? If your monitoring shows the vendor's status alongside your incident, this is one glance. If not, it is the provider's status page, then the second provider's, then a news search — while the clock runs.</li>
+      <li><b>Check what else is down.</b> If your marketing site on one host is fine and your app on another is not, that narrows it. If both are down and they share a CDN, the CDN is the suspect.</li>
+      <li><b>Check your own changes.</b> Was there a deploy in the last hour? If yes and no provider is reporting trouble, it is probably you. <a href="/blog/did-the-deploy-break-production">Did the deploy break it?</a></li>
+      <li><b>Decide, and say so.</b> "Dependency outage, provider X, no action on our side" or "ours, investigating". Write it down with the time; you will want it for the report.</li>
+    </ol>
+
+
+    <h2 id="what-not-to-do">What not to do during a dependency outage</h2>
+
+    <ul>
+      <li><b>Do not deploy.</b> A deploy during a provider outage cannot be validated, and if the provider recovers mid-deploy you now have two problems and no idea which caused which.</li>
+      <li><b>Do not restart things at random.</b> Restarting a service that is failing because its upstream is unreachable buys nothing and clears the evidence.</li>
+      <li><b>Do not "quickly switch" providers under pressure.</b> Failover that was not rehearsed is a second incident with a new cause.</li>
+      <li><b>Do not go silent.</b> Users do not know it is Cloudflare. They know your product is not working.</li>
+    </ul>
+
+
+    <h2 id="communicate">Communicating it honestly</h2>
+
+    <p>The status page update is: what users see, that the cause is an outage at a named provider, that there is no action they need to take, and when the next update is due. Do not name-and-blame; do not pretend it is nothing to do with you. "Our payment processing depends on Stripe, which is reporting degraded service since 09:40. Payments may fail. We will update when Stripe confirms recovery." — that is the whole message. <a href="/blog/public-status-page-small-business">The incident update template</a>.</p>
+    <p>For agency clients, the same message per client, and the monthly <a href="/blog/sla-reports-for-clients-agency">SLA report</a> marks the incident as dependency-caused — which matters for whether it counts against the tier, if your terms exclude upstream outages.</p>
+
+
+    <h2 id="noise">Suppressing the noise without hiding the signal</h2>
+
+    <p>A CDN outage takes down twenty client sites at once. Twenty incidents, twenty alerts, one cause. Monitoring that understands dependencies opens the incidents — they are real; the sites are down — but marks them as explained by the provider and alerts once for the group, rather than paging the owner twenty times about something they cannot fix. The distinction is between <b>suppressing the alert</b> (right) and <b>suppressing the incident</b> (wrong: it still happened, it still goes in the report). <a href="/blog/alert-fatigue-small-teams">Alert fatigue</a> is mostly built from exactly this case.</p>
+
+
+    <h2 id="blast-radius">Reducing the blast radius before the next one</h2>
+
+    <ul>
+      <li><b>Write the dependency map.</b> DNS, CDN, hosting, database, auth, email, payments, SMS, AI APIs. For each: what fails if it fails, and what the user sees.</li>
+      <li><b>Monitor the providers as components.</b> Their status feeds belong in your monitoring, not in a browser bookmark.</li>
+      <li><b>Degrade, don't die.</b> If the payment provider is down, let users browse and queue the checkout. If the AI API is down, fall back to the non-AI path. Each of these is a small piece of work that turns an outage into a degradation.</li>
+      <li><b>Rehearse one failover</b> a year for the dependency that would hurt most. Unrehearsed failover is not failover.</li>
+      <li><b>Know the concentration.</b> If your DNS, CDN and hosting are all one vendor, you have one dependency, not three. That may be fine; decide it consciously.</li>
+    </ul>
+    <p>The late-2025 outages did not mostly hurt teams because they depended on a provider — everyone does. They hurt because the teams did not know, for the first half hour, that they did. <a href="/blog/proactive-application-reliability">The full reliability loop</a>.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>First question</th><td>Is it us or them — answered by vendor status on the incident timeline</td></tr>
+      <tr><th>During</th><td>No deploys, no random restarts, no unrehearsed failover; communicate within minutes</td></tr>
+      <tr><th>Attribution</th><td>Honest — named provider, no blame, still your incident to your users</td></tr>
+      <tr><th>Noise rule</th><td>Suppress the repeated alert, never the incident</td></tr>
+      <tr><th>Afterwards</th><td>Dependency map; providers monitored as components; degrade-not-die paths; one rehearsed failover</td></tr>
+      <tr><th>Late-2025 lesson</th><td>Most teams lost the first half hour not knowing it was upstream</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>How do I know if an outage is my application or a third-party provider?</summary><p>Check whether the incident started at the same time as trouble reported by a provider you depend on, whether other properties of yours that share that provider are also affected, and whether you deployed in the last hour. Monitoring that shows vendor status feeds on the same timeline as your incidents answers the first question at a glance; without it, the answer comes from status pages and news while the clock runs.</p></details>
+      <details><summary>What should I do during an AWS or Cloudflare outage?</summary><p>Confirm it is the provider, post a status update saying what users see and that the cause is upstream, and then wait. Do not deploy, do not restart services at random, and do not attempt an unrehearsed switch of providers. Most self-inflicted damage during dependency outages comes from trying to fix something that was never yours.</p></details>
+      <details><summary>Should I tell users the outage is caused by a third party?</summary><p>Yes, plainly and without blame: name the provider, say what users will see, say no action is needed from them, and say when you will update next. It is still your incident to your users, so do not hide behind the provider — but honesty about the cause is what keeps their trust.</p></details>
+      <details><summary>Do third-party outages count against my SLA?</summary><p>That depends on your terms. Many agreements exclude upstream provider outages, some do not. Whichever it is, the monthly report should mark the incident as dependency-caused with the provider named, so the client can see the distinction — and so the decision about what counts was made in the contract rather than in the argument.</p></details>
+      <details><summary>How can a small team reduce the impact of provider outages?</summary><p>Write down every provider you depend on and what fails when it does; monitor their status as components of your own system; build degrade-not-die paths for the ones that matter most, such as queuing checkouts when payments are down; rehearse one failover a year; and know where several of your dependencies are actually one vendor.</p></details>
+      <details><summary>What were the big outages in late 2025?</summary><p>In October 2025 a failure in AWS's us-east-1 region took a large number of services offline for hours, and in November 2025 a Cloudflare configuration change caused widespread errors across sites using its network. In both cases many affected teams spent the early part of the incident investigating their own systems before the upstream cause was clear.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's Digital Operations module puts the provider on the timeline. Vendor status feeds for Stripe, Supabase, GitHub, Vercel, Cloudflare, Twilio and OpenAI are watched alongside your own assets; when an incident opens on one of your sites while a provider is reporting trouble, the incident carries that context from the start, and the alert says so. Incidents explained by a dependency are still recorded — they happened, and they appear in the monthly SLA report marked as dependency-caused — but the repeated alerting is suppressed so the owner is not paged twenty times about one CDN.</p>
+    <p>Deploys from GitHub and Vercel webhooks sit on the same timeline, so "did we ship something?" and "is a provider down?" are answered by the same view in the first minute. See the <a href="/modules">Digital Operations module</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Incidents" href="/blog/did-the-deploy-break-production">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="Did the deploy break production? Correlating deployments with incidents" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>Did the deploy break production? Correlating deployments with incidents</h3>
+        <p>Deploys on the timeline, reading correlation honestly, and the rollback decision.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Incidents" href="/blog/alert-fatigue-small-teams">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="Alert fatigue: why you ignore your own monitoring" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>Alert fatigue: why you ignore your own monitoring</h3>
+        <p>Five causes, six rules, and the two numbers that say whether your alerts are worth reading.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/application-up-but-users-see-errors">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="Your application is up. So why are users still having problems?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>Your application is up. So why are users still having problems?</h3>
+        <p>Uptime 100%, users unhappy — both true. Closing the gap between server health and experience.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></div>
+        <p class="desc">Merik is the all-in-one platform for employee management, attendance, leave, payroll, daily task tracking — and monitoring the websites and APIs you run.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a><a href="/modules">Digital Operations</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a><a href="/blog/proactive-application-monitoring">Proactive monitoring</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

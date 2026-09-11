@@ -41,7 +41,7 @@
 {
   "@context":"https://schema.org",
   "@graph":[
-    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/proactive-application-reliability#post","headline":"The Complete Guide to Proactive Application Reliability","description":"The cornerstone guide: how monitoring, baselines, early warnings, error budgets, incident response and deploy correlation combine into a reliability practice that prevents incidents instead of narrating them.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/proactive-application-reliability","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"application reliability, proactive monitoring, incident prevention, reliability engineering, error budget, early warning system, application health, site reliability practices","wordCount":882,"timeRequired":"PT7M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/proactive-application-reliability#post","headline":"The Complete Guide to Proactive Application Reliability","description":"The cornerstone guide: how monitoring, baselines, early warnings, error budgets, incident response and deploy correlation combine into a reliability practice that prevents incidents instead of narrating them.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/proactive-application-reliability","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"application reliability, proactive monitoring, incident prevention, reliability engineering, error budget, early warning system, application health, site reliability practices","wordCount":904,"timeRequired":"PT7M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
     {"@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
       {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
@@ -173,6 +173,7 @@
 
     <p>The loop closes when incidents feed back into detection. After each one: what preceded it in the telemetry? Was there a warning — and if not, what signal would have caught it? Which warnings this month came true, and which fizzled? This review is what tunes thresholds, adds missing monitors, and builds institutional memory — <a href="/blog/prevent-small-bugs-becoming-incidents">interrupting the escalation chain earlier each time</a>.</p>
     <p>Run for a few months, the loop compounds visibly: baselines sharpen, warnings grow more precise, repeat incident classes get monitors and stop repeating, and the on-call experience shifts from firefighting to reviewing briefings. The destination is not zero incidents — that target is dishonest — but a steadily larger fraction of problems met as trends rather than outages, with <a href="/blog/reactive-vs-proactive-monitoring">reactive capability</a> intact for the failures that give no warning. Reliability, in the end, is the loop running.</p>
+    <p>The loop's output to a client is <a href="/blog/sla-reports-for-clients-agency">the monthly SLA report</a>; its output to a user is <a href="/blog/public-status-page-small-business">the status page</a>.</p>
 
 
     <h2 id="facts">Quick reference</h2>
@@ -223,11 +224,11 @@
         <h3>Reactive vs proactive monitoring: what's the difference?</h3>
         <p>One tells you it broke; the other tells you it's breaking. That word is worth hours.</p></div>
       </a>
-      <a class="blog-card" data-cat="Incidents" href="/blog/prevent-small-bugs-becoming-incidents">
-        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="How proactive monitoring stops small bugs becoming major incidents" width="400" height="240" loading="lazy">
-        <div class="bc-body"><span class="tag2">Incidents</span>
-        <h3>How proactive monitoring stops small bugs becoming major incidents</h3>
-        <p>Small error → repeated error → degradation → outage. Cutting the chain at its cheapest link.</p></div>
+      <a class="blog-card" data-cat="Observability" href="/blog/error-budgets-slo-small-teams">
+        <img class="thumb" src="/assets/images/blog/observability.svg" alt="Error budgets and SLOs for small teams: a practical introduction" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Observability</span>
+        <h3>Error budgets and SLOs for small teams: a practical introduction</h3>
+        <p>SLO vs SLA, the minutes arithmetic, a health score as budget remaining, ship or stabilise.</p></div>
       </a>
     </div>
   </div>

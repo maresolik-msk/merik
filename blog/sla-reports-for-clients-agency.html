@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>How to Produce a Monthly SLA Report for Clients (What to Include, How to Compute It)</title>
+<meta name="description" content="A practical guide to monthly SLA reports for agencies and small vendors — choosing a tier, the uptime and minutes arithmetic, the seven sections every report needs, how to compute each from monitoring data, and how to present a month where nothing happened.">
+<meta name="keywords" content="SLA report template, monthly SLA report clients, uptime report for clients, how to calculate SLA uptime, SLA report agency, 99.9 uptime minutes per month, service level report, client uptime reporting">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/sla-reports-for-clients-agency">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="The monthly SLA report: what to include and how to compute it">
+<meta property="og:description" content="Tiers and their minutes, the seven sections, the arithmetic, and how to present a quiet month as delivered service.">
+<meta property="og:url" content="https://www.merik.in/blog/sla-reports-for-clients-agency">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/monitoring.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-09-08">
+<meta property="article:modified_time" content="2026-09-11">
+<meta property="article:section" content="Monitoring">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The monthly SLA report: what to include and how to compute it">
+<meta name="twitter:description" content="Tiers and their minutes, the seven sections, the arithmetic, and how to present a quiet month as delivered service.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/sla-reports-for-clients-agency#post","headline":"How to Produce a Monthly SLA Report for Clients (What to Include, How to Compute It)","description":"A practical guide to monthly SLA reports for agencies and small vendors — choosing a tier, the uptime and minutes arithmetic, the seven sections every report needs, how to compute each from monitoring data, and how to present a month where nothing happened.","datePublished":"2026-09-08","dateModified":"2026-09-11","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/sla-reports-for-clients-agency","image":"https://www.merik.in/assets/images/blog/monitoring.svg","articleSection":"Monitoring","keywords":"SLA report template, monthly SLA report clients, uptime report for clients, how to calculate SLA uptime, SLA report agency, 99.9 uptime minutes per month, service level report, client uptime reporting","wordCount":548,"timeRequired":"PT5M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Monthly SLA reports","item":"https://www.merik.in/blog/sla-reports-for-clients-agency"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What should a monthly SLA report include?","acceptedAnswer":{"@type":"Answer","text":"For each asset: the SLA tier and measured availability with downtime minutes against minutes allowed; every incident with start, detection, resolution and one-line cause; mean time to detect and resolve; response-time percentiles against baseline; certificate status; and the month's deploys. One page, sent every month regardless of whether anything happened."}},
+      {"@type":"Question","name":"How do you calculate SLA uptime percentage?","acceptedAnswer":{"@type":"Answer","text":"Divide the minutes the service was confirmed available by the total minutes in the period. Confirmed downtime runs from the check that confirmed the failure — usually the second or third consecutive failed check — to the first successful check after. On a 30-day month, 99.9% allows 43 minutes of downtime, 99.5% about 3 hours 36 minutes, and 99% about 7 hours 12 minutes."}},
+      {"@type":"Question","name":"How many minutes of downtime is 99.9% uptime?","acceptedAnswer":{"@type":"Answer","text":"About 43 minutes in a 30-day month, 8 hours 46 minutes in a year. At 99.5% it is about 3 hours 36 minutes a month; at 99% about 7 hours 12 minutes; at 99.95% about 22 minutes."}},
+      {"@type":"Question","name":"What SLA tier should I offer a client?","acceptedAnswer":{"@type":"Answer","text":"The one your hosting and response process can actually deliver. Marketing and brochure sites are usually 99%; small web apps 99.5%; transactional sites such as checkout or booking 99.9%, and only with redundant hosting. State whether measurement is 24×7 or business hours and whether announced maintenance is excluded."}},
+      {"@type":"Question","name":"Should I send an SLA report in a month with no incidents?","acceptedAnswer":{"@type":"Answer","text":"Yes — it is the most important one. A quiet month is the service working, and the report is the only evidence the client receives. Ten lines showing 100% availability, checks passed, certificate status and deploys, sent on the same day as every other month, is what makes a maintenance retainer renew."}},
+      {"@type":"Question","name":"What is the difference between MTTD and MTTR in an SLA report?","acceptedAnswer":{"@type":"Answer","text":"Mean time to detect is the average time from a failure starting to it being noticed and someone alerted; mean time to resolve is from detection to the service being restored. Reporting both shows the client how fast you learn about problems, which is the part of the service they cannot see any other way."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Monthly SLA reports</nav>
+    <div class="eyebrow">Monitoring</div>
+    <h1>The monthly SLA report: <span class="accent">what to include, how to compute it</span></h1>
+    <p class="lead">A monitoring service the client never sees is a cost. The monthly report is how it becomes a deliverable — including in the months when nothing broke.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/monitoring.svg" alt="A monthly client report showing uptime against its SLA tier" width="640" height="384">
+    <p class="post-meta">Published 8 September 2026 · Updated 11 September 2026 · Merik team · 5 min read</p>
+    <p class="lede"><b>A monthly SLA report states, for each client asset, the measured availability against the tier the client is on, every incident with when it was detected and resolved, the response-time trend, certificate status and deploys — in one page the client can read in two minutes.</b> Availability is computed as (total minutes − downtime minutes) ÷ total minutes; on 99.9% a 30-day month allows 43 minutes of downtime, on 99.5% about 3 hours 36 minutes, on 99% about 7 hours 12 minutes. Everything in the report comes from monitoring data already being collected; the work is choosing the tier honestly and presenting the month plainly.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Declare the tier <b>per asset</b>, not per client: a marketing site on 99%, a checkout on 99.9%.</li>
+      <li>The arithmetic is minutes: <b>99.9% = 43 min/month, 99.5% = 3 h 36 min, 99% = 7 h 12 min</b> on a 30-day month.</li>
+      <li>Seven sections: <b>summary, availability vs tier, incidents, detection and resolution times, response time, certificates, changes</b>.</li>
+      <li>Report <b>MTTD and MTTR</b> per incident. A client who sees a 3-minute detection time understands what they are paying for.</li>
+      <li>Send it <b>every month</b>, including quiet ones. A quiet month is the service working, and the report is the only evidence.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#tier">Choosing the tier honestly</a></li>
+      <li><a href="#compute">Computing availability from monitoring data</a></li>
+      <li><a href="#sections">The seven sections</a></li>
+      <li><a href="#quiet-month">Presenting a month where nothing happened</a></li>
+      <li><a href="#bad-month">Presenting a month where the tier was missed</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="tier">Choosing the tier honestly</h2>
+
+    <p>An SLA tier is a promise, so make one you can keep with the hosting you actually use. A site on shared hosting with no redundancy should not be on 99.9%. The tier sets the <a href="/blog/error-budgets-slo-small-teams">error budget</a> the month is measured against:</p>
+    <table class="facts">
+      <tr><th>99%</th><td>≈ 7 h 12 min downtime allowed per 30-day month. Marketing sites, brochure sites.</td></tr>
+      <tr><th>99.5%</th><td>≈ 3 h 36 min. Small web apps, portals with business-hours use.</td></tr>
+      <tr><th>99.9%</th><td>≈ 43 min. Checkout, booking, anything transactional.</td></tr>
+      <tr><th>99.95%</th><td>≈ 22 min. Only with redundant hosting and an actual response process.</td></tr>
+    </table>
+    <p>State whether the measurement is 24×7 or business hours, and whether announced maintenance is excluded. Both are legitimate; both must be written down before the first report.</p>
+
+
+    <h2 id="compute">Computing availability from monitoring data</h2>
+
+    <p><b>Availability = (minutes in period − confirmed downtime minutes) ÷ minutes in period.</b> Downtime starts when a failure is confirmed — usually two or three consecutive failed checks, to exclude single blips — and ends at the first successful check after. With five-minute checks the resolution is coarse; say so, and do not report to three decimal places on data measured every five minutes. If maintenance is excluded, subtract announced maintenance windows from both numerator and denominator.</p>
+    <p>Two figures the report should also carry per incident: <b>MTTD</b>, from the first failed check to the incident being opened and someone alerted, and <b>MTTR</b>, from open to resolved. <a href="/blog/reduce-mttd">Detection time is the number most vendors never show</a> — and the one that most clearly demonstrates value.</p>
+
+
+    <h2 id="sections">The seven sections</h2>
+
+    <ol>
+      <li><b>Summary</b> — one line per asset: tier, measured availability, met / not met.</li>
+      <li><b>Availability vs tier</b> — the percentage, the minutes of downtime, the minutes the tier allowed, and the remaining budget.</li>
+      <li><b>Incidents</b> — each with start, detection, resolution, cause in one sentence, and whether it was a dependency (hosting, CDN, payment provider) or the site itself. <a href="/blog/third-party-dependency-outages">Attributing dependency outages honestly</a>.</li>
+      <li><b>Detection and resolution</b> — MTTD and MTTR for the month, and the trend against previous months.</li>
+      <li><b>Response time</b> — p50 and p95 against the asset's baseline; note any drift and whether it was addressed.</li>
+      <li><b>Certificates</b> — expiry dates, renewals completed. <a href="/blog/ssl-certificate-expiry-monitoring">Why this section is growing</a>.</li>
+      <li><b>Changes</b> — deploys in the month, and whether any coincided with an incident.</li>
+    </ol>
+    <p>One page. Charts optional; the table with the minutes is what the client's finance person reads.</p>
+
+
+    <h2 id="quiet-month">Presenting a month where nothing happened</h2>
+
+    <p>The quiet month is the one agencies skip, and the one that matters most: it is the evidence the retainer is working. The report is short — availability 100%, zero incidents, 8,640 checks passed, certificate renewed on the 14th, two deploys with no regression, p95 stable. Ten lines. Send it with the same subject line as every other month. Clients who receive twelve quiet reports renew; clients who receive one report after an outage wonder what they paid for the other eleven months.</p>
+
+
+    <h2 id="bad-month">Presenting a month where the tier was missed</h2>
+
+    <p>Lead with it. "Availability 99.62% against a 99.9% tier — not met. One incident, 2 h 44 min, caused by the hosting provider's storage failure on the 9th; detected in 4 minutes, client informed in 11, resolved when the provider restored service. Actions: moved the site to the provider's redundant tier on the 12th." Then the standard sections. If there is a service credit, state it without being asked. Nothing rebuilds trust like a bad month reported before the client noticed it was bad.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Formula</th><td>(period minutes − confirmed downtime minutes) ÷ period minutes</td></tr>
+      <tr><th>99.9%</th><td>≈ 43 minutes downtime per 30-day month</td></tr>
+      <tr><th>99.5%</th><td>≈ 3 h 36 min</td></tr>
+      <tr><th>99%</th><td>≈ 7 h 12 min</td></tr>
+      <tr><th>Confirmed downtime</th><td>From 2–3 consecutive failed checks to the first success</td></tr>
+      <tr><th>Seven sections</th><td>Summary · availability vs tier · incidents · MTTD/MTTR · response time · certificates · changes</td></tr>
+      <tr><th>Cadence</th><td>Every month, including quiet ones</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What should a monthly SLA report include?</summary><p>For each asset: the SLA tier and measured availability with downtime minutes against minutes allowed; every incident with start, detection, resolution and one-line cause; mean time to detect and resolve; response-time percentiles against baseline; certificate status; and the month's deploys. One page, sent every month regardless of whether anything happened.</p></details>
+      <details><summary>How do you calculate SLA uptime percentage?</summary><p>Divide the minutes the service was confirmed available by the total minutes in the period. Confirmed downtime runs from the check that confirmed the failure — usually the second or third consecutive failed check — to the first successful check after. On a 30-day month, 99.9% allows 43 minutes of downtime, 99.5% about 3 hours 36 minutes, and 99% about 7 hours 12 minutes.</p></details>
+      <details><summary>How many minutes of downtime is 99.9% uptime?</summary><p>About 43 minutes in a 30-day month, 8 hours 46 minutes in a year. At 99.5% it is about 3 hours 36 minutes a month; at 99% about 7 hours 12 minutes; at 99.95% about 22 minutes.</p></details>
+      <details><summary>What SLA tier should I offer a client?</summary><p>The one your hosting and response process can actually deliver. Marketing and brochure sites are usually 99%; small web apps 99.5%; transactional sites such as checkout or booking 99.9%, and only with redundant hosting. State whether measurement is 24×7 or business hours and whether announced maintenance is excluded.</p></details>
+      <details><summary>Should I send an SLA report in a month with no incidents?</summary><p>Yes — it is the most important one. A quiet month is the service working, and the report is the only evidence the client receives. Ten lines showing 100% availability, checks passed, certificate status and deploys, sent on the same day as every other month, is what makes a maintenance retainer renew.</p></details>
+      <details><summary>What is the difference between MTTD and MTTR in an SLA report?</summary><p>Mean time to detect is the average time from a failure starting to it being noticed and someone alerted; mean time to resolve is from detection to the service being restored. Reporting both shows the client how fast you learn about problems, which is the part of the service they cannot see any other way.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik produces the monthly SLA report per client from the monitoring it already does. Each asset carries a declared SLA tier, and its health score is an error budget against that tier — so "met or not met" and "minutes remaining" are computed, not assembled. Incidents carry their detection and resolution times; deploys from GitHub and Vercel webhooks sit on the same timeline; vendor status feeds mark which incidents were dependency-caused; certificate expiry is checked daily.</p>
+    <p>The report is generated monthly per client, and the private status page gives the client the same picture between reports. Because assets belong to clients in the same workspace as projects, quotes and invoices, the retainer that includes monitoring is billed from the same record. See the <a href="/modules">Digital Operations module</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Observability" href="/blog/error-budgets-slo-small-teams">
+        <img class="thumb" src="/assets/images/blog/observability.svg" alt="Error budgets and SLOs for small teams: a practical introduction" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Observability</span>
+        <h3>Error budgets and SLOs for small teams: a practical introduction</h3>
+        <p>SLO vs SLA, the minutes arithmetic, a health score as budget remaining, ship or stabilise.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/public-status-page-small-business">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="Do you need a public status page? A guide for small teams" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>Do you need a public status page? A guide for small teams</h3>
+        <p>When it earns its place, what to show, private per-client pages, and the honesty rules.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/website-monitoring-for-agencies-client-sites">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Website monitoring for agencies: every client site, no ops person" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Website monitoring for agencies: every client site, no ops person</h3>
+        <p>Per-client structure, what to check, who gets the alert, and pricing the retainer around it.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></div>
+        <p class="desc">Merik is the all-in-one platform for employee management, attendance, leave, payroll, daily task tracking — and monitoring the websites and APIs you run.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a><a href="/modules">Digital Operations</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a><a href="/blog/proactive-application-monitoring">Proactive monitoring</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

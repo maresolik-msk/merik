@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>SSL Certificate Expiry Monitoring: Why 200-Day (Soon 47-Day) Certificates Make It Mandatory</title>
+<meta name="description" content="Public TLS certificates are capped at 200 days since March 2026, dropping to 100 in 2027 and 47 in 2029. What an expired certificate looks like to users, why automated renewal fails silently, what to monitor, when to alert, and how to keep an inventory across every site you own or manage.">
+<meta name="keywords" content="SSL certificate expiry monitoring, SSL expiry alert, certificate expiration monitoring, 47 day certificates, 200 day certificate validity 2026, TLS certificate lifetime reduction, monitor SSL expiration, Let's Encrypt renewal failed, certificate expired website down">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/ssl-certificate-expiry-monitoring">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="SSL expiry monitoring in the age of 47-day certificates">
+<meta property="og:description" content="200-day certificates now, 47 by 2029. Renewal automation fails silently; monitoring is what catches it.">
+<meta property="og:url" content="https://www.merik.in/blog/ssl-certificate-expiry-monitoring">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/api.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-09-09">
+<meta property="article:modified_time" content="2026-09-11">
+<meta property="article:section" content="Reliability">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SSL expiry monitoring in the age of 47-day certificates">
+<meta name="twitter:description" content="200-day certificates now, 47 by 2029. Renewal automation fails silently; monitoring is what catches it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/ssl-certificate-expiry-monitoring#post","headline":"SSL Certificate Expiry Monitoring: Why 200-Day (Soon 47-Day) Certificates Make It Mandatory","description":"Public TLS certificates are capped at 200 days since March 2026, dropping to 100 in 2027 and 47 in 2029. What an expired certificate looks like to users, why automated renewal fails silently, what to monitor, when to alert, and how to keep an inventory across every site you own or manage.","datePublished":"2026-09-09","dateModified":"2026-09-11","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/ssl-certificate-expiry-monitoring","image":"https://www.merik.in/assets/images/blog/api.svg","articleSection":"Reliability","keywords":"SSL certificate expiry monitoring, SSL expiry alert, certificate expiration monitoring, 47 day certificates, 200 day certificate validity 2026, TLS certificate lifetime reduction, monitor SSL expiration, Let's Encrypt renewal failed, certificate expired website down","wordCount":605,"timeRequired":"PT5M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"SSL certificate expiry monitoring","item":"https://www.merik.in/blog/ssl-certificate-expiry-monitoring"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"How long are SSL certificates valid in 2026?","acceptedAnswer":{"@type":"Answer","text":"Public TLS certificates issued from 15 March 2026 are limited to 200 days. Under the CA/Browser Forum schedule adopted in April 2025, the maximum drops to 100 days from March 2027 and to 47 days from March 2029. Certificates issued before March 2026 keep their original validity of up to 398 days."}},
+      {"@type":"Question","name":"Why do certificate lifetimes keep getting shorter?","acceptedAnswer":{"@type":"Answer","text":"Because revocation does not work reliably at internet scale, so a compromised or mis-issued certificate stays trusted until it expires. Shorter lifetimes limit that window and force renewal to be automated rather than manual. The operational consequence is that renewal becomes continuous and needs monitoring."}},
+      {"@type":"Question","name":"What happens when an SSL certificate expires?","acceptedAnswer":{"@type":"Answer","text":"Browsers show a full-page warning that the connection is not private and most visitors leave; API clients fail their TLS handshake and see connection errors. The site is effectively down. Uptime checks that do not validate the certificate chain may continue to report the site as up."}},
+      {"@type":"Question","name":"Why did my automatic SSL renewal fail?","acceptedAnswer":{"@type":"Answer","text":"The common causes are a DNS change that broke validation, an ACME client still running on a server the site no longer uses, a hit rate limit from a looping script, a rotated API key for DNS-01 validation, or a certificate that was issued but never deployed to the CDN or load balancer. The renewal log records the failure; nobody reads renewal logs, which is why external expiry monitoring exists."}},
+      {"@type":"Question","name":"How far in advance should I be alerted about certificate expiry?","acceptedAnswer":{"@type":"Answer","text":"At 14 days, 7 days and 3 days remaining, to a named owner. Fourteen days is enough to fix a DNS or configuration problem; three days is the final call. With 47-day certificates, also alert when a renewal that should have happened at around day 17 did not."}},
+      {"@type":"Question","name":"How do I monitor SSL expiry for many sites?","acceptedAnswer":{"@type":"Answer","text":"Register every hostname you own or manage — including client sites, staging and API subdomains — in one place with an owner, and check the served certificate daily from the outside. The inventory is the hard part; tying the certificate check to the same registration used for uptime monitoring keeps the list maintained."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> SSL certificate expiry monitoring</nav>
+    <div class="eyebrow">Reliability</div>
+    <h1>SSL certificate expiry monitoring: why <span class="accent">shorter certificates</span> make it mandatory</h1>
+    <p class="lead">For twenty years a certificate was a once-a-year chore. Since March 2026 it is a five-times-a-year chore, and by 2029 it will be every six weeks. Automation does the renewing; monitoring catches the times it does not.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/api.svg" alt="A certificate validity window shrinking from a year to 47 days" width="640" height="384">
+    <p class="post-meta">Published 9 September 2026 · Updated 11 September 2026 · Merik team · 5 min read</p>
+    <p class="lede"><b>Public TLS certificates issued since 15 March 2026 are limited to 200 days' validity; the limit falls to 100 days in March 2027 and 47 days in March 2029, under the CA/Browser Forum ballot adopted in April 2025.</b> That makes automated renewal mandatory in practice — and automated renewal fails silently more often than people expect: a DNS change breaks validation, a rate limit is hit, an ACME client is left on a decommissioned server, a wildcard's DNS token stops working. The user then sees a full-page browser warning, and the site is effectively down while every uptime check reports success on the redirect. Expiry monitoring — a daily check of days remaining on every certificate you own or manage, alerting at 14, 7 and 3 days — is the control that closes the gap.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li>Validity limits: <b>200 days now (since 15 March 2026), 100 days from March 2027, 47 days from March 2029.</b> Annual renewal calendars are already obsolete.</li>
+      <li>An expired certificate is <b>an outage with a scarier error page</b>. Users see a warning, not your site, and most leave.</li>
+      <li>Automated renewal fails silently: <b>DNS changes, rate limits, dead ACME clients, moved servers.</b> You find out at expiry.</li>
+      <li>Monitor <b>days remaining</b> on every hostname daily; alert at 14, 7 and 3 days, to a named owner.</li>
+      <li>Keep an <b>inventory</b>: every domain, subdomain and client site, with who renews it and how. Shorter lifetimes turn a forgotten subdomain into a monthly incident.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#timeline">The shortening timeline</a></li>
+      <li><a href="#what-expiry-looks-like">What an expired certificate looks like to a user</a></li>
+      <li><a href="#why-renewal-fails">Why automated renewal fails silently</a></li>
+      <li><a href="#what-to-monitor">What to monitor, and when to alert</a></li>
+      <li><a href="#inventory">The inventory problem</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="timeline">The shortening timeline</h2>
+
+    <table class="facts">
+      <tr><th>Before March 2026</th><td>398 days maximum (since 2020)</td></tr>
+      <tr><th>From 15 March 2026</th><td><b>200 days</b> maximum validity; domain validation reuse cut to 200 days</td></tr>
+      <tr><th>From 15 March 2027</th><td><b>100 days</b> maximum; validation reuse 100 days</td></tr>
+      <tr><th>From 15 March 2029</th><td><b>47 days</b> maximum; validation reuse 10 days</td></tr>
+    </table>
+    <p>The stated reasons are sound — revocation does not work well at internet scale, and a short-lived certificate limits how long a compromised key is useful — but the operational effect for a small team or an agency with forty client sites is that certificate renewal has moved from "annual task" to "continuous process", and continuous processes need monitoring. Facts checked 11 September 2026.</p>
+
+
+    <h2 id="what-expiry-looks-like">What an expired certificate looks like to a user</h2>
+
+    <p>A full-page browser interstitial — "Your connection is not private", a red warning, a button most people will not click. For an e-commerce site it is a 100% conversion drop. For a SaaS login it is a support queue. For an API it is every client's TLS handshake failing with an error that looks, from their side, like your service refusing connections. Meanwhile a basic uptime check that follows the HTTP redirect and does not validate the chain may keep reporting "up" — one more case of <a href="/blog/application-up-but-users-see-errors">the application being up while users see errors</a>.</p>
+
+
+    <h2 id="why-renewal-fails">Why automated renewal fails silently</h2>
+
+    <ul>
+      <li><b>DNS changed.</b> The domain moved providers, the CNAME for validation was not recreated, HTTP-01 validation now hits a different server.</li>
+      <li><b>The ACME client lives on a server that is gone.</b> The site moved to a CDN or a new host; the cron job that renewed it is still running on the old box, or nowhere.</li>
+      <li><b>Rate limits.</b> Too many renewals for one registered domain in a week — common when a script loops on a failure.</li>
+      <li><b>Wildcard DNS-01 token broken.</b> The API key the client uses to write the validation record was rotated.</li>
+      <li><b>The renewal worked; the deploy did not.</b> A new certificate was issued but the load balancer, CDN or container still serves the old one.</li>
+      <li><b>Nobody owns it.</b> The person who set it up left. Shorter lifetimes shrink the window in which that goes unnoticed from a year to weeks.</li>
+    </ul>
+    <p>In every case the renewal log says something went wrong, and nobody reads renewal logs. <a href="/blog/logs-vs-monitoring">Logs are records, not lookouts</a>.</p>
+
+
+    <h2 id="what-to-monitor">What to monitor, and when to alert</h2>
+
+    <ol>
+      <li><b>Days remaining</b>, checked daily from the outside on every hostname — the served certificate, not the one on disk. Alert at 14, 7 and 3 days.</li>
+      <li><b>Chain validity</b> — an intermediate that expired or was not sent is as fatal as the leaf.</li>
+      <li><b>Hostname match</b> — a certificate that renewed for the apex but not the www, or vice versa.</li>
+      <li><b>Renewal success</b>, inferred: if days remaining should have jumped and did not, the renewal failed. With 47-day certificates, "renewal did not happen at day 17" is the alert that matters.</li>
+      <li><b>Every hostname you own or manage</b> — including client sites, staging, and the API subdomain nobody visits in a browser.</li>
+    </ol>
+    <p>Alerts go to a named owner, once, with the hostname and the expiry date. Fourteen days is enough to fix DNS; three days is the last call. <a href="/blog/production-issues-monitoring-should-detect">One of the ten issues monitoring should detect without a human</a>.</p>
+
+
+    <h2 id="inventory">The inventory problem</h2>
+
+    <p>The hard part is not checking a certificate; it is knowing which certificates exist. Agencies and small teams accumulate hostnames — client sites, redirect domains, staging, APIs, the marketing site's old subdomain — and each one has a certificate on a schedule. Keep the list where the monitoring is: every asset registered, each with an owner and the renewal method. When a site is registered for uptime monitoring, its certificate is monitored with it, and the inventory maintains itself. <a href="/blog/website-monitoring-for-agencies-client-sites">Per-client monitoring for agencies</a> covers the structure.</p>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>Maximum validity</th><td>200 days (since 15 Mar 2026) → 100 days (Mar 2027) → 47 days (Mar 2029)</td></tr>
+      <tr><th>User impact of expiry</th><td>Full-page browser warning; site effectively down</td></tr>
+      <tr><th>Why renewal fails</th><td>DNS change, dead ACME client, rate limits, rotated API keys, issued-but-not-deployed, no owner</td></tr>
+      <tr><th>Check</th><td>Daily, outside-in, on the served certificate, every hostname</td></tr>
+      <tr><th>Alert thresholds</th><td>14, 7 and 3 days remaining; one alert to a named owner</td></tr>
+      <tr><th>Also check</th><td>Chain validity, hostname match, that renewal actually happened</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>How long are SSL certificates valid in 2026?</summary><p>Public TLS certificates issued from 15 March 2026 are limited to 200 days. Under the CA/Browser Forum schedule adopted in April 2025, the maximum drops to 100 days from March 2027 and to 47 days from March 2029. Certificates issued before March 2026 keep their original validity of up to 398 days.</p></details>
+      <details><summary>Why do certificate lifetimes keep getting shorter?</summary><p>Because revocation does not work reliably at internet scale, so a compromised or mis-issued certificate stays trusted until it expires. Shorter lifetimes limit that window and force renewal to be automated rather than manual. The operational consequence is that renewal becomes continuous and needs monitoring.</p></details>
+      <details><summary>What happens when an SSL certificate expires?</summary><p>Browsers show a full-page warning that the connection is not private and most visitors leave; API clients fail their TLS handshake and see connection errors. The site is effectively down. Uptime checks that do not validate the certificate chain may continue to report the site as up.</p></details>
+      <details><summary>Why did my automatic SSL renewal fail?</summary><p>The common causes are a DNS change that broke validation, an ACME client still running on a server the site no longer uses, a hit rate limit from a looping script, a rotated API key for DNS-01 validation, or a certificate that was issued but never deployed to the CDN or load balancer. The renewal log records the failure; nobody reads renewal logs, which is why external expiry monitoring exists.</p></details>
+      <details><summary>How far in advance should I be alerted about certificate expiry?</summary><p>At 14 days, 7 days and 3 days remaining, to a named owner. Fourteen days is enough to fix a DNS or configuration problem; three days is the final call. With 47-day certificates, also alert when a renewal that should have happened at around day 17 did not.</p></details>
+      <details><summary>How do I monitor SSL expiry for many sites?</summary><p>Register every hostname you own or manage — including client sites, staging and API subdomains — in one place with an owner, and check the served certificate daily from the outside. The inventory is the hard part; tying the certificate check to the same registration used for uptime monitoring keeps the list maintained.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Every website, web app or API registered in Merik's Digital Operations module gets a daily SSL certificate expiry check alongside its availability and response-time checks, from the outside, on the certificate actually being served. Days remaining are visible per asset; an approaching expiry raises a warning to the asset's owner, once, by email or Slack. Because assets are registered per client, the inventory problem solves itself — the client site you registered for uptime is the client site whose certificate is being watched.</p>
+    <p>Certificate status is a standing section of the monthly per-client SLA report, so a renewal that went smoothly is visible to the client as a delivered service rather than an absence of complaints. See the <a href="/modules">Digital Operations module</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Monitoring" href="/blog/website-monitoring-for-agencies-client-sites">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Website monitoring for agencies: every client site, no ops person" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Website monitoring for agencies: every client site, no ops person</h3>
+        <p>Per-client structure, what to check, who gets the alert, and pricing the retainer around it.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/production-issues-monitoring-should-detect">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="10 production issues your monitoring should detect automatically" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>10 production issues your monitoring should detect automatically</h3>
+        <p>If a human has to notice any of these ten, the monitoring has a gap.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/application-up-but-users-see-errors">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="Your application is up. So why are users still having problems?" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>Your application is up. So why are users still having problems?</h3>
+        <p>Uptime 100%, users unhappy — both true. Closing the gap between server health and experience.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></div>
+        <p class="desc">Merik is the all-in-one platform for employee management, attendance, leave, payroll, daily task tracking — and monitoring the websites and APIs you run.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a><a href="/modules">Digital Operations</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a><a href="/blog/proactive-application-monitoring">Proactive monitoring</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

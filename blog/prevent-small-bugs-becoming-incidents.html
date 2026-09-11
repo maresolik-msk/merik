@@ -41,7 +41,7 @@
 {
   "@context":"https://schema.org",
   "@graph":[
-    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/prevent-small-bugs-becoming-incidents#post","headline":"How Proactive Monitoring Stops Small Bugs Becoming Major Incidents","description":"Incidents are rarely born big — they escalate: small error, repeated error, degradation, outage, customer impact. How early detection interrupts the chain at its cheapest link.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/prevent-small-bugs-becoming-incidents","image":"https://www.merik.in/assets/images/blog/incidents.svg","articleSection":"Incidents","keywords":"proactive incident detection, prevent production incidents, incident prevention, application bugs, error escalation, incident escalation chain, monitoring, early detection","wordCount":725,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/prevent-small-bugs-becoming-incidents#post","headline":"How Proactive Monitoring Stops Small Bugs Becoming Major Incidents","description":"Incidents are rarely born big — they escalate: small error, repeated error, degradation, outage, customer impact. How early detection interrupts the chain at its cheapest link.","datePublished":"2026-08-18","dateModified":"2026-08-18","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/prevent-small-bugs-becoming-incidents","image":"https://www.merik.in/assets/images/blog/incidents.svg","articleSection":"Incidents","keywords":"proactive incident detection, prevent production incidents, incident prevention, application bugs, error escalation, incident escalation chain, monitoring, early detection","wordCount":743,"timeRequired":"PT6M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
     {"@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
       {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
@@ -156,6 +156,7 @@
 
     <p>Tooling makes the chain visible; a small practice makes the visibility compound. After every incident, ask the chain question: <b>which link did we catch this at, and what signal would have caught it one link earlier?</b> The answer is almost always specific — a fingerprint that existed on day one, an endpoint that deserved its own check, a trend that deserved a warning — and it becomes next sprint's monitoring change.</p>
     <p>Teams that run this loop for a few quarters watch their incident distribution migrate leftward: fewer link-four surprises, more link-two investigations, and a growing file of would-have-been incidents that are now just tickets titled "investigated the warning, fixed the pool sizing". The major incident stops being a periodic certainty and becomes what it always technically was: <a href="/blog/proactive-application-reliability">a chain of small, catchable things</a> — caught.</p>
+    <p>Most chains start with a change — <a href="/blog/did-the-deploy-break-production">correlating deploys with incidents</a> is how to see the first link.</p>
 
 
     <h2 id="facts">Quick reference</h2>
@@ -206,11 +207,11 @@
         <h3>How to reduce MTTD (mean time to detect) application issues</h3>
         <p>Most incident time is spent not knowing. Six changes that cut detection from hours to minutes.</p></div>
       </a>
-      <a class="blog-card" data-cat="Reliability" href="/blog/proactive-application-reliability">
-        <img class="thumb" src="/assets/images/blog/api.svg" alt="The complete guide to proactive application reliability" width="400" height="240" loading="lazy">
-        <div class="bc-body"><span class="tag2">Reliability</span>
-        <h3>The complete guide to proactive application reliability</h3>
-        <p>Observe, baseline, warn, respond, learn — the full loop that prevents incidents instead of narrating them.</p></div>
+      <a class="blog-card" data-cat="Incidents" href="/blog/did-the-deploy-break-production">
+        <img class="thumb" src="/assets/images/blog/incidents.svg" alt="Did the deploy break production? Correlating deployments with incidents" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Incidents</span>
+        <h3>Did the deploy break production? Correlating deployments with incidents</h3>
+        <p>Deploys on the timeline, reading correlation honestly, and the rollback decision.</p></div>
       </a>
     </div>
   </div>

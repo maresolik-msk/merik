@@ -12,7 +12,7 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Modules](https://www.merik.in/modules): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices, assets & software, and Digital Operations (uptime, early warnings, incidents, SLA reports, status pages).
 - [Pricing](https://www.merik.in/pricing): Free workspace with unlimited employee self sign-up; guided setup available on request.
 - [ROI calculator](https://www.merik.in/roi): Interactive estimate of what manual attendance, leave and payroll admin costs per year.
-- [Blog](https://www.merik.in/blog/): 60 practical guides — attendance, payroll, leave, tasks, clients, assets and HR, plus application monitoring, API reliability, frontend error detection, observability and proactive incident prevention.
+- [Blog](https://www.merik.in/blog/): 80 practical guides — attendance, payroll, leave, tasks, clients, assets and HR, plus application monitoring, API reliability, frontend error detection, observability and proactive incident prevention.
 
 ## Key facts
 
@@ -38,6 +38,10 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Geolocation attendance for field teams](https://www.merik.in/blog/geolocation-attendance-field-teams): Location-verified check-in, accuracy limits, privacy boundaries.
 - [Attendance policy template](https://www.merik.in/blog/attendance-policy-template-small-business): Seven clauses covering hours, grace periods, half-days, corrections.
 - [Attendance regularisation](https://www.merik.in/blog/attendance-regularisation-corrections): Correcting a wrong day via approved request, not silent edit.
+- [Why your Excel attendance sheet breaks at 15 employees](https://www.merik.in/blog/excel-attendance-sheet-problems): Seven failure modes of the spreadsheet and the headcount where each bites.
+- [WhatsApp attendance groups: why they fail and what replaces them](https://www.merik.in/blog/whatsapp-attendance-group-problems): Why a message is not a record, and the one-tap replacement.
+- [Hybrid work attendance: tracking office days, WFH and remote fairly](https://www.merik.in/blog/hybrid-work-attendance-tracking): Four statuses, office-day rules, location at the punch only.
+- [Free attendance app for a small business: what "free" should include](https://www.merik.in/blog/free-attendance-app-small-business-india): What a genuinely free tier must include; eight caps to check.
 
 ## Guides — Payroll
 
@@ -49,6 +53,11 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Payslip format](https://www.merik.in/blog/payslip-format-what-to-include): The three blocks every payslip needs.
 - [Loss of pay calculation](https://www.merik.in/blog/loss-of-pay-calculation-explained): Calendar vs fixed-30 vs working-day divisors, with worked examples.
 - [Salary hike cycle](https://www.merik.in/blog/salary-hike-revision-cycle): Budgets, effective dates, arrears, CTC history.
+- [India's new labour codes: what changes for small business payroll](https://www.merik.in/blog/new-labour-codes-india-small-business-payroll): 50% wages rule, wages by the 7th, fixed-term gratuity, 180-day leave; five-step checklist.
+- [HR & payroll compliance calendar for Indian small businesses](https://www.merik.in/blog/hr-compliance-calendar-india-small-business): Monthly, quarterly and annual statutory dates with applicability thresholds.
+- [Overtime calculation in India: rules, formula and worked examples](https://www.merik.in/blog/overtime-calculation-india-small-business): Twice the ordinary rate on wages ÷ 208; worked examples; comp-off rules.
+- [How to generate salary slips for your team without a template](https://www.merik.in/blog/how-to-generate-salary-slips-small-business): Days → structure → compute → review → render → distribute → archive.
+- [Payroll software for a small Indian business: a 10-point checklist](https://www.merik.in/blog/payroll-software-small-business-india-how-to-choose): Ten checks, five red flags, and a two-week trial design.
 
 ## Guides — Leave
 
@@ -73,6 +82,7 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Quote-to-invoice workflow](https://www.merik.in/blog/quote-to-invoice-workflow): One record in two states.
 - [Project profitability from task hours](https://www.merik.in/blog/project-profitability-from-task-hours): Loaded hourly cost and worked margin examples.
 - [Pricing retainers from time data](https://www.merik.in/blog/pricing-retainers-from-time-data): Sizing, models, overage, renewal.
+- [Catching scope creep early in the task log](https://www.merik.in/blog/scope-creep-agency-task-logs): Logged vs estimated hours weekly; change requests while the ask is fresh.
 
 ## Guides — Assets & software
 
@@ -88,8 +98,41 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Choosing HR software: buyer's checklist](https://www.merik.in/blog/choosing-hr-software-small-business-checklist): What to evaluate.
 - [Monthly performance review process](https://www.merik.in/blog/monthly-performance-review-process): Four questions, twenty minutes, grounded in logged work.
 - [Workforce data security checklist](https://www.merik.in/blog/workforce-data-security-checklist): Eight questions to ask any HR vendor.
+- [Gratuity calculation in India: formula, eligibility and worked examples](https://www.merik.in/blog/gratuity-calculation-india-explained): 15/26 formula, five-year rule and edges, rounding, ₹20 lakh limit, fixed-term rule.
+- [HRMS vs payroll software vs attendance app: which do you need?](https://www.merik.in/blog/hrms-vs-payroll-software-vs-attendance-app): What each category does, the integration tax, decision guide by size.
 
 ## Guides — AI & migration
 
 - [AI in HR software](https://www.merik.in/blog/ai-in-hr-software-what-actually-helps): Where it helps, where statistics beat it, where it must not go.
 - [Spreadsheet to workforce software migration](https://www.merik.in/blog/spreadsheet-to-workforce-software-migration): A 30-day week-by-week plan.
+
+## Guides — Application monitoring & reliability (Digital Operations)
+
+- [What is proactive application monitoring?](https://www.merik.in/blog/proactive-application-monitoring): Baselines, anomalies and early warnings, explained.
+- [Application health monitoring: the complete guide](https://www.merik.in/blog/application-health-monitoring): Every layer of health, rolled into one honest score.
+- [What should you monitor in a SaaS application?](https://www.merik.in/blog/saas-monitoring-checklist): Uptime, APIs, frontend errors, certificates, dependencies, deploys.
+- [Application monitoring for startups: what to monitor first](https://www.merik.in/blog/application-monitoring-for-startups): What to monitor first, what can wait.
+- [Frontend errors: why users see problems before your team does](https://www.merik.in/blog/frontend-error-monitoring): Failures uptime checks cannot see.
+- [How to monitor JavaScript console errors in production](https://www.merik.in/blog/javascript-console-error-monitoring): Capture, group and alert on browser errors.
+- [Backend errors that break your product without crashing it](https://www.merik.in/blog/backend-error-monitoring): Errors that break the product without crashing it.
+- [The hidden cost of silent application failures](https://www.merik.in/blog/silent-application-failures): What silence costs and how to end it.
+- [How to detect API failures before your customers do](https://www.merik.in/blog/api-failure-detection): Latency drift, timeouts, error trickles.
+- [10 production issues your monitoring should detect automatically](https://www.merik.in/blog/production-issues-monitoring-should-detect): Ten issues monitoring should catch without a human.
+- [Your application is up. So why are users still having problems?](https://www.merik.in/blog/application-up-but-users-see-errors): Closing the gap between server health and experience.
+- [The complete guide to proactive application reliability](https://www.merik.in/blog/proactive-application-reliability): Observe, baseline, warn, respond, learn.
+- [What is observability, and how is it different from monitoring?](https://www.merik.in/blog/observability-vs-monitoring): Monitoring says what; observability says why.
+- [Why logs alone are not enough for application monitoring](https://www.merik.in/blog/logs-vs-monitoring): Logs are records, not lookouts.
+- [How AI helps detect application problems before they become incidents](https://www.merik.in/blog/ai-application-monitoring): Where AI helps monitoring, honestly mapped.
+- [Reactive vs proactive monitoring: what's the difference?](https://www.merik.in/blog/reactive-vs-proactive-monitoring): It broke vs it is breaking.
+- [Why waiting for users to report bugs is too late](https://www.merik.in/blog/detect-bugs-before-users-report-them): The first report ends a long silence.
+- [How to detect broken user flows before customers complain](https://www.merik.in/blog/broken-user-flows): A flow is only as healthy as its weakest step.
+- [How to reduce MTTD (mean time to detect) application issues](https://www.merik.in/blog/reduce-mttd): Six changes that cut detection from hours to minutes.
+- [How proactive monitoring stops small bugs becoming major incidents](https://www.merik.in/blog/prevent-small-bugs-becoming-incidents): Cutting the chain at its cheapest link.
+- [Website monitoring for agencies: every client site, no ops person](https://www.merik.in/blog/website-monitoring-for-agencies-client-sites): Per-client structure, six checks, one owner alerted once, SLA reports and status pages in the retainer.
+- [The monthly SLA report: what to include and how to compute it](https://www.merik.in/blog/sla-reports-for-clients-agency): Tiers as minutes, seven sections, computing availability and MTTD/MTTR, presenting a quiet month.
+- [SSL certificate expiry monitoring in the age of 47-day certificates](https://www.merik.in/blog/ssl-certificate-expiry-monitoring): 200-day certificates since March 2026, 47-day by 2029; why renewal fails silently; alert at 14/7/3 days.
+- [Do you need a public status page? A guide for small teams](https://www.merik.in/blog/public-status-page-small-business): When a status page earns its place, private per-client token pages, honesty rules, update template.
+- [Is it us or them? Handling third-party outages in a small team](https://www.merik.in/blog/third-party-dependency-outages): Is it us or them — the first ten minutes, what not to do, honest attribution, blast-radius reduction.
+- [Alert fatigue: why you ignore your own monitoring](https://www.merik.in/blog/alert-fatigue-small-teams): Five causes, six rules, alerts-per-week and action rate.
+- [Did the deploy break production? Correlating deployments with incidents](https://www.merik.in/blog/did-the-deploy-break-production): Deploys on the incident timeline from webhooks; reading correlation honestly; rollback vs investigate.
+- [Error budgets and SLOs for small teams: a practical introduction](https://www.merik.in/blog/error-budgets-slo-small-teams): SLO vs SLA, minutes arithmetic, health score as budget remaining, ship-or-stabilise rule.

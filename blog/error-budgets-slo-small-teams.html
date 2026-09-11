@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Error Budgets and SLOs for Small Teams: A Practical Introduction</title>
+<meta name="description" content="SLOs and error budgets without the Google-scale baggage — what an SLO is versus an SLA, the minutes arithmetic, how a health score can simply be budget remaining, what to do when the budget burns, and how a three-person team uses it to decide between shipping and stabilising.">
+<meta name="keywords" content="error budget explained, SLO for small teams, SLO vs SLA, error budget calculation, service level objective small business, error budget policy, health score error budget, reliability targets startup, SRE for small teams">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/blog/error-budgets-slo-small-teams">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Error budgets and SLOs for small teams">
+<meta property="og:description" content="SLO vs SLA, the minutes arithmetic, a health score as budget remaining, and the ship-or-stabilise decision.">
+<meta property="og:url" content="https://www.merik.in/blog/error-budgets-slo-small-teams">
+<meta property="og:image" content="https://www.merik.in/assets/images/blog/observability.svg">
+<meta property="og:locale" content="en_IN">
+<meta property="article:published_time" content="2026-09-11">
+<meta property="article:modified_time" content="2026-09-11">
+<meta property="article:section" content="Observability">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Error budgets and SLOs for small teams">
+<meta name="twitter:description" content="SLO vs SLA, the minutes arithmetic, a health score as budget remaining, and the ship-or-stabilise decision.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"BlogPosting","@id":"https://www.merik.in/blog/error-budgets-slo-small-teams#post","headline":"Error Budgets and SLOs for Small Teams: A Practical Introduction","description":"SLOs and error budgets without the Google-scale baggage — what an SLO is versus an SLA, the minutes arithmetic, how a health score can simply be budget remaining, what to do when the budget burns, and how a three-person team uses it to decide between shipping and stabilising.","datePublished":"2026-09-11","dateModified":"2026-09-11","author":{"@type":"Organization","name":"Merik","@id":"https://www.merik.in/#org"},"publisher":{"@id":"https://www.merik.in/#org"},"mainEntityOfPage":"https://www.merik.in/blog/error-budgets-slo-small-teams","image":"https://www.merik.in/assets/images/blog/observability.svg","articleSection":"Observability","keywords":"error budget explained, SLO for small teams, SLO vs SLA, error budget calculation, service level objective small business, error budget policy, health score error budget, reliability targets startup, SRE for small teams","wordCount":526,"timeRequired":"PT5M","isPartOf":{"@id":"https://www.merik.in/blog/#blog"},"inLanguage":"en"},
+    {"@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"https://www.merik.in/"},
+      {"@type":"ListItem","position":2,"name":"Blog","item":"https://www.merik.in/blog/"},
+      {"@type":"ListItem","position":3,"name":"Error budgets & SLOs","item":"https://www.merik.in/blog/error-budgets-slo-small-teams"}]},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"What is an error budget?","acceptedAnswer":{"@type":"Answer","text":"An error budget is the amount of failure a service level objective permits over a window. If the SLO is 99.9% availability over 30 days, the error budget is 0.1% of that window — about 43 minutes of downtime. Confirmed failures spend the budget; while budget remains the team ships normally, and when it is exhausted feature work pauses in favour of reliability."}},
+      {"@type":"Question","name":"What is the difference between an SLO and an SLA?","acceptedAnswer":{"@type":"Answer","text":"An SLA is the external promise made to a customer, usually in a contract with credits or penalties. An SLO is the internal target the team actually runs to, set stricter than the SLA so the SLA is never at risk. The SLI is the underlying measurement — for example the fraction of checks that succeeded — that both are targets for."}},
+      {"@type":"Question","name":"How do I calculate an error budget?","acceptedAnswer":{"@type":"Answer","text":"Subtract the SLO from 100% and multiply by the window. For 99.9% over a 30-day month of 43,200 minutes: 0.1% × 43,200 = 43.2 minutes. For 99.5%: 216 minutes, or 3 hours 36 minutes. For 99%: 432 minutes, or 7 hours 12 minutes. Latency SLOs use requests or checks instead of minutes."}},
+      {"@type":"Question","name":"Do small teams need SLOs?","acceptedAnswer":{"@type":"Answer","text":"A small team benefits more than a large one, because it has no reliability department to arbitrate the ship-or-stabilise argument. One declared target per user-visible asset, an error budget derived from it, and a one-paragraph policy about what happens when the budget is spent replaces that argument with a number."}},
+      {"@type":"Question","name":"What should a health score be based on?","acceptedAnswer":{"@type":"Answer","text":"Error budget remaining against a declared target is the most honest basis: it is a statement about a promise and how much room is left, comparable across assets on different tiers, and explainable to a client. Blended scores that weight uptime, latency and errors by hidden coefficients answer the question \"what does 87 mean?\" with silence."}},
+      {"@type":"Question","name":"What availability target should a small SaaS set?","acceptedAnswer":{"@type":"Answer","text":"One the architecture can actually deliver. A single-region deployment on ordinary hosting with no on-call rotation can honestly target 99.5%; 99.9% needs redundancy and a response process; 99.99% is not a small-team target. Set the SLO slightly tighter than whatever SLA you offer customers, and tighten it as the system earns it."}}]}
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/" aria-current="page">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/app/">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> <a href="/blog/">Blog</a><span>›</span> Error budgets &amp; SLOs</nav>
+    <div class="eyebrow">Observability</div>
+    <h1>Error budgets and SLOs for small teams: <span class="accent">a practical introduction</span></h1>
+    <p class="lead">SLOs came from teams with thousands of services and a reliability department. The idea is simpler than its reputation, and a three-person team can use it to settle its most common argument: ship, or stabilise?</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+    <img class="article-hero-img" src="/assets/images/blog/observability.svg" alt="An error budget draining over a month against a declared availability target" width="640" height="384">
+    <p class="post-meta">Published 11 September 2026 · Updated 11 September 2026 · Merik team · 5 min read</p>
+    <p class="lede"><b>A service level objective is a target you set for your own service — say, 99.9% of checks succeed over a rolling 30 days — and the error budget is the failure that target allows: at 99.9%, about 43 minutes of downtime a month.</b> An SLA is the version of that promise you make to a customer, with consequences; the SLO is the stricter internal target you run against so the SLA is never at risk. The budget turns reliability from a feeling into a number with a decision attached: while budget remains, ship; when it is spent, stabilise. For a small team, the whole practice can be one declared target per asset and a health score that shows budget remaining.</p>
+
+    <div class="keytakeaways">
+      <b>Key takeaways</b>
+      <ul>
+      <li><b>SLO</b> is the target you hold yourself to; <b>SLA</b> is the promise you make to customers. Set the SLO tighter than the SLA.</li>
+      <li><b>Error budget = 100% − SLO</b>, as minutes. 99.9% → 43 min/month; 99.5% → 3 h 36 min; 99% → 7 h 12 min.</li>
+      <li>The budget's purpose is a <b>decision rule</b>: budget left, ship features; budget gone, stop and fix. It ends the argument.</li>
+      <li>A <b>health score can simply be budget remaining</b>. That is more honest than a blended "85/100" nobody can explain.</li>
+      <li>One SLO per user-visible asset is enough. <b>Do not build a taxonomy</b>; build one number per thing customers use.</li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <ol>
+      <li><a href="#slo-vs-sla">SLO versus SLA, in one table</a></li>
+      <li><a href="#arithmetic">The arithmetic</a></li>
+      <li><a href="#decision-rule">The decision rule: ship or stabilise</a></li>
+      <li><a href="#health-score">A health score that means something</a></li>
+      <li><a href="#pitfalls">Pitfalls for small teams</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="slo-vs-sla">SLO versus SLA, in one table</h2>
+
+    <table class="facts">
+      <tr><th>SLA</th><td>External promise to a customer, in a contract, with credits or penalties. Example: 99.5% monthly availability. <a href="/blog/sla-reports-for-clients-agency">Reporting against it</a>.</td></tr>
+      <tr><th>SLO</th><td>Internal target you actually run to, stricter than the SLA so the SLA is safe. Example: 99.8%.</td></tr>
+      <tr><th>SLI</th><td>The measurement — the fraction of checks that succeeded, the fraction of requests under 500 ms. What the SLO is a target for.</td></tr>
+      <tr><th>Error budget</th><td>What the SLO allows to fail: 100% − SLO, expressed as minutes or failed requests over the window.</td></tr>
+    </table>
+
+
+    <h2 id="arithmetic">The arithmetic</h2>
+
+    <p>Over a 30-day window (43,200 minutes):</p>
+    <table class="facts">
+      <tr><th>99%</th><td>432 minutes of failure allowed — 7 h 12 min</td></tr>
+      <tr><th>99.5%</th><td>216 minutes — 3 h 36 min</td></tr>
+      <tr><th>99.9%</th><td>43 minutes</td></tr>
+      <tr><th>99.95%</th><td>21.6 minutes</td></tr>
+      <tr><th>99.99%</th><td>4.3 minutes — not a target for a small team on ordinary hosting</td></tr>
+    </table>
+    <p>Budget burns as failures are confirmed. A 25-minute incident on a 99.9% asset spends 58% of the month's budget. Two such incidents and the budget is gone with two weeks left — which is precisely the information the team needs. Latency SLOs work the same way with requests instead of minutes: "99% of checks under 800 ms" gives a budget of 1% slow checks. <a href="/blog/application-health-monitoring">How the layers roll up</a>.</p>
+
+
+    <h2 id="decision-rule">The decision rule: ship or stabilise</h2>
+
+    <p>This is the part that earns its keep. Write a one-paragraph error budget policy:</p>
+    <blockquote>While an asset has error budget remaining in the current window, feature work proceeds normally. When the budget is exhausted, feature deploys to that asset stop until the window recovers or the cause is fixed; engineering time goes to reliability. Budget spent on a dependency outage counts unless the SLA excludes it.</blockquote>
+    <p>The value is not the rule itself but that it was agreed in advance. "Should we ship this or fix the flakiness first?" is no longer a negotiation between the founder and the engineer; it is a look at a number. <a href="/blog/did-the-deploy-break-production">Deploy correlation</a> tells you which deploys spent budget; <a href="/blog/prevent-small-bugs-becoming-incidents">catching small bugs early</a> is how you stop spending it.</p>
+
+
+    <h2 id="health-score">A health score that means something</h2>
+
+    <p>Many dashboards show a health score — 87/100 — that blends uptime, latency, errors and "trend" with weights nobody remembers. The question "what does 87 mean?" has no answer. Budget remaining does: "this asset has used 31% of its monthly error budget" is a statement about the promise you made and how much room is left. It rises as the window rolls forward and drops when checks fail; it is comparable across assets on different tiers; and it tells a client exactly where the month stands. <a href="/blog/observability-vs-monitoring">Monitoring says something is wrong; the budget says how much it cost</a>.</p>
+
+
+    <h2 id="pitfalls">Pitfalls for small teams</h2>
+
+    <ul>
+      <li><b>Too many SLOs.</b> One per user-visible asset. Not one per endpoint, not one per microservice.</li>
+      <li><b>Targets copied from big companies.</b> 99.99% on a single-region deploy with no on-call is a promise to fail. Pick what the architecture can deliver; tighten later.</li>
+      <li><b>Measuring from the inside.</b> A server that reports itself healthy is not a user's experience. Measure from outside, as a user would arrive. <a href="/blog/application-up-but-users-see-errors">The gap</a>.</li>
+      <li><b>Ignoring the budget when it is spent.</b> A policy that is overridden the first time it bites was never a policy.</li>
+      <li><b>No window.</b> Rolling 30 days. Calendar months work for SLA reporting; rolling windows work for decisions.</li>
+    </ul>
+
+
+    <h2 id="facts">Quick reference</h2>
+    <table class="facts">
+      <tr><th>SLO</th><td>Internal target you run to; stricter than the SLA</td></tr>
+      <tr><th>SLA</th><td>External promise with consequences</td></tr>
+      <tr><th>Error budget</th><td>100% − SLO, as minutes or failed requests over the window</td></tr>
+      <tr><th>99.9% / 30 days</th><td>43 minutes of failure allowed</td></tr>
+      <tr><th>Decision rule</th><td>Budget remaining → ship; budget spent → stabilise</td></tr>
+      <tr><th>Health score</th><td>Budget remaining, per asset, against its declared tier</td></tr>
+      <tr><th>How many</th><td>One SLO per user-visible asset</td></tr>
+    </table>
+
+    <h2 id="faq">Frequently asked questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>What is an error budget?</summary><p>An error budget is the amount of failure a service level objective permits over a window. If the SLO is 99.9% availability over 30 days, the error budget is 0.1% of that window — about 43 minutes of downtime. Confirmed failures spend the budget; while budget remains the team ships normally, and when it is exhausted feature work pauses in favour of reliability.</p></details>
+      <details><summary>What is the difference between an SLO and an SLA?</summary><p>An SLA is the external promise made to a customer, usually in a contract with credits or penalties. An SLO is the internal target the team actually runs to, set stricter than the SLA so the SLA is never at risk. The SLI is the underlying measurement — for example the fraction of checks that succeeded — that both are targets for.</p></details>
+      <details><summary>How do I calculate an error budget?</summary><p>Subtract the SLO from 100% and multiply by the window. For 99.9% over a 30-day month of 43,200 minutes: 0.1% × 43,200 = 43.2 minutes. For 99.5%: 216 minutes, or 3 hours 36 minutes. For 99%: 432 minutes, or 7 hours 12 minutes. Latency SLOs use requests or checks instead of minutes.</p></details>
+      <details><summary>Do small teams need SLOs?</summary><p>A small team benefits more than a large one, because it has no reliability department to arbitrate the ship-or-stabilise argument. One declared target per user-visible asset, an error budget derived from it, and a one-paragraph policy about what happens when the budget is spent replaces that argument with a number.</p></details>
+      <details><summary>What should a health score be based on?</summary><p>Error budget remaining against a declared target is the most honest basis: it is a statement about a promise and how much room is left, comparable across assets on different tiers, and explainable to a client. Blended scores that weight uptime, latency and errors by hidden coefficients answer the question "what does 87 mean?" with silence.</p></details>
+      <details><summary>What availability target should a small SaaS set?</summary><p>One the architecture can actually deliver. A single-region deployment on ordinary hosting with no on-call rotation can honestly target 99.5%; 99.9% needs redundancy and a response process; 99.99% is not a small-team target. Set the SLO slightly tighter than whatever SLA you offer customers, and tighten it as the system earns it.</p></details>
+    </div>
+
+    <h2 id="merik">How Merik handles it</h2>
+
+    <p>Merik's health score is exactly this: each asset carries a declared SLA tier, and its health is the error budget remaining against that tier over the window — measured from the outside by the same checks a user's request would take, not from the server's opinion of itself. Confirmed failures spend budget; recovered warnings do not. The score is comparable across a client's assets on different tiers and is the number the monthly SLA report is built on.</p>
+    <p>Deploys from GitHub and Vercel webhooks and provider incidents from vendor status feeds sit on the same timeline, so you can see which deploy or which dependency spent the budget — and apply an error budget policy with evidence rather than argument. See the <a href="/modules">Digital Operations module</a>.</p>
+
+
+    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
+    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+  </div>
+</section>
+
+<section class="related soft">
+  <div class="wrap">
+    <h2>Related articles</h2>
+    <div class="grid">
+      <a class="blog-card" data-cat="Monitoring" href="/blog/sla-reports-for-clients-agency">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="The monthly SLA report: what to include and how to compute it" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>The monthly SLA report: what to include and how to compute it</h3>
+        <p>Tiers and their minutes, the seven sections, and how to present a quiet month.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Monitoring" href="/blog/application-health-monitoring">
+        <img class="thumb" src="/assets/images/blog/monitoring.svg" alt="Application health monitoring: the complete guide" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Monitoring</span>
+        <h3>Application health monitoring: the complete guide</h3>
+        <p>Every layer of application health, and how to roll them into one honest score.</p></div>
+      </a>
+      <a class="blog-card" data-cat="Reliability" href="/blog/proactive-application-reliability">
+        <img class="thumb" src="/assets/images/blog/api.svg" alt="The complete guide to proactive application reliability" width="400" height="240" loading="lazy">
+        <div class="bc-body"><span class="tag2">Reliability</span>
+        <h3>The complete guide to proactive application reliability</h3>
+        <p>Observe, baseline, warn, respond, learn — the full loop that prevents incidents instead of narrating them.</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></div>
+        <p class="desc">Merik is the all-in-one platform for employee management, attendance, leave, payroll, daily task tracking — and monitoring the websites and APIs you run.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a><a href="/modules">Digital Operations</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a><a href="/blog/proactive-application-monitoring">Proactive monitoring</a></div>
+      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+  var reveals=document.querySelectorAll('.reveal');
+  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -60px 0px',threshold:.08});
+    reveals.forEach(function(el){io.observe(el);});
+    setTimeout(revealAll,3000);
+  }else{revealAll();}
+</script>
+<script>
+  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+</script>
+</body>
+</html>

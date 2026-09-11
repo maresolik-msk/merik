@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Generate the Merik blog: article pages, the blog index, and sitemap.xml.
 
-Forty posts share one template, so schema, nav, footer, related links and the
+Sixty posts share one template, so schema, nav, footer, related links and the
 sitemap can never drift apart. Article bodies for the posts this script owns
-live in blog_posts.py; the older hand-written posts are listed in CARDS only,
+live in blog_posts.py, blog_posts_monitoring.py and blog_posts_growth.py; the older hand-written posts are listed in CARDS only,
 so the index and sitemap still cover them.
 
     python3 scripts/gen_blog.py
 
-ponytail: regenerates the whole blog every run — it's 40 files, a diff is the
+ponytail: regenerates the whole blog every run — it's 80 files, a diff is the
 check. Add incremental output only if that stops being instant.
 """
 import html
@@ -16,10 +16,11 @@ import pathlib
 import re
 
 from blog_posts import POSTS as WORKFORCE_POSTS
+from blog_posts_growth import POSTS as GROWTH_POSTS
 from blog_posts_monitoring import POSTS as MONITORING_POSTS
 from site_chrome import CHROME_JS, footer, header
 
-POSTS = WORKFORCE_POSTS + MONITORING_POSTS
+POSTS = WORKFORCE_POSTS + MONITORING_POSTS + GROWTH_POSTS
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BLOG = ROOT / "blog"
@@ -48,6 +49,18 @@ CARDS = [
     ("attendance-regularisation-corrections", "Attendance", "attendance",
      "Attendance regularisation: fixing a wrong day without breaking trust",
      "How to handle missed punches and corrections with an audit trail."),
+    ("excel-attendance-sheet-problems", "Attendance", "attendance",
+     "Why your Excel attendance sheet breaks at 15 employees",
+     "Seven failure modes, the headcount where each one bites, and what to use instead."),
+    ("whatsapp-attendance-group-problems", "Attendance", "attendance",
+     "WhatsApp attendance groups: why they fail and what replaces them",
+     "Message time is not arrival time, nothing is countable, nothing reaches payroll."),
+    ("hybrid-work-attendance-tracking", "Attendance", "attendance",
+     "Hybrid work attendance: tracking office days, WFH and remote fairly",
+     "Four statuses, anchor-day rules, WFH as a request, location at the punch only."),
+    ("free-attendance-app-small-business-india", "Attendance", "attendance",
+     "Free attendance app for a small business: what &quot;free&quot; should include",
+     "Eight things free tiers usually cap, the hidden costs, and what to check first."),
     # Payroll
     ("attendance-to-payroll-automation", "Payroll", "payroll",
      "From attendance to payroll: how to stop re-keying numbers every month",
@@ -73,6 +86,21 @@ CARDS = [
     ("salary-hike-revision-cycle", "Payroll", "payroll",
      "Running a salary hike cycle without guesswork",
      "How to structure revisions, effective dates and arrears cleanly."),
+    ("new-labour-codes-india-small-business-payroll", "Payroll", "compliance",
+     "India's new labour codes: what changes for small business payroll",
+     "The 50% wages rule, fixed-term gratuity, 180-day leave, wages by the 7th — decoded."),
+    ("hr-compliance-calendar-india-small-business", "Payroll", "compliance",
+     "HR &amp; payroll compliance calendar for Indian small businesses",
+     "Every monthly, quarterly and annual statutory date, with the thresholds that apply."),
+    ("overtime-calculation-india-small-business", "Payroll", "payroll",
+     "Overtime calculation in India: rules, formula and worked examples",
+     "Twice the ordinary rate on monthly wages ÷ 208 — and the records that make it defensible."),
+    ("how-to-generate-salary-slips-small-business", "Payroll", "payroll",
+     "How to generate salary slips for your team without a template",
+     "Why generators produce wrong slips, and a process that issues every slip by the 7th."),
+    ("payroll-software-small-business-india-how-to-choose", "Payroll", "payroll",
+     "Payroll software for a small Indian business: a 10-point checklist",
+     "What you need at 5–200 people, what you are sold instead, and the red flags."),
     # Leave
     ("leave-management-small-business", "Leave", "leave",
      "Paid vs unpaid leave: how to manage employee leave in a small business",
@@ -121,6 +149,9 @@ CARDS = [
     ("pricing-retainers-from-time-data", "Clients", "clients",
      "How to price a retainer using your own time data",
      "Stop guessing the monthly number — derive it from logged hours."),
+    ("scope-creep-agency-task-logs", "Clients", "clients",
+     "Catching scope creep early in the task log",
+     "Estimate vs logged hours per project, weekly, turned into a change request in time."),
     # Assets
     ("it-asset-management-small-business", "Assets", "assets",
      "IT asset management for small businesses: the register you actually need",
@@ -150,6 +181,12 @@ CARDS = [
     ("workforce-data-security-checklist", "HR", "security",
      "Workforce data security: what to check before you upload your team",
      "The questions to ask any HR tool holding your salaries and IDs."),
+    ("gratuity-calculation-india-explained", "HR", "hr",
+     "Gratuity calculation in India: formula, eligibility and worked examples",
+     "15 ÷ 26 × last wages × years — plus rounding, the tax limit and the fixed-term rule."),
+    ("hrms-vs-payroll-software-vs-attendance-app", "HR", "hr",
+     "HRMS vs payroll software vs attendance app: which do you need?",
+     "What each category does, the integration tax of buying three, and a guide by team size."),
     # AI & migration
     ("ai-in-hr-software-what-actually-helps", "AI", "ai",
      "AI in HR software: what actually helps, and what's theatre",
@@ -170,6 +207,12 @@ CARDS = [
     ("application-monitoring-for-startups", "Monitoring", "monitoring",
      "Application monitoring for startups: what to monitor first",
      "The monitoring that pays for itself this week, and the monitoring that can wait a year."),
+    ("website-monitoring-for-agencies-client-sites", "Monitoring", "monitoring",
+     "Website monitoring for agencies: every client site, no ops person",
+     "Per-client structure, what to check, who gets the alert, and pricing the retainer around it."),
+    ("sla-reports-for-clients-agency", "Monitoring", "monitoring",
+     "The monthly SLA report: what to include and how to compute it",
+     "Tiers and their minutes, the seven sections, and how to present a quiet month."),
     ("frontend-error-monitoring", "Errors", "errors",
      "Frontend errors: why users see problems before your team does",
      "The server said 200. The page broke anyway. Seeing the failures uptime checks can't."),
@@ -194,6 +237,12 @@ CARDS = [
     ("proactive-application-reliability", "Reliability", "api",
      "The complete guide to proactive application reliability",
      "Observe, baseline, warn, respond, learn — the full loop that prevents incidents instead of narrating them."),
+    ("ssl-certificate-expiry-monitoring", "Reliability", "api",
+     "SSL certificate expiry monitoring in the age of 47-day certificates",
+     "200-day certificates now, 47 by 2029. Renewal fails silently; monitoring catches it."),
+    ("public-status-page-small-business", "Reliability", "api",
+     "Do you need a public status page? A guide for small teams",
+     "When it earns its place, what to show, private per-client pages, and the honesty rules."),
     ("observability-vs-monitoring", "Observability", "observability",
      "What is observability, and how is it different from monitoring?",
      "Monitoring says something is wrong; observability says why. The two, untangled."),
@@ -206,6 +255,9 @@ CARDS = [
     ("reactive-vs-proactive-monitoring", "Observability", "observability",
      "Reactive vs proactive monitoring: what's the difference?",
      "One tells you it broke; the other tells you it's breaking. That word is worth hours."),
+    ("error-budgets-slo-small-teams", "Observability", "observability",
+     "Error budgets and SLOs for small teams: a practical introduction",
+     "SLO vs SLA, the minutes arithmetic, a health score as budget remaining, ship or stabilise."),
     ("detect-bugs-before-users-report-them", "Incidents", "incidents",
      "Why waiting for users to report bugs is too late",
      "The first report ends a long silence — days of failures and quiet exits. Detect first."),
@@ -218,6 +270,15 @@ CARDS = [
     ("prevent-small-bugs-becoming-incidents", "Incidents", "incidents",
      "How proactive monitoring stops small bugs becoming major incidents",
      "Small error → repeated error → degradation → outage. Cutting the chain at its cheapest link."),
+    ("third-party-dependency-outages", "Incidents", "incidents",
+     "Is it us or them? Handling third-party outages in a small team",
+     "The first ten minutes, what not to do, honest communication, and shrinking the blast radius."),
+    ("alert-fatigue-small-teams", "Incidents", "incidents",
+     "Alert fatigue: why you ignore your own monitoring",
+     "Five causes, six rules, and the two numbers that say whether your alerts are worth reading."),
+    ("did-the-deploy-break-production", "Incidents", "incidents",
+     "Did the deploy break production? Correlating deployments with incidents",
+     "Deploys on the timeline, reading correlation honestly, and the rollback decision."),
 ]
 
 CARD_BY_SLUG = {c[0]: c for c in CARDS}
@@ -240,9 +301,11 @@ HEAD_COMMON = """<script async src="https://www.googletagmanager.com/gtag/js?id=
 
 
 def j(s):
-    """Escape a string for embedding in JSON-LD."""
-    return (s.replace("\\", "\\\\").replace('"', '\\"')
-             .replace("\n", " ").replace("&amp;", "&").replace("&#8377;", "₹"))
+    """Escape a string for embedding in JSON-LD. HTML entities used in <title>
+    and content="" attributes are turned back into characters first, so the
+    structured data carries text, not markup."""
+    s = s.replace("&amp;", "&").replace("&#8377;", "₹").replace("&quot;", '"')
+    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")
 
 
 def strip_tags(s):

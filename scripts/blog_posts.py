@@ -95,6 +95,7 @@ POSTS = [
 ("payroll", "How location-verified attendance reaches payroll", """
     <p>This is the part that makes it worth doing. A location-verified day is still just a day: present, half-day, absent, on leave. Its status is what payroll consumes. The location is the evidence that supports the status if anyone questions it later.</p>
     <p>So the chain is: <b>check-in with location → status for the day → monthly payable days → salary calculation</b>. When those steps live in one system, nothing is re-typed and every payslip line can be traced back to a dated entry with a place name attached. When they live in three places, you get the familiar month-end reconciliation and the equally familiar errors — <a href="/blog/attendance-to-payroll-automation">the re-keying problem</a> in full.</p>
+    <p>For teams that split the week between office and home rather than site and site, <a href="/blog/hybrid-work-attendance-tracking">hybrid attendance tracking</a> uses the same punch-time location for a different question.</p>
 """),
 ],
 "facts": [
@@ -118,7 +119,7 @@ POSTS = [
     <p>In Merik, employees check in and out from their own dashboard. The location is captured at the punch, reverse-geocoded to a readable place name, and stored on the attendance record — no per-site hardware, no background tracking between punches. Admins see the whole company's day in one live view, with late marks and half-days applied by the rules you configure rather than by argument.</p>
     <p>Because attendance, leave and payroll share one dataset, a location-verified day flows straight into the monthly summary and then into the payroll run — so the day a technician logged from a client site is the same day their payslip is calculated from. Approved work-from-home and leave update the attendance record automatically, so nobody on approved leave is ever counted absent. See the <a href="/modules">attendance module</a>, the <a href="/features">full feature list</a>, or <a href="/how-it-works">how setup works</a> in three steps.</p>
 """,
-"related": ["biometric-vs-gps-vs-manual-attendance", "attendance-policy-template-small-business", "attendance-to-payroll-automation"],
+"related": ["biometric-vs-gps-vs-manual-attendance", "attendance-policy-template-small-business", "hybrid-work-attendance-tracking"],
 },
 
 {
@@ -208,7 +209,7 @@ POSTS = [
     <p>A policy is only as good as the system applying it. Merik holds the rules that this template describes — grace windows, late marks, half-day thresholds, holiday calendar — and applies them to every employee identically, so the register reflects the policy without anyone doing the arithmetic by hand.</p>
     <p>Employees mark their own attendance and raise leave or work-from-home requests from their dashboard; approvals update the attendance record directly, so approved leave never appears as absence. Where a day still needs changing, an admin edits it in the attendance grid — note that this replaces the previous value rather than keeping it alongside. At month-end, the payable days that payroll uses are the same days the register shows — see the <a href="/modules">attendance and leave modules</a>, the <a href="/features">full feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["calculating-late-marks-half-days-fairly", "attendance-regularisation-corrections", "work-from-home-policy-template"],
+"related": ["calculating-late-marks-half-days-fairly", "attendance-regularisation-corrections", "hybrid-work-attendance-tracking"],
 },
 
 {
@@ -302,7 +303,7 @@ POSTS = [
     <p>Where a day still needs changing, an admin edits it in the attendance grid. To be straight about the limits: Merik does not currently have the employee-raised, manager-approved correction request described above, and an admin edit replaces the previous value rather than keeping it alongside. If you need a correction trail for disputes, keep the requests in whatever system you already use for approvals until that lands.</p>
     <p>The monthly summary recalculates from the corrected register, and that summary is exactly what the payroll run consumes, so no one re-counts payable days by hand after a correction lands. See the <a href="/modules">attendance and leave modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["attendance-policy-template-small-business", "calculating-late-marks-half-days-fairly", "loss-of-pay-calculation-explained"],
+"related": ["attendance-policy-template-small-business", "calculating-late-marks-half-days-fairly", "excel-attendance-sheet-problems"],
 },
 
 # ------------------------------------------------------------------- PAYROLL
@@ -387,6 +388,7 @@ POSTS = [
       <li><b>Immutable once issued.</b> A correction should produce a revised slip that says it is revised, not a quiet replacement of the original.</li>
     </ul>
     <p>On statutory obligations: several Indian states, under their Shops and Establishments rules, require wage slips to be issued and wage registers to be maintained in prescribed forms and retained for a set period. Requirements vary by state and by the applicable act, so confirm what applies to you and take local professional advice — this is general guidance, not legal advice.</p>
+    <p>Once the format is settled, <a href="/blog/how-to-generate-salary-slips-small-business">the monthly process for generating the slips</a> is what keeps them correct.</p>
 """),
 ],
 "facts": [
@@ -410,7 +412,7 @@ POSTS = [
     <p>Merik generates payslips as part of the payroll run itself, not as a separate step — so the slip and the calculation cannot drift apart. The attendance basis is printed on the slip because it comes from the same dataset the salary was computed from: payable days, days actually paid, and loss-of-pay days, drawn straight from the month's attendance register.</p>
     <p>All salary maths runs server-side rather than in the browser, and slips can be emailed individually or in bulk. Employees download their own payslips from their dashboard whenever they need them — including years later for a loan or a rental — without raising a request with HR. See the <a href="/modules">payroll module</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["ctc-vs-in-hand-salary-payslip", "loss-of-pay-calculation-explained", "payroll-compliance-checklist-india-small-business"],
+"related": ["ctc-vs-in-hand-salary-payslip", "loss-of-pay-calculation-explained", "how-to-generate-salary-slips-small-business"],
 },
 
 {
@@ -486,6 +488,7 @@ POSTS = [
 ("prevent", "Most LOP disputes aren't arithmetic disputes", """
     <p>In practice, when an employee challenges an LOP deduction, the argument is rarely about the divisor. It is about whether the day should have been unpaid at all: leave that was approved verbally but never recorded, a work-from-home day marked absent, a correction request that was never processed.</p>
     <p>Which means the highest-leverage fix is upstream of payroll entirely — approvals that write directly to the attendance record, and a working <a href="/blog/attendance-regularisation-corrections">correction route</a> with a deadline. Get those right and the LOP calculation stops being contentious, because everyone already agrees which days were unpaid.</p>
+    <p>The same divisor question appears in reverse when hours exceed the day — see <a href="/blog/overtime-calculation-india-small-business">how overtime is calculated</a>.</p>
 """),
 ],
 "facts": [
@@ -509,7 +512,7 @@ POSTS = [
     <p>Merik computes payable days from the attendance register itself — present days, approved paid leave and work-from-home count as paid; absent days, unpaid leave and the unpaid part of a half-day reduce the month. The salary calculation then runs server-side in a secured function rather than in the browser, so the same rules apply to every employee, every month.</p>
     <p>Because leave and WFH approvals update the attendance record directly, the most common cause of a wrong LOP deduction — approved leave sitting in a chat thread and never reaching the register — largely disappears. Payable days, days paid and LOP days are printed on the payslip, so an employee can check the arithmetic themselves. See the <a href="/modules">payroll and attendance modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["payslip-format-what-to-include", "attendance-to-payroll-automation", "common-payroll-mistakes-small-businesses"],
+"related": ["payslip-format-what-to-include", "attendance-to-payroll-automation", "overtime-calculation-india-small-business"],
 },
 
 {
@@ -588,6 +591,7 @@ POSTS = [
 ("communicate", "Stage 6 — Communicate it properly", """
     <p>A revision letter should state, in this order: the new annual CTC, the effective date, the revised component structure, the expected monthly take-home (approximate is fine — say so), when the first revised payslip will arrive, and whether arrears are due and in which run.</p>
     <p>Two practical notes. First, deliver revisions to everyone in a tight window; staggered communication over two weeks turns into corridor comparison and speculation. Second, when someone receives no increase, say so directly with a reason. Silence is heard as an oversight, and the conversation you avoid in April becomes a resignation in July.</p>
+    <p>The stored CTC history is also what <a href="/blog/gratuity-calculation-india-explained">a gratuity calculation</a> depends on years later.</p>
 """),
 ],
 "facts": [
@@ -611,7 +615,7 @@ POSTS = [
     <p>Merik keeps salary as a history rather than a single editable field. Each revision is recorded with its own effective date, so the CTC that applied in May is still the CTC that May's payroll used — which is what makes arrears calculable and old payslips reconcilable. The effective CTC for any month is resolved from that history rather than from whatever value happens to be current.</p>
     <p>Because payroll reads the same records, a revision applied with a back-dated effective date is visible where you need it, and the monthly run continues to compute server-side from attendance and the salary in force. Monthly performance reviews live in the same workspace, so the evidence you allocate increments against is the record your managers already maintain. See <a href="/modules">salary and payroll modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["ctc-vs-in-hand-salary-payslip", "monthly-performance-review-process", "loss-of-pay-calculation-explained"],
+"related": ["ctc-vs-in-hand-salary-payslip", "monthly-performance-review-process", "gratuity-calculation-india-explained"],
 },
 
 # --------------------------------------------------------------------- LEAVE
@@ -688,6 +692,7 @@ POSTS = [
 ("legal", "Statutory floors override your policy", """
     <p>In India, leave entitlements, accrual, carry-forward and encashment on separation are governed largely by state Shops and Establishments Acts, with the Factories Act applying to manufacturing. The specifics differ by state — the number of earned leave days, the maximum accumulation, and the treatment at exit.</p>
     <p>Your policy may be more generous than the statutory floor, never less. If you operate across states, the safest approach is to meet the most demanding requirement everywhere rather than maintaining separate policies. Confirm the position for each state you operate in and take local professional advice — this article is general guidance, not legal advice. <a href="/blog/how-many-leaves-small-business-india">Benchmarks for setting the entitlement itself are here.</a></p>
+    <p>Note that <a href="/blog/new-labour-codes-india-small-business-payroll">the labour codes</a> changed both the wages definition encashment is computed on and the eligibility period for annual leave.</p>
 """),
 ],
 "facts": [
@@ -711,7 +716,7 @@ POSTS = [
     <p>Merik tracks leave requests and approvals against each employee, keeping paid and unpaid leave separate so the monthly payroll calculation stays correct and the balance an employee sees is the balance the business is carrying. Employees view their own leave history and status from their dashboard rather than emailing HR to ask — which is what stops balances becoming a year-end surprise for either side.</p>
     <p>Because approvals write straight to the attendance record, approved leave is never counted as absence at payroll time, and the holiday calendar feeds the same payable-days calculation. See the <a href="/modules">leave and payroll modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["how-many-leaves-small-business-india", "sick-leave-vs-casual-leave", "employee-exit-full-and-final-settlement"],
+"related": ["how-many-leaves-small-business-india", "sick-leave-vs-casual-leave", "new-labour-codes-india-small-business-payroll"],
 },
 
 {
@@ -786,6 +791,7 @@ POSTS = [
 ("changes", "Mid-year changes and unplanned closures", """
     <p>Calendars change — a state declares an unexpected holiday, weather closes an office, an election day is announced. Handle these as explicit calendar entries rather than as ad-hoc attendance edits for every employee. One entry marks the day non-working for everyone; forty manual edits create forty chances to miss someone, and <a href="/blog/attendance-regularisation-corrections">no audit trail explaining why</a>.</p>
     <p>Also decide, in advance, what an unplanned closure does to payable days for that month. Treating it as a paid holiday is the usual and simplest answer.</p>
+    <p>The holiday list is one line of <a href="/blog/hr-compliance-calendar-india-small-business">the wider compliance calendar</a> — the monthly and annual statutory dates belong on the same page.</p>
 """),
 ],
 "facts": [
@@ -809,7 +815,7 @@ POSTS = [
     <p>Merik holds the company holiday calendar as data, not as a document — the days you declare feed the attendance module directly, so nobody shows as absent on a day the office was closed, and they feed the same payable-days figure the monthly payroll run uses. One entry, applied everywhere, instead of a PDF plus forty manual corrections.</p>
     <p>One entry, applied everywhere, instead of a PDF plus forty manual corrections. Worth knowing how it reaches pay: the monthly payroll run prorates on calendar days and derives unpaid days from attendance status, so a declared holiday protects the day in the register rather than changing the divisor. See the <a href="/modules">holidays and attendance modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["how-many-leaves-small-business-india", "leave-encashment-carry-forward", "attendance-to-payroll-automation"],
+"related": ["how-many-leaves-small-business-india", "leave-encashment-carry-forward", "hr-compliance-calendar-india-small-business"],
 },
 
 # --------------------------------------------------------------------- TASKS
@@ -907,7 +913,7 @@ POSTS = [
     <p>Merik's task log captures exactly those fields — the work, the client and project chosen from real records rather than typed freely, time spent, status, blockers and proof links — with time suggestions drawn from the employee's own history so most entries take seconds. Filtering by period, client, employee and free text is built in, along with CSV export when someone needs the raw rows.</p>
     <p>Because entries carry a client and project, they roll up automatically: a monthly tracker showing who logged what, task insights over the whole log, and project-level intelligence with per-project drill-down. The same entries can ground a monthly performance review, so the review discusses recorded work rather than recent memory. See the <a href="/modules">task management modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["daily-task-tracking-small-teams", "daily-standups-without-meetings", "time-estimates-vs-actuals"],
+"related": ["daily-task-tracking-small-teams", "daily-standups-without-meetings", "scope-creep-agency-task-logs"],
 },
 
 {
@@ -983,6 +989,7 @@ POSTS = [
 ("business", "Why this shows up in your margins", """
     <p>Estimation is not a project-management nicety — it is priced into everything. A fixed-price quote built on estimates that run 1.6× is a quote priced at 62% of its true cost. A retainer sized on optimistic estimates is a retainer you deliver at a loss while feeling busy.</p>
     <p>So the correction factor is directly a commercial input: it belongs in <a href="/blog/pricing-retainers-from-time-data">how you price retainers</a> and in <a href="/blog/project-profitability-from-task-hours">how you assess project profitability</a>. Teams that measure it typically discover their most-loved client is their least profitable — which is a useful, if uncomfortable, thing to learn from your own data rather than from a bad year.</p>
+    <p>When the gap is not estimation error but added work, <a href="/blog/scope-creep-agency-task-logs">catching scope creep in the task log</a> is the next read.</p>
 """),
 ],
 "facts": [
@@ -1006,7 +1013,7 @@ POSTS = [
     <p>Merik's task log captures estimated and actual time on the same entry, so the comparison exists without anyone running a separate exercise. Task Insights aggregates it across the log, and <code>predictTime()</code> suggests a duration for a new task by scoring it against similar past tasks — token overlap in the description, plus the same project and client — rather than by asking someone to guess again.</p>
     <p>It is deliberately not a language model. It is a similarity lookup over your own history, and it tunes itself: <code>tuneTimeModel()</code> backtests its own weights leave-one-out against tasks whose real duration is already known, keeping whichever settings minimise median error. So the suggestion improves as your log grows, and it is explainable — you can see which past tasks it matched. See the <a href="/modules">task insights module</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["timesheets-vs-daily-task-logs", "project-profitability-from-task-hours", "pricing-retainers-from-time-data"],
+"related": ["timesheets-vs-daily-task-logs", "project-profitability-from-task-hours", "scope-creep-agency-task-logs"],
 },
 
 # ------------------------------------------------------------------- CLIENTS
@@ -1113,7 +1120,7 @@ POSTS = [
     <p>Merik models clients and projects the way this article describes: client records with auto-derived codes, projects belonging to one client and unique per client, and task entries that select a project rather than typing one. Bulk edit and delete are available for the housekeeping that inevitably comes up.</p>
     <p>For teams arriving with a messy history, there is a dedicated repair screen — Fix Project Names — that attaches historical, free-typed project names on task entries to real project records: it guesses the mapping, lets you review it, and applies it per-row or in bulk, retaining the original value. Once clean, Project Intelligence rolls everything up: stage stepper, contributor avatars, sparklines and per-project drill-down. See the <a href="/modules">client and project modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["project-profitability-from-task-hours", "quote-to-invoice-workflow", "timesheets-vs-daily-task-logs"],
+"related": ["project-profitability-from-task-hours", "quote-to-invoice-workflow", "website-monitoring-for-agencies-client-sites"],
 },
 
 {
@@ -1192,6 +1199,7 @@ POSTS = [
       <li><b>Reminders on a schedule</b> — a few days before due, on the due date, and at intervals after. Scheduled reminders are unemotional; ad-hoc chasing is not.</li>
       <li><b>Track status on the invoice</b> — sent, viewed, part-paid, paid. "Did we ever send that?" should never be a question.</li>
     </ul>
+    <p>For agencies that keep sites running after launch, <a href="/blog/sla-reports-for-clients-agency">the monthly SLA report</a> is the deliverable that turns monitoring into a billable line.</p>
 """),
 ],
 "facts": [
@@ -1388,6 +1396,7 @@ POSTS = [
       <li><b>Below 70% consistently</b> — the client is not getting value and will eventually notice and cancel. Proactively propose more scope or a lower fee. Doing this before they raise it is one of the strongest retention moves available.</li>
     </ul>
     <p>At renewal, open with the data: here is what we delivered each month, here is what was sold, here is the proposed adjustment. A conversation grounded in measured delivery is a negotiation about facts. A conversation that begins "we need to increase the fee by 15%" is a negotiation about your costs, which is not the client's problem.</p>
+    <p>For agencies, a maintenance retainer has a second half: <a href="/blog/website-monitoring-for-agencies-client-sites">monitoring the client's site</a> and sending <a href="/blog/sla-reports-for-clients-agency">a monthly SLA report</a> — both are deliverables the retainer can price in.</p>
 """),
 ],
 "facts": [
@@ -1411,7 +1420,7 @@ POSTS = [
     <p>The measurement this article depends on comes out of Merik's daily task log: entries carry client, project, person and time spent, so hours delivered per client per month are already recorded rather than reconstructed at renewal time. Project Intelligence rolls them up per project and contributor, which is where the utilisation figure comes from.</p>
     <p>Quotes and invoices live against the same client records, so the fee you sold and the effort you delivered can be compared without exporting anything. When it is time to reprice, the conversation starts from data both sides can see. See the <a href="/modules">clients, projects and task modules</a>, the <a href="/features">feature list</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["project-profitability-from-task-hours", "quote-to-invoice-workflow", "time-estimates-vs-actuals"],
+"related": ["project-profitability-from-task-hours", "quote-to-invoice-workflow", "scope-creep-agency-task-logs"],
 },
 
 # -------------------------------------------------------------------- ASSETS
@@ -1797,6 +1806,7 @@ POSTS = [
     <p><b>Data location.</b> Ask which country the data is stored in and whether that is configurable. Data localisation expectations vary by sector and jurisdiction, and India's Digital Personal Data Protection framework places obligations on you as the entity determining how employee data is processed — you remain accountable for the processor you chose.</p>
     <p><b>Vendor exit.</b> Ask what happens to your data if you cancel: how long before deletion, what is retained and why, and whether you receive confirmation. "It stays in backups indefinitely" is a real answer some vendors give, and you should know it before you sign rather than after.</p>
     <p>None of this is legal advice — if you handle employee data at scale or in a regulated sector, take proper professional advice on your specific obligations. <a href="/blog/choosing-hr-software-small-business-checklist">The broader buying checklist is here.</a></p>
+    <p>If payroll is the module you are evaluating, <a href="/blog/payroll-software-small-business-india-how-to-choose">the payroll-specific checklist</a> adds the questions about computation and export.</p>
 """),
 ],
 "facts": [
@@ -1820,7 +1830,7 @@ POSTS = [
     <p>Merik is multi-tenant with isolation enforced in Postgres by row-level security, not only in application code — every company gets one workspace, and a query from one company cannot return another's rows. Roles are scoped accordingly: employees see their own work, company admins see their own company, and each role has its own navigation and its own allowed set of views.</p>
     <p>All salary maths runs server-side in a secured payroll function rather than in the browser. Where the product holds provider API keys for its optional AI features, they are stored only as encrypted ciphertext and the dashboard displays only the last four characters. That AI layer is itself fail-closed behind four gates — a master switch, a per-feature flag, a per-company grant and a monthly call cap — and everything else works with it switched off. See the <a href="/features">feature list</a>, the <a href="/modules">module breakdown</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["choosing-hr-software-small-business-checklist", "ai-in-hr-software-what-actually-helps", "employee-self-service-what-it-means"],
+"related": ["choosing-hr-software-small-business-checklist", "ai-in-hr-software-what-actually-helps", "payroll-software-small-business-india-how-to-choose"],
 },
 
 # ------------------------------------------------------------------------ AI
@@ -1927,7 +1937,7 @@ POSTS = [
     <p>Merik's AI layer is deliberately narrow. Exactly one server-side function talks to a language model, and it does two things: draft a performance summary from an employee's own task log and attendance, and draft a quote from a scope description. Both are drafts a human edits — for performance summaries, the edit distance between the draft and what the manager submits is captured, so it is visible whether drafts are actually being reviewed.</p>
     <p>Four gates control it, all failing closed: a master switch, a per-feature flag, a per-company grant, and a monthly call cap. Provider keys — Anthropic, OpenAI, Google, xAI or an OpenAI-compatible endpoint — are stored only as encrypted ciphertext, and the dashboard shows only the last four characters. Everything else in the product works with AI switched off entirely, and the time estimator is deliberately <i>not</i> a language model: it scores tasks by similarity to your own history and backtests its own weights, so its suggestions are explainable. See the <a href="/features">feature list</a>, the <a href="/modules">modules</a>, or <a href="/how-it-works">how it works</a>.</p>
 """,
-"related": ["workforce-data-security-checklist", "monthly-performance-review-process", "time-estimates-vs-actuals"],
+"related": ["workforce-data-security-checklist", "monthly-performance-review-process", "hrms-vs-payroll-software-vs-attendance-app"],
 },
 
 {
@@ -2020,6 +2030,7 @@ POSTS = [
       <li><b>Keeping "just one" shadow spreadsheet.</b> It becomes the real system within a quarter, and nobody notices until the two disagree.</li>
       <li><b>Launching without deciding the rules</b>, so managers keep applying their own — which was the original problem, now with software.</li>
     </ul>
+    <p>If you are migrating from a sheet, <a href="/blog/excel-attendance-sheet-problems">why the sheet broke</a> is worth reading first; if from a chat group, <a href="/blog/whatsapp-attendance-group-problems">the WhatsApp version</a>.</p>
 """),
 ],
 "facts": [
@@ -2043,7 +2054,7 @@ POSTS = [
     <p>Creating a Merik workspace takes minutes, which is why the plan above spends its time on decisions and verification instead. Employees self sign-up and land in the right department with designation and CTC in place, so the employee master is populated by the people who know their own details rather than by one person retyping a sheet.</p>
     <p>The rules from week one — grace windows, late marks, half-days, holiday calendar, leave types, the payroll cut-off — are configured once and then applied identically to everyone, which is precisely the inconsistency most migrations uncover. For teams bringing messy task history, the Fix Project Names screen maps historical free-typed project names onto real project records in bulk. And because attendance, leave and payroll share one dataset, the parallel-month reconciliation compares two calculations rather than two datasets. See <a href="/how-it-works">how setup works</a>, the <a href="/features">feature list</a>, or <a href="/#talk-to-us">talk to us</a> if you would like help with the import.</p>
 """,
-"related": ["choosing-hr-software-small-business-checklist", "attendance-policy-template-small-business", "structuring-clients-and-projects"],
+"related": ["choosing-hr-software-small-business-checklist", "attendance-policy-template-small-business", "excel-attendance-sheet-problems"],
 },
 
 ]
