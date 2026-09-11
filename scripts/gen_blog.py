@@ -467,8 +467,8 @@ def build_post(p):
     <h2 id="merik">How Merik handles it</h2>
 {p["merik"]}
 
-    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
-    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+    <p><a class="btn btn-primary" href="/request-access?from=/blog/{slug}">Request your workspace →</a></p>
+    <p style="margin-top:10px">Free, set up for you, every module included — <a href="/pricing" style="color:var(--brand);font-weight:600">see what the free workspace includes →</a></p>
   </div>
 </section>
 
@@ -577,9 +577,9 @@ def build_index():
   <div class="wrap">
     <div class="cta-wrap">
       <h2>Run your workforce the simple way</h2>
-      <p>Create your company workspace and bring employees, attendance, leave, payroll and tasks together.</p>
+      <p>Request your free company workspace and bring employees, attendance, leave, payroll and tasks together.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="/app/">Create your workspace →</a>
+        <a class="btn btn-primary" href="/request-access?from=/blog/">Request your workspace →</a>
         <a class="btn btn-ghost" href="/features">Explore features</a>
       </div>
     </div>
@@ -640,6 +640,12 @@ def build_sitemap(posts_by_slug):
         url(f"{SITE}/roi", newest, "monthly", "0.8"),
         url(f"{SITE}/glossary", newest, "monthly", "0.8"),
         url(f"{SITE}/blog/", newest, "weekly", "0.7"),
+        url(f"{SITE}/request-access", "2026-09-11", "monthly", "0.9"),
+        url(f"{SITE}/about", "2026-09-11", "yearly", "0.5"),
+        url(f"{SITE}/contact", "2026-09-11", "yearly", "0.5"),
+        url(f"{SITE}/security", "2026-09-11", "monthly", "0.7"),
+        url(f"{SITE}/privacy", "2026-09-11", "yearly", "0.3"),
+        url(f"{SITE}/terms", "2026-09-11", "yearly", "0.3"),
     ]
     for slug, _, _, _, _ in CARDS:
         p = posts_by_slug.get(slug)

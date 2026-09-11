@@ -1,6 +1,7 @@
+# /app/ and /status/ are marked noindex (meta + X-Robots-Tag). Search crawlers
+# must be allowed to fetch them to see that, so they are not disallowed here.
 User-agent: *
 Allow: /
-Disallow: /app/
 
 # AI / answer-engine crawlers explicitly welcomed on marketing pages.
 # Two kinds are listed: training/indexing crawlers, and the live retrieval

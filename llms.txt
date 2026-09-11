@@ -2,7 +2,7 @@
 
 > Merik is an all-in-one workforce management platform for small and growing businesses — employee management, attendance tracking, leave management, payroll, daily task tracking, clients and invoicing, and asset tracking in one secure company workspace.
 
-Merik replaces spreadsheets and disconnected tools with a single company workspace. Employees self sign-up, mark their own attendance with geolocated check-in, request leave or work-from-home, log daily tasks and download their own payslips. Attendance and leave data flow directly into monthly payroll, so pay is calculated from the days already recorded rather than re-typed from a spreadsheet.
+Merik replaces spreadsheets and disconnected tools with a single company workspace. Employees sign in to their own dashboard, mark their own attendance with geolocated check-in, request leave or work-from-home, log daily tasks and download their own payslips. Attendance and leave data flow directly into monthly payroll, so pay is calculated from the days already recorded rather than re-typed from a spreadsheet.
 
 ## Product
 
@@ -10,14 +10,17 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - [Features](https://www.merik.in/features): Employee management, attendance tracking, leave management, payroll, daily task tracking, company workspaces, digital operations monitoring.
 - [How it works](https://www.merik.in/how-it-works): Three-step setup — create a workspace, invite employees, run daily operations.
 - [Modules](https://www.merik.in/modules): Employees, attendance, leave & WFH, payroll, daily tasks, performance, clients/projects/quotes/invoices, assets & software, and Digital Operations (uptime, early warnings, incidents, SLA reports, status pages).
-- [Pricing](https://www.merik.in/pricing): Free workspace with unlimited employee self sign-up; guided setup available on request.
+- [Pricing](https://www.merik.in/pricing): Free workspace, set up by the Merik team on request, with unlimited employees; guided setup around existing data available as a paid option.
+- [Request access](https://www.merik.in/request-access): The form to request a free company workspace. A person on the Merik team reviews it and emails the admin login.
+- [Security](https://www.merik.in/security): Tenant isolation, where payroll is computed, authentication, AI gating, the browser SDK's data rules, and the third-party services Merik runs on.
+- [About](https://www.merik.in/about) · [Contact](https://www.merik.in/contact) · [Privacy policy](https://www.merik.in/privacy) · [Terms of service](https://www.merik.in/terms)
 - [ROI calculator](https://www.merik.in/roi): Interactive estimate of what manual attendance, leave and payroll admin costs per year.
 - [Blog](https://www.merik.in/blog/): 80 practical guides — attendance, payroll, leave, tasks, clients, assets and HR, plus application monitoring, API reliability, frontend error detection, observability and proactive incident prevention.
 
 ## Key facts
 
-- Pricing: free to start, unlimited employee self sign-up, no setup fee, no card required.
-- Setup time: under 5 minutes to create a company workspace.
+- Pricing: free to start, unlimited employees, no setup fee, no card required.
+- Getting a workspace: request it at merik.in/request-access; the Merik team creates the workspace and emails the admin login. There is no instant self-serve signup. Admins then add employees and create their logins.
 - Typical customer: small and growing businesses, roughly 5–200 employees.
 - Core modules: Employees, Attendance, Leave & WFH, Payroll & Payslips, Daily Tasks, Task Insights, Clients/Projects/Quotes/Invoices, Assets & Software, Performance, Digital Operations.
 - Attendance: geolocated check-in and check-out, reverse-geocoded to a readable place name; late marks and half-days applied by configurable rules.
@@ -28,7 +31,7 @@ Merik replaces spreadsheets and disconnected tools with a single company workspa
 - AI: optional and off by default. One server-side function, four fail-closed gates (master switch, per-feature flag, per-tenant grant, monthly call cap). Drafts only — performance summaries and quote drafts, always human-edited. Provider keys stored as AES-GCM ciphertext.
 - Digital Operations (monitoring): register websites, web apps and APIs (per client for agencies) and Merik checks them from the outside every few minutes — availability, response time, HTTP status, daily SSL-certificate expiry. Latency and error-rate baselines are measured per monitor over 14 days; deviations raise at most one early warning per asset, carrying a risk score, a separate confidence score and the evidence list. Confirmed failures open incidents auto-assigned to the asset's owner, alerted once by email or Slack with quiet-hours rules. A browser SDK (merik.js, one script tag, no cookies, query strings stripped, server-side redaction) reports JavaScript errors, unhandled rejections and failed requests, grouped by fingerprint per hour. GitHub and Vercel webhooks put deploys on the incident timeline; vendor status feeds (Stripe, Supabase, GitHub, Vercel, Cloudflare, Twilio, OpenAI) explain and suppress dependency-caused incidents. Health scores are SLO error budgets against a declared SLA tier; monthly per-client SLA reports and public token-URL status pages are built in.
 - Region: built for Indian small businesses (INR, CTC structures, state Shops & Establishments context), usable anywhere.
-- Contact: maresolik@gmail.com
+- Contact: merik.msk@gmail.com
 
 ## Guides — Attendance
 

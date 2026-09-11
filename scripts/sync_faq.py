@@ -32,7 +32,11 @@ DETAILS = re.compile(
 
 
 def text_of(fragment):
-    """Visible text of an HTML fragment, normalised the way a crawler sees it."""
+    """Visible text of an HTML fragment, normalised the way a crawler sees it.
+
+    A trailing "Read more →" style link is navigation, not part of the answer,
+    so it is dropped before the text goes into the schema."""
+    fragment = re.sub(r"\s*<a\b[^>]*>[^<]*→\s*</a>\s*$", "", fragment.strip())
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", fragment))).strip()
 
 

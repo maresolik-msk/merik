@@ -11,7 +11,9 @@ import json, pathlib, re, sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PAGES = {"/search": "search.html", "/glossary": "glossary.html", "/": "index.html", "/features": "features.html", "/how-it-works": "how-it-works.html",
          "/modules": "modules.html", "/pricing": "pricing.html", "/roi": "roi.html",
-         "/blog/": "blog/index.html", "/app/": None}
+         "/blog/": "blog/index.html", "/app/": None,
+         "/request-access": "request-access.html", "/about": "about.html", "/contact": "contact.html",
+         "/security": "security.html", "/privacy": "privacy.html", "/terms": "terms.html"}
 
 
 def main():

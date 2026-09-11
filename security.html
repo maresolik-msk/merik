@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5L9G7GMZWD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-5L9G7GMZWD");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.className+=' js';</script>
+<title>Security at Merik — Tenant Isolation, Payroll, Location Data and AI</title>
+<meta name="description" content="How Merik protects workforce data: row-level tenant isolation in Postgres, server-side payroll, admin-created logins, optional fail-closed AI with encrypted keys, a privacy-first browser SDK, and the services Merik runs on.">
+<meta name="author" content="Merik">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#D93A31">
+<link rel="canonical" href="https://www.merik.in/security">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Merik">
+<meta property="og:title" content="Security at Merik">
+<meta property="og:description" content="How Merik protects workforce data: row-level tenant isolation in Postgres, server-side payroll, admin-created logins, optional fail-closed AI with encrypted keys, a privacy-first browser SDK, and the services Merik runs on.">
+<meta property="og:url" content="https://www.merik.in/security">
+<meta property="og:image" content="https://www.merik.in/assets/images/og-image.png">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Security at Merik">
+<meta name="twitter:description" content="How Merik protects workforce data: row-level tenant isolation in Postgres, server-side payroll, admin-created logins, optional fail-closed AI with encrypted keys, a privacy-first browser SDK, and the services Merik runs on.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css?v=9">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://www.merik.in/security#webpage",
+      "url": "https://www.merik.in/security",
+      "name": "Security at Merik",
+      "isPartOf": {
+        "@id": "https://www.merik.in/#website"
+      },
+      "about": {
+        "@id": "https://www.merik.in/#software"
+      },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.merik.in/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Security",
+          "item": "https://www.merik.in/security"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is my company's data isolated from other companies on Merik?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Merik is multi-tenant and every company has one isolated workspace. Isolation is enforced in the Postgres database by row-level security policies, so a query from one company's user cannot return another company's rows even if the application code had a bug."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where is payroll calculated?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "On the server, in a dedicated function, and the result is stored. It is never computed in the browser, so the payroll register and the payslip an employee downloads cannot disagree."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Merik use AI on my data?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Only if it is switched on for your workspace. AI is off by default and gated four times — a master switch, a per-feature flag, a per-company grant and a monthly call cap — and every gate fails closed. It is used to draft performance summaries and quotes for a person to edit. Provider API keys are stored only as AES-GCM ciphertext."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does the merik.js browser snippet collect from my visitors?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "JavaScript errors, unhandled promise rejections and failed requests, grouped by fingerprint. By construction it never reads form contents, input values, cookies, localStorage, request or response bodies, headers, or the query string of any URL, and it sets no cookie. Anything that looks like a token, key, card number or credential is redacted again on the server before storage."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What location data does attendance capture?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "When an employee checks in or out, the browser's location (latitude and longitude, if the employee grants permission) is recorded with the punch and converted to a readable place name. Location is captured at the punch only — Merik does not track employees between check-in and check-out."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap nav">
+    <a href="/" class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main">
+      <a class="link" href="/features">Features</a>
+      <a class="link" href="/how-it-works">How it works</a>
+      <a class="link" href="/modules">Modules</a>
+      <a class="link" href="/pricing">Pricing</a>
+      <a class="link" href="/roi">ROI</a>
+      <a class="link" href="/blog/">Blog</a>
+      <div class="nav-cta">
+        <a class="btn btn-outline" href="/app/">Sign In</a>
+        <a class="btn btn-primary" href="/request-access">Get Started</a>
+      </div>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span> Security</nav>
+    <div class="eyebrow">Security</div>
+    <h1>How your <span class="accent">data is protected</span></h1>
+    <p class="lead">Specific claims you can check against how the product actually behaves. Where we don't yet publish something, we say so.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap prose">
+
+    <h2 id="isolation">One workspace per company, enforced in the database</h2>
+    <p>Merik is multi-tenant. Every company has its own workspace, and the boundary between workspaces is enforced by <b>row-level security policies in Postgres</b>, not only by application code. A signed-in user's queries can only return rows belonging to their own company. This is the check we would ask you to make of any HR tool, and it is the one we made first.</p>
+    <p>There are three roles. <b>Superadmin</b> is the Merik team, who create workspaces and manage the platform. <b>Admin</b> runs a company's workspace. <b>Employee</b> sees their own dashboard — their attendance, leave, tasks and payslips — and nothing else.</p>
+
+    <h2 id="payroll">Payroll runs on the server</h2>
+    <p>Monthly payroll is computed by a server-side function from the attendance, leave and salary structure already on record, and the computed result is saved. Nothing is calculated in the browser, so the register, the payslip and what an employee downloads are the same numbers.</p>
+
+    <h2 id="auth">Sign-in and accounts</h2>
+    <ul>
+      <li>Authentication is email and password, handled by the managed auth service of our database provider (Supabase), which stores passwords hashed. An initial password is set by whoever creates the account — the Merik team for an admin, the admin for an employee — and is emailed once; change it at first sign-in.</li>
+      <li>Employee logins are created by the company's admin from the Employees module. There is no open self-registration into a company's workspace.</li>
+      <li>Password resets go by emailed link. The reset screen never confirms whether an address has an account.</li>
+      <li>Company workspaces are created by a person on the Merik team after a request is reviewed.</li>
+    </ul>
+
+    <h2 id="ai">AI is optional, and fails closed</h2>
+    <p>All AI in Merik goes through one server-side function. It is <b>off by default</b>. Every request passes four gates — a master switch, a per-feature flag, a per-company grant, and a monthly call cap — and each gate fails closed: a company with no grant gets nothing. AI is used to draft performance summaries and quotes that a person edits before use; core features work with it off. Provider API keys entered in the dashboard are stored only as AES-GCM ciphertext, encrypted with a key that lives outside the database, and the dashboard only ever shows the last four characters.</p>
+
+    <h2 id="location">Attendance location</h2>
+    <p>When an employee checks in or out and grants location permission, the coordinates are recorded with that punch and converted to a readable place name. To do that conversion the coordinates are sent to a reverse-geocoding service (BigDataCloud, with OpenStreetMap Nominatim as fallback). Location is captured <b>at the punch only</b>; Merik has no background tracking between check-in and check-out. Your attendance policy should tell employees this — our <a href="/blog/attendance-policy-template-small-business">policy template</a> includes the clause.</p>
+
+    <h2 id="sdk">The browser snippet on your sites</h2>
+    <p><code>merik.js</code> is a one-line script for sites you monitor. It reports JavaScript errors, unhandled rejections and failed requests, grouped by fingerprint. By construction it never reads or sends form contents, input values, cookies, localStorage, request or response bodies, headers, or the query string of any URL, and it sets no cookie and assigns no user identity. Everything it does send is redacted again on arrival — tokens, keys, bearer headers, card-like numbers and credential-shaped strings are replaced before storage — because a privacy promise enforced only in the client is a promise anyone can edit.</p>
+
+    <h2 id="transport">Transport and hosting</h2>
+    <ul>
+      <li>Everything is served over HTTPS. The site sends HSTS with preload, and the usual content-type, framing and referrer protections.</li>
+      <li>The marketing site is static and hosted on Vercel. The application's database, authentication and server-side functions run on Supabase (managed Postgres).</li>
+      <li>Emails — payslips, welcome emails, reset links, lead notifications — are sent by SMTP from a Merik-controlled account.</li>
+      <li>Google Analytics runs on the marketing pages only. It is not loaded inside the application.</li>
+    </ul>
+
+    <h2 id="yours">Your data stays yours</h2>
+    <p>Employees, attendance, leave, payroll history and the task log belong to your company. The task log exports to CSV from inside the product, and if you stop using Merik you can ask us to delete the workspace. We do not sell workforce data and we do not use one company's data to serve another.</p>
+
+    <h2 id="not-yet">What we do not yet publish</h2>
+    <p>We do not yet publish a backup and retention schedule, the hosting region, a penetration-test summary, or a formal sub-processor list beyond the services named on this page and in the <a href="/privacy">privacy policy</a>. If any of these matters for your decision, <a href="/contact">ask</a> — a straight answer is better than a badge.</p>
+
+    <h2 id="report">Reporting a security issue</h2>
+    <p>Email <a href="mailto:merik.msk@gmail.com">merik.msk@gmail.com</a> with "Security" in the subject. Please give us a chance to respond before disclosing publicly.</p>
+
+    <h2 id="faq">Questions</h2>
+    <div class="faq" style="margin:0 0 24px">
+      <details open><summary>Is my company's data isolated from other companies on Merik?</summary><p>Yes. Merik is multi-tenant and every company has one isolated workspace. Isolation is enforced in the Postgres database by row-level security policies, so a query from one company's user cannot return another company's rows even if the application code had a bug.</p></details>
+      <details><summary>Where is payroll calculated?</summary><p>On the server, in a dedicated function, and the result is stored. It is never computed in the browser, so the payroll register and the payslip an employee downloads cannot disagree.</p></details>
+      <details><summary>Does Merik use AI on my data?</summary><p>Only if it is switched on for your workspace. AI is off by default and gated four times — a master switch, a per-feature flag, a per-company grant and a monthly call cap — and every gate fails closed. It is used to draft performance summaries and quotes for a person to edit. Provider API keys are stored only as AES-GCM ciphertext.</p></details>
+      <details><summary>What does the merik.js browser snippet collect from my visitors?</summary><p>JavaScript errors, unhandled promise rejections and failed requests, grouped by fingerprint. By construction it never reads form contents, input values, cookies, localStorage, request or response bodies, headers, or the query string of any URL, and it sets no cookie. Anything that looks like a token, key, card number or credential is redacted again on the server before storage.</p></details>
+      <details><summary>What location data does attendance capture?</summary><p>When an employee checks in or out, the browser's location (latitude and longitude, if the employee grants permission) is recorded with the punch and converted to a readable place name. Location is captured at the punch only — Merik does not track employees between check-in and check-out.</p></details>
+    </div>
+
+  </div>
+</section>
+
+<section class="soft">
+  <div class="wrap">
+    <div class="cta-wrap">
+      <h2>Run a real month on Merik, free</h2>
+      <p>Request a workspace and we set it up for you. No card, no setup fee, every module included.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/request-access">Request your workspace →</a>
+        <a class="btn btn-ghost" href="/pricing">See what's included</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand"><img src="/assets/images/wordmark.png" alt="Merik" width="102" height="24"></div>
+        <p class="desc">Merik is the all-in-one platform for employee management, attendance, leave, payroll, daily task tracking — and monitoring the websites and APIs you run.</p>
+      </div>
+      <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
+      <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a><a href="/modules">Digital Operations</a></div>
+      <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a><a href="/blog/proactive-application-monitoring">Proactive monitoring</a></div>
+      <div><h5>Company</h5><a href="/request-access">Request a workspace</a><a href="/app/">Sign in</a><a href="/about">About Merik</a><a href="/contact">Contact</a><a href="/security">Security</a><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a></div>
+    </div>
+    <div class="foot-social">
+      <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
+      <a href="https://www.instagram.com/merik_msk/" rel="me noopener" target="_blank">Instagram</a>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr"></span> Merik — Workforce Suite. All rights reserved.</span>
+      <span>Built for growing teams.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
+  mb.addEventListener('click',function(){var o=nl.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false');});
+  nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
+  var bar=document.getElementById('progress');
+  if(bar){addEventListener('scroll',function(){
+    var h=document.documentElement,max=h.scrollHeight-h.clientHeight,y=h.scrollTop||document.body.scrollTop;
+    bar.style.width=(max>0?(y/max)*100:0)+'%';
+  },{passive:true});}
+</script>
+<script>
+  document.querySelectorAll('a[href^="/request-access"],a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim(),destination:a.getAttribute("href")});});});
+</script>
+</body>
+</html>

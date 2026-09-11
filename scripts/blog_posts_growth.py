@@ -25,7 +25,7 @@ POSTS = [
 "og_title": "New labour codes: what actually changes in your payroll",
 "og_desc": "The 50% wages rule, fixed-term gratuity, 180-day leave eligibility, wages by the 7th — decoded for a 5–200 person business.",
 "img_alt": "A salary structure being rebalanced so basic pay reaches half of total remuneration",
-"published": "2026-09-02", "published_h": "2 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "India's new labour codes: what changes for <span class=\"accent\">small business payroll</span>",
 "lead": "Four codes replaced twenty-nine laws. Most of the text does not touch a 30-person company. Five clauses do — and they all land in the payroll run.",
@@ -116,7 +116,7 @@ POSTS = [
 "og_title": "The HR compliance calendar for a small Indian business",
 "og_desc": "Monthly, quarterly and annual statutory dates in one list — plus the headcount thresholds that decide which ones apply.",
 "img_alt": "A calendar with statutory payroll deadlines marked across the month",
-"published": "2026-09-02", "published_h": "2 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "The HR &amp; payroll compliance calendar for a <span class=\"accent\">small Indian business</span>",
 "lead": "Compliance in a small company fails on dates, not on knowledge. Here is every recurring date, what triggers it, and what has to be true in your records for it to be met.",
@@ -212,7 +212,7 @@ POSTS = [
 "og_title": "Overtime in India: the rule, the formula, the examples",
 "og_desc": "Twice the ordinary rate, computed on monthly wages ÷ 208 — and the record-keeping that makes it defensible.",
 "img_alt": "A timesheet showing hours worked beyond the standard nine-hour day",
-"published": "2026-09-03", "published_h": "3 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Overtime calculation in India: <span class=\"accent\">the rule, the formula, the records</span>",
 "lead": "Overtime disputes are rarely about the rate. They are about whether anyone can prove the hours. Here is the arithmetic, and the record that makes it stand up.",
@@ -293,7 +293,7 @@ POSTS = [
 "og_title": "Generating salary slips without a template",
 "og_desc": "Why generator templates produce wrong slips, what a slip must show, and a process that issues every slip by the 7th.",
 "img_alt": "A monthly payslip generated from recorded attendance and salary structure",
-"published": "2026-09-03", "published_h": "3 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "How to generate salary slips for your team <span class=\"accent\">without a template</span>",
 "lead": "\"Salary slip generator\" is one of the most-searched payroll phrases in India. The search is the symptom: the numbers on the slip are being typed, not computed.",
@@ -400,7 +400,7 @@ POSTS = [
 "og_title": "Payroll software for a small Indian business: the 10-point checklist",
 "og_desc": "What you need at 5–200 people, what enterprise tools sell you instead, and the red flags.",
 "img_alt": "A checklist for evaluating payroll software against a small business's real needs",
-"published": "2026-09-04", "published_h": "4 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Payroll software for a small Indian business: <span class=\"accent\">a 10-point checklist</span>",
 "lead": "Most payroll software is designed for a payroll department. You do not have one. Here is what to check when the person running payroll is also running the company.",
@@ -464,8 +464,8 @@ POSTS = [
 ("How do I test payroll software before committing?", "Run a two-week trial with five real employees, deliberately including a mid-month joiner and someone with a salary revision. Let them mark attendance and request leave, then run a payroll and compare every line to a hand calculation. Any difference is either your error or the software's, and you need to know which before you migrate."),
 ],
 "merik": """
-    <p>Merik is built for the checklist above rather than for a payroll department. Employees self sign-up and mark their own attendance with geolocated check-in; leave and work-from-home are requests with approvals; payroll is computed on the server from those days, with basic, HRA, other allowance, professional tax, LOP, incentives and arrears, and salary revisions carry effective dates. Payslips are generated and emailed individually or in bulk, and employees download their own.</p>
-    <p>Where Merik stops: it does not file PF, ESI or TDS returns — it produces the register your consultant files from. The workspace is free with unlimited employee self sign-up and no card, tenant isolation is enforced in the database, and the task log exports to CSV. Compare against your own numbers with the <a href="/roi">ROI calculator</a>, or read <a href="/pricing">what the free workspace includes</a>.</p>
+    <p>Merik is built for the checklist above rather than for a payroll department. Employees sign in to their own dashboard and mark their own attendance with geolocated check-in; leave and work-from-home are requests with approvals; payroll is computed on the server from those days, with basic, HRA, other allowance, professional tax, LOP, incentives and arrears, and salary revisions carry effective dates. Payslips are generated and emailed individually or in bulk, and employees download their own.</p>
+    <p>Where Merik stops: it does not file PF, ESI or TDS returns — it produces the register your consultant files from. The workspace is free with no limit on employees and no card, tenant isolation is enforced in the database, and the task log exports to CSV. Compare against your own numbers with the <a href="/roi">ROI calculator</a>, or read <a href="/pricing">what the free workspace includes</a>.</p>
 """,
 "related": ["choosing-hr-software-small-business-checklist", "hrms-vs-payroll-software-vs-attendance-app", "common-payroll-mistakes-small-businesses"],
 },
@@ -480,7 +480,7 @@ POSTS = [
 "og_title": "Gratuity in India: formula, eligibility, worked examples",
 "og_desc": "15 ÷ 26 × last wages × years — plus the five-year rule, rounding, the tax limit and the new one-year rule for fixed-term staff.",
 "img_alt": "A gratuity calculation worked from last drawn wages and years of service",
-"published": "2026-09-04", "published_h": "4 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Gratuity calculation in India: <span class=\"accent\">formula, eligibility, examples</span>",
 "lead": "Gratuity is the exit payment most small businesses forget to provision for and then discover at the worst moment. The arithmetic is simple; the record-keeping is what goes wrong.",
@@ -559,7 +559,7 @@ POSTS = [
 "og_title": "HRMS, payroll software or attendance app?",
 "og_desc": "What each category does, the integration tax of buying three, and a decision guide by team size.",
 "img_alt": "Three software categories converging on one workforce dataset",
-"published": "2026-09-05", "published_h": "5 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "HRMS vs payroll software vs attendance app: <span class=\"accent\">which do you need?</span>",
 "lead": "Three categories, three vendors, three logins — and a spreadsheet in the middle joining them. Here is what each one actually does and when one workspace beats three tools.",
@@ -623,12 +623,12 @@ POSTS = [
 ("Do I need an HRMS for a small business?", "Not by that name. What a 10–200 person business needs is an employee record, attendance, leave and payroll in one place with employee self-service. Some products that provide that call themselves HRMS, some call themselves workforce management; many enterprise HRMS products provide far more than that and charge for it. Name the five things you need and evaluate against them."),
 ("Can I use an attendance app and separate payroll software?", "Yes, and many small businesses do. The cost is a monthly manual step — exporting the register, reconciling it against leave and corrections, and uploading it to payroll — which is where most payroll errors originate. If that step takes more than an hour or has produced an error recently, the two should share one dataset."),
 ("At what team size does a single workforce system pay off?", "Around ten employees, because from that point loss of pay and leave balances affect pay every month and the reconciliation is real work. Teams with field staff benefit at any size, because location-verified attendance only means something if it reaches payroll without a manual step."),
-("Is an all-in-one HR platform harder to set up than an attendance app?", "Not necessarily. Setup effort depends on how much data the system needs before it is useful. A workspace where employees self sign-up and mark their own attendance from day one can be running in an afternoon; the payroll and leave modules then use data that is already there. Enterprise suites are harder because they need configuration before anything works."),
+("Is an all-in-one HR platform harder to set up than an attendance app?", "Not necessarily. Setup effort depends on how much data the system needs before it is useful. A workspace where employees mark their own attendance from day one can be running in an afternoon once logins are created; the payroll and leave modules then use data that is already there. Enterprise suites are harder because they need configuration before anything works."),
 ("What should I check before choosing any workforce software?", "Where paid days come from, how loss of pay and salary revisions are handled, whether employees can serve themselves, whether there is an audit trail, how data is isolated and secured, and whether you can export everything. Then run a two-week trial with five real employees and check the payroll by hand."),
 ],
 "merik": """
     <p>Merik is the one-dataset answer. Employees, attendance, leave and work-from-home, payroll and payslips, daily tasks, clients and invoicing, and assets share one company workspace with one login per person. An employee marks attendance with a geolocated check-in, requests leave, logs the day's work and downloads their own payslip in the same place; the admin runs payroll from the days already recorded. There is no export-reconcile-upload step because there is nothing to move between.</p>
-    <p>It is free to start with unlimited employee self sign-up, computes payroll on the server, enforces tenant isolation in the database, and exports the task log to CSV. See <a href="/modules">the modules</a> or <a href="/how-it-works">the three-step setup</a>.</p>
+    <p>It is free to start with no limit on employees, computes payroll on the server, enforces tenant isolation in the database, and exports the task log to CSV. See <a href="/modules">the modules</a> or <a href="/how-it-works">the three-step setup</a>.</p>
 """,
 "related": ["payroll-software-small-business-india-how-to-choose", "choosing-hr-software-small-business-checklist", "employee-self-service-what-it-means"],
 },
@@ -643,7 +643,7 @@ POSTS = [
 "og_title": "Why the Excel attendance sheet breaks at 15 employees",
 "og_desc": "Seven failure modes, the headcount where each one bites, and what a replacement has to do.",
 "img_alt": "An attendance spreadsheet with formulas breaking as the team grows",
-"published": "2026-09-05", "published_h": "5 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Why your Excel attendance sheet breaks at <span class=\"accent\">15 employees</span>",
 "lead": "The sheet worked at six people because you knew where everyone was. Past fifteen, the sheet is the only thing that knows — and it does not.",
@@ -704,7 +704,7 @@ POSTS = [
 ("How do I migrate from an attendance spreadsheet without breaking payroll?", "Cut over at a month boundary and run one month in parallel — the new system and the old sheet both recording — then reconcile the two before running payroll from the new one. Migrate current balances and structures, archive the old sheets rather than importing years of history, and use the parallel month to find the rules you never wrote down."),
 ],
 "merik": """
-    <p>Merik replaces the sheet with the record. Employees self sign-up and mark their own attendance from their dashboard; each check-in carries a server timestamp and a reverse-geocoded place name; late marks and half-days apply by the rules you configure; approved leave and work-from-home update the day automatically so nobody on holiday is marked absent; and corrections go through a request with an approval trail rather than a silent edit.</p>
+    <p>Merik replaces the sheet with the record. Employees mark their own attendance from their dashboard; each check-in carries a server timestamp and a reverse-geocoded place name; late marks and half-days apply by the rules you configure; approved leave and work-from-home update the day automatically so nobody on holiday is marked absent; and corrections go through a request with an approval trail rather than a silent edit.</p>
     <p>Payroll then reads the month's paid days directly — no export, no upload — and the task log exports to CSV when you want to analyse it in Excel, which is where Excel belongs. The workspace is free with unlimited employee sign-up; <a href="/how-it-works">setup takes three steps</a>.</p>
 """,
 "related": ["whatsapp-attendance-group-problems", "spreadsheet-to-workforce-software-migration", "employee-attendance-tracking-small-business"],
@@ -719,7 +719,7 @@ POSTS = [
 "og_title": "WhatsApp attendance groups: why they fail",
 "og_desc": "Message time is not arrival time, nothing is countable, and nothing reaches payroll. What to use instead.",
 "img_alt": "A stream of chat messages that cannot be turned into an attendance register",
-"published": "2026-09-06", "published_h": "6 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "WhatsApp attendance groups: <span class=\"accent\">why they fail</span> and what replaces them",
 "lead": "\"Good morning, reached office\" is the most common attendance record in India. It proves a phone sent a message. Everything else is inference.",
@@ -778,7 +778,7 @@ POSTS = [
 ],
 "merik": """
     <p>Merik makes the tap the record. An employee checks in from their own dashboard; the moment is stamped by the server and the location is reverse-geocoded to a place name; late marks and half-days follow the rules you set; leave and work-from-home are requests that update the day when approved; corrections are requests with a trail. The admin sees the whole company's day in one live view instead of a thread.</p>
-    <p>Payroll reads the month directly, and payslips go to each employee individually — emailed or downloaded from their own account — so nothing about pay ever needs to be asked in a group. Employees self sign-up, the workspace is free, and the group can go back to being a group. See <a href="/how-it-works">how it works</a>.</p>
+    <p>Payroll reads the month directly, and payslips go to each employee individually — emailed or downloaded from their own account — so nothing about pay ever needs to be asked in a group. Each employee gets their own login, the workspace is free, and the group can go back to being a group. See <a href="/how-it-works">how it works</a>.</p>
 """,
 "related": ["excel-attendance-sheet-problems", "geolocation-attendance-field-teams", "free-attendance-app-small-business-india"],
 },
@@ -792,7 +792,7 @@ POSTS = [
 "og_title": "Hybrid work attendance without surveillance",
 "og_desc": "Four statuses, anchor-day rules, WFH as a request, location at the punch only — and what reaches payroll.",
 "img_alt": "A week of attendance showing office, work-from-home and remote days side by side",
-"published": "2026-09-06", "published_h": "6 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Hybrid work attendance: tracking office days, WFH and remote <span class=\"accent\">fairly</span>",
 "lead": "Return-to-office rules are being written everywhere. Most of them fail at the same point: nobody can say, without an argument, how many days someone was in.",
@@ -866,7 +866,7 @@ POSTS = [
 "og_title": "A free attendance app: what &quot;free&quot; has to include",
 "og_desc": "Eight things free tiers usually cap, the hidden costs, and what a working free tier looks like for 5–50 people.",
 "img_alt": "A mobile check-in screen with location, on a free attendance app",
-"published": "2026-09-07", "published_h": "7 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Free attendance app for a small business: what <span class=\"accent\">\"free\" should include</span>",
 "lead": "Free attendance apps are easy to find and hard to keep. Here is the difference between a free tier and a trial with the price hidden.",
@@ -932,14 +932,14 @@ POSTS = [
 ],
 "faqs": [
 ("Is there a genuinely free attendance app for small businesses in India?", "Yes, but check the shape of the free tier rather than the word. A genuinely free tier has no user cap you will hit, keeps history indefinitely, captures timestamp and location at check-in, links leave to attendance, and lets you export. Many free apps cap users at five or ten or keep only thirty days of history, which makes them trials."),
-("What should a free attendance app include?", "Unlimited employees with self sign-up, check-in and check-out with a server timestamp and a reverse-geocoded location, late marks and half-days computed by configurable rules, leave and work-from-home requests that update attendance when approved, a monthly register per employee that feeds payroll without re-typing, employee self-service, CSV export and basic tenant security."),
+("What should a free attendance app include?", "Unlimited employees, check-in and check-out with a server timestamp and a reverse-geocoded location, late marks and half-days computed by configurable rules, leave and work-from-home requests that update attendance when approved, a monthly register per employee that feeds payroll without re-typing, employee self-service, CSV export and basic tenant security."),
 ("Do free attendance apps work for field employees?", "Only if location capture is included on the free tier. Check-in with a stored, reverse-geocoded location is what makes a field employee's attendance verifiable; some apps put that behind a paid plan. Also check that location is captured at the punch only, not tracked continuously."),
 ("Can a free attendance app connect to payroll?", "Some can, if attendance and payroll are modules of the same workspace and share one record. If the app only produces a register that you upload or re-type into a separate payroll tool, the app is free but the monthly reconciliation is not — and that reconciliation is where most small-business payroll errors come from."),
 ("What are the hidden costs of free attendance software?", "Per-user pricing that begins at a headcount you will reach, a separate paid tool for leave or payroll, biometric hardware the app assumes, the absence of export so leaving means re-typing history, and the owner's own time re-keying the register into a salary sheet every month."),
-("Is Merik's attendance app free?", "Yes. Merik's company workspace is free to create with unlimited employee self sign-up and no card, and it includes geolocated check-in and check-out, configurable late and half-day rules, leave and work-from-home requests, a monthly register that feeds payroll directly, employee self-service payslip download and CSV export of the task log. Guided setup is available on request."),
+("Is Merik's attendance app free?", "Yes. Merik's company workspace is free — set up for you on request, with no limit on employees and no card — and it includes geolocated check-in and check-out, configurable late and half-day rules, leave and work-from-home requests, a monthly register that feeds payroll directly, employee self-service payslip download and CSV export of the task log. Guided setup is available on request."),
 ],
 "merik": """
-    <p>Merik's workspace is free, with unlimited employee self sign-up and no card. The attendance module is the full thing, not a preview: check-in and check-out from the employee's own phone with a server timestamp and a reverse-geocoded place name, late marks and half-days by the rules you configure, leave and work-from-home as approved requests that update the day, a live company-wide view for admins, and a monthly register that payroll reads directly — because payroll is in the same workspace.</p>
+    <p>Merik's workspace is free, with no limit on employees and no card. The attendance module is the full thing, not a preview: check-in and check-out from the employee's own phone with a server timestamp and a reverse-geocoded place name, late marks and half-days by the rules you configure, leave and work-from-home as approved requests that update the day, a live company-wide view for admins, and a monthly register that payroll reads directly — because payroll is in the same workspace.</p>
     <p>Employees see their own history and download their own payslips; the task log exports to CSV; tenant isolation is enforced in the database. If the answers above are the ones you wanted, <a href="/pricing">the pricing page</a> says the same thing in more detail, and <a href="/how-it-works">setup is three steps</a>.</p>
 """,
 "related": ["whatsapp-attendance-group-problems", "biometric-vs-gps-vs-manual-attendance", "attendance-to-payroll-automation"],
@@ -955,7 +955,7 @@ POSTS = [
 "og_title": "Catching scope creep in the task log, not the invoice",
 "og_desc": "Estimate vs logged hours per project, checked weekly, turned into a change request while the client still remembers asking.",
 "img_alt": "Logged hours on a project overtaking the estimate week by week",
-"published": "2026-09-07", "published_h": "7 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Catching scope creep early <span class=\"accent\">in the task log</span>",
 "lead": "By the time scope creep reaches the invoice, the argument is about money. Three weeks earlier, in the task log, it was a question you could still ask.",
@@ -1035,7 +1035,7 @@ POSTS = [
 "og_title": "Website monitoring for agencies: every client site, no ops person",
 "og_desc": "Per-client structure, what to check, who gets the alert, monthly SLA reports and status pages — and pricing the retainer around it.",
 "img_alt": "A dashboard of client websites, each with its own health and owner",
-"published": "2026-09-08", "published_h": "8 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Website monitoring for agencies: <span class=\"accent\">every client site</span>, no ops person",
 "lead": "The client's call is the agency's monitoring system — until the call comes at 11pm about a site that went down at 4. Here is how agencies watch what they ship without hiring for it.",
@@ -1105,7 +1105,7 @@ POSTS = [
 "og_title": "The monthly SLA report: what to include and how to compute it",
 "og_desc": "Tiers and their minutes, the seven sections, the arithmetic, and how to present a quiet month as delivered service.",
 "img_alt": "A monthly client report showing uptime against its SLA tier",
-"published": "2026-09-08", "published_h": "8 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "The monthly SLA report: <span class=\"accent\">what to include, how to compute it</span>",
 "lead": "A monitoring service the client never sees is a cost. The monthly report is how it becomes a deliverable — including in the months when nothing broke.",
@@ -1185,7 +1185,7 @@ POSTS = [
 "og_title": "SSL expiry monitoring in the age of 47-day certificates",
 "og_desc": "200-day certificates now, 47 by 2029. Renewal automation fails silently; monitoring is what catches it.",
 "img_alt": "A certificate validity window shrinking from a year to 47 days",
-"published": "2026-09-09", "published_h": "9 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "SSL certificate expiry monitoring: why <span class=\"accent\">shorter certificates</span> make it mandatory",
 "lead": "For twenty years a certificate was a once-a-year chore. Since March 2026 it is a five-times-a-year chore, and by 2029 it will be every six weeks. Automation does the renewing; monitoring catches the times it does not.",
@@ -1267,7 +1267,7 @@ POSTS = [
 "og_title": "Do you need a public status page?",
 "og_desc": "When it earns its place, what to show, private per-client pages, and the honesty rules that make it worth trusting.",
 "img_alt": "A status page showing per-component health and an open incident",
-"published": "2026-09-09", "published_h": "9 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Do you need a public status page? <span class=\"accent\">A guide for small teams</span>",
 "lead": "A status page is the cheapest support engineer you will ever hire — provided it tells the truth, and provided someone can find it before they open a ticket.",
@@ -1352,7 +1352,7 @@ POSTS = [
 "og_title": "Is it us or them? Third-party outages in a small team",
 "og_desc": "The first ten minutes, what not to do, how to communicate it, and how to shrink the blast radius before the next one.",
 "img_alt": "An incident timeline with a vendor status feed showing the upstream cause",
-"published": "2026-09-10", "published_h": "10 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Is it us or them? Handling <span class=\"accent\">third-party outages</span> in a small team",
 "lead": "In late 2025, a single cloud region and then a single CDN's configuration change each took a large slice of the internet's applications down for hours. Most of the affected teams spent the first half hour debugging their own code.",
@@ -1431,7 +1431,7 @@ POSTS = [
 "og_title": "Alert fatigue: why you ignore your own monitoring",
 "og_desc": "Five causes, six rules, and the two numbers that tell you whether your alerts are worth reading.",
 "img_alt": "A flood of alerts collapsing into one incident with evidence and an owner",
-"published": "2026-09-10", "published_h": "10 September 2026",
+"published": "2026-09-11", "published_h": "11 September 2026",
 "modified": "2026-09-11", "modified_h": "11 September 2026",
 "h1": "Alert fatigue in small teams: why you <span class=\"accent\">ignore your own monitoring</span>",
 "lead": "The monitoring was set up carefully. Three months later the channel is muted and the outage is discovered by a customer. Nothing broke in between except the ratio of alerts to problems.",

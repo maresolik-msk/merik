@@ -73,7 +73,7 @@
       <a class="link" href="/blog/" aria-current="page">Blog</a>
       <div class="nav-cta">
         <a class="btn btn-outline" href="/app/">Sign In</a>
-        <a class="btn btn-primary" href="/app/">Get Started</a>
+        <a class="btn btn-primary" href="/request-access">Get Started</a>
       </div>
     </nav>
     <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">☰</button>
@@ -182,8 +182,8 @@
     <p>The boundaries are respected in the product's own language: risk and confidence are separate numbers, the evidence list is always attached, warnings that fizzle resolve themselves and say so, and warnings that come true link to the incident they predicted — so the hit rate is a number you can check, not a claim you have to take. No verdicts, no mystique: <a href="/blog/proactive-application-monitoring">measured normal, honest deviation</a>, and one credible warning at a time.</p>
 
 
-    <p><a class="btn btn-primary" href="/app/">Create your workspace →</a></p>
-    <p style="margin-top:10px"><a href="/#talk-to-us" style="color:var(--brand);font-weight:600">Or talk to us about your team →</a></p>
+    <p><a class="btn btn-primary" href="/request-access?from=/blog/ai-application-monitoring">Request your workspace →</a></p>
+    <p style="margin-top:10px">Free, set up for you, every module included — <a href="/pricing" style="color:var(--brand);font-weight:600">see what the free workspace includes →</a></p>
   </div>
 </section>
 
@@ -223,7 +223,7 @@
       <div><h5>Product</h5><a href="/features">Features</a><a href="/modules">Modules</a><a href="/how-it-works">How it works</a><a href="/pricing">Pricing</a><a href="/roi">ROI calculator</a><a href="/glossary">Glossary</a><a href="/blog/">Blog</a><a href="/search">Search</a></div>
       <div><h5>Modules</h5><a href="/modules">Employees</a><a href="/modules">Attendance</a><a href="/modules">Leave &amp; Payroll</a><a href="/modules">Daily Tasks</a><a href="/modules">Clients &amp; Invoices</a><a href="/modules">Assets</a><a href="/modules">Digital Operations</a></div>
       <div><h5>Popular guides</h5><a href="/blog/employee-attendance-tracking-small-business">Attendance tracking</a><a href="/blog/attendance-to-payroll-automation">Attendance → payroll</a><a href="/blog/ctc-vs-in-hand-salary-payslip">CTC vs in-hand</a><a href="/blog/leave-management-small-business">Leave management</a><a href="/blog/choosing-hr-software-small-business-checklist">Choosing HR software</a><a href="/blog/proactive-application-monitoring">Proactive monitoring</a></div>
-      <div><h5>Get started</h5><a href="/app/">Create workspace</a><a href="/#talk-to-us">Talk to us</a><a href="/app/">Employee sign up</a><a href="mailto:maresolik@gmail.com">Contact us</a></div>
+      <div><h5>Company</h5><a href="/request-access">Request a workspace</a><a href="/app/">Sign in</a><a href="/about">About Merik</a><a href="/contact">Contact</a><a href="/security">Security</a><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a></div>
     </div>
     <div class="foot-social">
       <a href="https://www.linkedin.com/company/merik-msk/" rel="me noopener" target="_blank">LinkedIn</a>
@@ -255,7 +255,7 @@
   }else{revealAll();}
 </script>
 <script>
-  document.querySelectorAll('a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim()});});});
+  document.querySelectorAll('a[href^="/request-access"],a[href*="app/"]').forEach(function(a){a.addEventListener("click",function(){if(typeof gtag==="function")gtag("event","click_signup_cta",{link_text:a.textContent.trim(),destination:a.getAttribute("href")});});});
 </script>
 </body>
 </html>

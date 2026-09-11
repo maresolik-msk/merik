@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The app is an authenticated surface, not a page to rank. Header X-Robots-Tag in vercel.json says the same. -->
+<meta name="robots" content="noindex, nofollow">
 <title>Merik</title>
 <link rel="icon" type="image/png" href="../assets/images/favicon-32.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -954,7 +956,7 @@ function renderLogin(tab){
       <div><i class="fa-solid fa-money-bill-wave"></i> Automated payroll &amp; payslips</div>
       <div><i class="fa-solid fa-diagram-project"></i> Projects, clients &amp; task logs</div>
     </div></div></div>`;
-  const tabs=`<a href="../index.html" class="auth-back"><i class="fa-solid fa-arrow-left"></i> Back to home</a>
+  const tabs=`<a href="/" class="auth-back"><i class="fa-solid fa-arrow-left"></i> Back to home</a>
   ${AUTH_TAB==='forgot'?'':`<div class="auth-tabs">
     <button class="${AUTH_TAB==='login'?'on':''}" onclick="renderLogin('login')">Sign In</button>
     <button class="${AUTH_TAB==='signup'?'on':''}" onclick="renderLogin('signup')">Request Access</button></div>`}`;
