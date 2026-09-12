@@ -450,7 +450,7 @@ h1 .grad{background:linear-gradient(100deg,var(--brand) 0%,var(--brand-2) 55%,va
 .sec-badges{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:940px;margin:0 auto}
 .sec-badge{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;text-align:center;transition:transform .2s ease,border-color .2s ease}
 .sec-badge:hover{transform:translateY(-4px);border-color:var(--brand)}
-.sec-badge .ic{font-size:24px;margin-bottom:10px}
+.sec-badge .ic{font-size:24px;margin-bottom:10px;color:var(--brand)}
 .sec-badge b{display:block;font-size:15px;color:var(--ink);margin-bottom:5px}
 .sec-badge small{font-size:13px;color:var(--muted);line-height:1.5;display:block}
 
@@ -558,3 +558,5 @@ h1 .grad{background:linear-gradient(100deg,var(--brand) 0%,var(--brand-2) 55%,va
    explicit two-column grid for the long glossary index instead. */
 .toc ol.toc-2col{grid-template-columns:1fr 1fr;column-gap:34px}
 @media(max-width:700px){.toc ol.toc-2col{grid-template-columns:1fr}}
+
+.ico{width:1em;height:1em;display:inline-block;vertical-align:-.15em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
