@@ -387,6 +387,15 @@ h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
 .taskrow{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;background:var(--surface)}
 .taskrow .tasknum{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 label span{text-transform:none;letter-spacing:0;font-weight:400}
+.pulse{position:fixed;right:20px;bottom:20px;width:320px;max-width:calc(100vw - 32px);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:16px 18px;z-index:70;animation:fadein .2s ease}
+.pulse-q{font-weight:600;color:var(--ink);margin-right:24px}
+.pulse-stars{display:flex;gap:4px;margin:10px 0 4px}
+.pulse-stars button{background:none;border:0;font-size:22px;color:var(--input);cursor:pointer;padding:2px;line-height:1}
+.pulse-stars button.on,.pulse-stars button:hover{color:var(--brand)}
+.pulse-more textarea{margin:8px 0}
+.pulse-x{position:absolute;top:8px;right:8px;background:none;border:0;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px}
+.pulse-x:hover{background:var(--surface);color:var(--ink)}
+@media(max-width:768px){.pulse{left:12px;right:12px;bottom:12px;width:auto}}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .modal .card{width:640px;max-width:95vw;max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg);margin:0}
 
@@ -1024,6 +1033,43 @@ function promptDialog(msg,o={}){return new Promise(res=>{
   const inp=div.querySelector('#dlg_v');const done=v=>{div.remove();res(v)};div._resolve=done;div._cancelValue=null;
   div.querySelector('[data-ok]').onclick=()=>done(inp.value);div.querySelector('[data-x]').onclick=()=>done(null);
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done(inp.value)}});setTimeout(()=>inp.focus(),30);})}
+/* ---------- ADOPTION ----------
+   Page opens per workspace, role, page and day. Counted here, flushed once a minute and on
+   pagehide; the RPC attributes them to the caller's own workspace, so nothing can be filed
+   against another tenant. Superadmins have no workspace and are not counted. */
+const USAGE_Q={};
+function usageFlush(){if(!ME||ME.profile?.role==='superadmin')return;const rows=Object.entries(USAGE_Q).map(([view,n])=>({view,n}));if(!rows.length)return;
+  for(const k in USAGE_Q)delete USAGE_Q[k];sb.rpc('report_product_usage',{p_rows:rows}).then(()=>{},()=>{})}
+setInterval(usageFlush,60000);window.addEventListener('pagehide',usageFlush);
+/* ---------- PULSE ----------
+   One question, in the corner, at a few moments in a workspace's life: a week in, a month
+   in, after the first payslip release, then once a quarter. Answers are kept per user, so a
+   person is never asked the same question twice, on any device. "Not now" snoozes 3 days. */
+let PULSE_DONE=null;
+function pulseDue(org){const age=(Date.now()-new Date(org?.created_at||Date.now()))/864e5;const d=new Date();const t=[];
+  if(age>=7)t.push('week1');if(age>=30)t.push('month1');if(age>=90)t.push(`q${d.getFullYear()}-${Math.floor(d.getMonth()/3)+1}`);return t}
+async function pulseAsk(trigger){
+  if(!ME||ME.profile?.role==='superadmin'||$('pulse'))return;
+  try{if((+localStorage.getItem('merik.pulse.snooze.'+ME.user.id)||0)>Date.now())return}catch(e){}
+  if(!PULSE_DONE){const{data}=await sb.from('product_pulse').select('trigger').eq('user_id',ME.user.id);PULSE_DONE=new Set((data||[]).map(r=>r.trigger))}
+  if(!PULSE_DONE.has(trigger))pulseShow(trigger)}
+async function pulseMaybe(){if(!ME||ME.profile?.role==='superadmin')return;
+  if(!PULSE_DONE){const{data}=await sb.from('product_pulse').select('trigger').eq('user_id',ME.user.id);PULSE_DONE=new Set((data||[]).map(r=>r.trigger))}
+  const due=pulseDue(ME.org).find(t=>!PULSE_DONE.has(t));if(due)pulseAsk(due)}
+function pulseShow(trigger){if($('pulse'))return;const d=document.createElement('div');d.id='pulse';d.className='pulse noprint';d.setAttribute('role','region');d.setAttribute('aria-label','Feedback');
+  d.innerHTML=`<button class="pulse-x" onclick="pulseSnooze()" aria-label="Not now" title="Not now"><i class="fa-solid fa-xmark"></i></button>
+   <div class="pulse-q">How is Merik working for you?</div>
+   <div class="pulse-stars" role="radiogroup" aria-label="Rating out of 5">${[1,2,3,4,5].map(n=>`<button type="button" data-s="${n}" aria-label="${n} of 5"><i class="fa-regular fa-star"></i></button>`).join('')}</div>
+   <div class="pulse-more" hidden><textarea id="pulse_c" rows="2" maxlength="600" placeholder="What's one thing you'd change?"></textarea>
+   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm sec" onclick="pulseSnooze()">Not now</button><button class="btn sm" onclick="pulseSend('${trigger}')">Send</button></div></div>`;
+  d.querySelectorAll('.pulse-stars button').forEach(b=>b.onclick=()=>{const n=+b.dataset.s;d.dataset.score=n;
+    d.querySelectorAll('.pulse-stars button').forEach(x=>{const on=+x.dataset.s<=n;x.classList.toggle('on',on);x.querySelector('i').className=on?'fa-solid fa-star':'fa-regular fa-star'});
+    d.querySelector('.pulse-more').hidden=false;$('pulse_c').focus()});
+  document.body.appendChild(d)}
+function pulseSnooze(){try{localStorage.setItem('merik.pulse.snooze.'+ME.user.id,String(Date.now()+3*864e5))}catch(e){}$('pulse')?.remove()}
+async function pulseSend(trigger){const d=$('pulse');const score=+(d?.dataset.score||0);if(!score)return toast('Pick a star rating first.');
+  const{error}=await sb.from('product_pulse').insert({user_id:ME.user.id,role:ME.profile?.role,score,comment:$('pulse_c').value.trim()||null,page:VIEW,trigger});
+  if(error)return toast(saveErr(error));PULSE_DONE?.add(trigger);d.remove();toast('Thanks, that helps.')}
 /* ---------- UNSAVED CHANGES ----------
    Typing in any modal marks it dirty; leaving the page then asks first. Modals that keep
    their own draft (data-draft) are exempt, since a reload costs them nothing. */
@@ -1184,7 +1230,7 @@ const ADMIN_GROUPS=[
 // Merik super admin (product owner) — sees product feedback across all tenant orgs. Not a tenant admin.
 const SUPER_GROUPS=[
  [null,[['suoverview','<i class="fa-solid fa-gauge-high"></i>','Overview'],['suanalytics','<i class="fa-solid fa-chart-line"></i>','Analytics'],['suhealth','<i class="fa-solid fa-heart-pulse"></i>','Product Health']]],
- ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots"></i>','Feedback'],['suann','<i class="fa-solid fa-bullhorn"></i>','Announcements'],['suai','<i class="fa-solid fa-robot"></i>','AI Control']]]];
+ ['Product',[['sutenants','<i class="fa-solid fa-building"></i>','Tenants'],['suusers','<i class="fa-solid fa-users-gear"></i>','Users'],['signups','<i class="fa-solid fa-user-plus"></i>','Signup Requests'],['fb','<i class="fa-solid fa-comment-dots"></i>','Feedback'],['supulse','<i class="fa-solid fa-heart"></i>','Pulse'],['suann','<i class="fa-solid fa-bullhorn"></i>','Announcements'],['suai','<i class="fa-solid fa-robot"></i>','AI Control']]]];
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots"></i>','Feedback']]]];
@@ -1262,6 +1308,7 @@ function renderShell(){
   NOTIFS=[];loadNotifs();
   NOTIF_TIMER=setInterval(()=>{if(ME)loadNotifs();else clearInterval(NOTIF_TIMER)},180000);
   liveSubscribe();
+  setTimeout(pulseMaybe,4000);
   bindNotifDismiss();
   // Reopen where they left off — losing your place on every refresh is a small
   // insult that adds up over a working day.
@@ -1300,7 +1347,7 @@ function filterNav(q){
 }
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
-const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,suhealth,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,warns,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
+const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,suhealth,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,warns,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip,supulse};
 /* ---------- FRESHNESS ----------
    Other people's changes used to show only after a reload. The current view now re-runs
    quietly (no skeleton) when the tab regains focus, every 60 s, and on a Realtime change
@@ -1340,7 +1387,7 @@ async function liveSubscribe(){
   LIVE=ch.subscribe();
 }
 function liveUnsubscribe(){if(LIVE){try{sb.removeChannel(LIVE)}catch(e){}LIVE=null}}
-function go(v){if(ALLOWED_VIEWS&&!ALLOWED_VIEWS.has(v))v=HOME_VIEW;VIEW=v;closeSide();
+function go(v){if(ALLOWED_VIEWS&&!ALLOWED_VIEWS.has(v))v=HOME_VIEW;VIEW=v;closeSide();USAGE_Q[v]=(USAGE_Q[v]||0)+1;
   document.querySelectorAll('#side a').forEach(a=>{a.classList.remove('act');a.removeAttribute('aria-current')});
   const el=$('nav-'+v);
   if(el){el.classList.add('act');el.setAttribute('aria-current','page');
@@ -2932,6 +2979,7 @@ async function sendAll(y,m){
   if(error)return toast(saveErr(error));
   toast(`Released ${data?.length||0} paid payslip(s). Unpaid salaries were skipped.`);
   pay(`${y}-${String(m).padStart(2,'0')}`);
+  if(data?.length)setTimeout(()=>pulseAsk('first_payroll'),2500);
 }
 async function slip(eid,y,m){
   const [{data:e},{data:r}]=await Promise.all([
@@ -5383,6 +5431,38 @@ async function suaiSaveKey(){
 async function suaiSetActive(id){const r=await aiCall({action:'set_active',id});if(!r.ok)return toast(r.error);suai();}
 async function suaiKeyToggle(id,on){const{error}=await sb.from('ai_provider_keys').update({enabled:on}).eq('id',id);if(error)return toast(saveErr(error));suai();}
 async function suaiDelKey(id){if(!await confirmDialog('Delete this provider key? Any AI features using it will stop until you activate another.'))return;const r=await aiCall({action:'delete_key',id});if(!r.ok)return toast(r.error);suai();}
+/* Pulse: ratings from the last 90 days, activity from the last 30, per workspace. */
+async function supulse(){
+  const iso=d=>new Date(Date.now()-d*864e5).toISOString();const day=d=>iso(d).slice(0,10);
+  const [{data:pulses},{data:usage},{data:orgs},{data:emps},{data:profs},att,tu]=await Promise.all([
+    sb.from('product_pulse').select('org_id,role,score,comment,page,trigger,created_at').gte('created_at',iso(90)).order('created_at',{ascending:false}).limit(500),
+    sb.from('product_usage').select('org_id,role,view,day,count').gte('day',day(30)),
+    sb.from('orgs').select('id,name,modules,created_at,status'),
+    sb.from('employees').select('id,org_id,status'),
+    sb.from('profiles').select('id,org_id,employee_id'),
+    fetchAll(()=>sb.from('attendance').select('employee_id').gte('att_date',day(30))),
+    fetchAll(()=>sb.from('task_updates').select('employee_id').gte('upd_date',day(30)).eq('update_status','Update Shared'))]);
+  const P=pulses||[],U=usage||[],O=orgs||[],E=emps||[];
+  const checked=new Set((att||[]).map(r=>r.employee_id)),filed=new Set((tu||[]).map(r=>r.employee_id));
+  const lastDay={},viewsUsed={};U.forEach(u=>{if(!lastDay[u.org_id]||u.day>lastDay[u.org_id])lastDay[u.org_id]=u.day;(viewsUsed[u.org_id]=viewsUsed[u.org_id]||new Set()).add(u.view)});
+  const rows=O.map(o=>{const e=E.filter(x=>x.org_id===o.id&&x.status==='Active');const logins=(profs||[]).filter(x=>x.org_id===o.id&&x.employee_id).length;
+    const en=Array.isArray(o.modules)?o.modules:null;const used=new Set([...(viewsUsed[o.id]||[])].map(v=>VIEW_MODULE[v]).filter(Boolean));
+    const unused=MODULES.filter(([k])=>modOn(en,k)&&!used.has(k)).map(([,l])=>l);
+    const sc=P.filter(x=>x.org_id===o.id);
+    return {o,emps:e.length,logins,ci:e.filter(x=>checked.has(x.id)).length,fi:e.filter(x=>filed.has(x.id)).length,last:lastDay[o.id]||null,unused,avg:sc.length?(sc.reduce((a,b)=>a+b.score,0)/sc.length).toFixed(1):null,n:sc.length}});
+  const silent=rows.filter(r=>!r.last||r.last<day(7)).length;
+  const allAvg=P.length?(P.reduce((a,b)=>a+b.score,0)/P.length).toFixed(1):'—';
+  const stars=n=>`<span style="color:var(--brand);letter-spacing:1px">${'★'.repeat(n)}</span><span style="color:var(--input);letter-spacing:1px">${'★'.repeat(5-n)}</span>`;
+  M(pgh('Pulse','What users say, and where they stall. Ratings from the last 90 days, activity from the last 30.')+
+   kpis([['<i class="fa-solid fa-star"></i>','var(--brand-soft)','Average rating',allAvg,P.length+' response'+(P.length===1?'':'s')],
+         ['<i class="fa-solid fa-comment"></i>','#E6F7EC','With a comment',P.filter(x=>x.comment).length,'worth reading'],
+         ['<i class="fa-solid fa-moon"></i>','#FFF6E5','Silent workspaces',silent,'no page opened in 7 days'],
+         ['<i class="fa-solid fa-puzzle-piece"></i>','#FDECEA','Unused modules',rows.filter(r=>r.unused.length).length,'workspaces with a module never opened']])+
+   `<div class="card"><h3 style="margin:0 0 10px">Adoption by workspace</h3><table data-empty="No workspaces yet."><tr><th>Workspace</th><th>Employees / logins</th><th>Checked in (30d)</th><th>Filed updates (30d)</th><th>Last active</th><th>Rating</th><th>Modules never opened</th></tr>
+   ${rows.map(r=>`<tr><td><b>${esc(r.o.name)}</b>${r.o.status==='Suspended'?' <span class="badge stA">Suspended</span>':''}</td><td class="num">${r.emps} / ${r.logins}</td><td class="num">${r.ci} of ${r.emps}</td><td class="num">${r.fi} of ${r.emps}</td><td>${r.last?fmtDate(r.last):'<span class="tl-dash">never</span>'}</td><td>${r.avg?r.avg+' <span class="tl-sub">('+r.n+')</span>':'<span class="tl-dash">—</span>'}</td><td>${r.unused.length?esc(r.unused.join(', ')):'<span class="tl-sub">all opened</span>'}</td></tr>`).join('')}</table></div>
+   <div class="card"><h3 style="margin:0 0 10px">Responses</h3><table data-empty="No one has been asked yet. The first prompt appears a week after a workspace is created."><tr><th>When</th><th>Workspace</th><th>Role</th><th>Rating</th><th>Page</th><th>Prompt</th><th>Comment</th></tr>
+   ${P.map(x=>{const o=O.find(y=>y.id===x.org_id);return `<tr><td>${fmtDate(x.created_at)}</td><td>${esc(o?.name||'—')}</td><td>${esc(x.role||'')}</td><td>${stars(x.score)}</td><td>${esc(x.page||'')}</td><td>${esc(x.trigger)}</td><td>${esc(x.comment||'')}</td></tr>`}).join('')}</table></div>`);
+}
 async function suoverview(){
   const [{data:orgs},{data:emps},{data:sr},{data:fbk},ures]=await Promise.all([
     sb.from('orgs').select('id,name,status,created_at').order('created_at',{ascending:false}),
