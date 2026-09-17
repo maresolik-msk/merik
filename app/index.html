@@ -909,6 +909,12 @@ function bindNotifDismiss(){
     const p=$('notifpanel');if(p&&!p.hidden){closeNotifs();$('notifbtn').focus()}});
 }
 let BOOTING=false;
+/* ---------- UNSAVED CHANGES ----------
+   Typing in any modal marks it dirty; leaving the page then asks first. Modals that keep
+   their own draft (data-draft) are exempt, since a reload costs them nothing. */
+document.addEventListener('input',e=>{const m=e.target.closest?.('.modal');if(m)m.dataset.dirty='1'});
+document.addEventListener('change',e=>{const m=e.target.closest?.('.modal');if(m)m.dataset.dirty='1'});
+window.addEventListener('beforeunload',e=>{if(document.querySelector('.modal[data-dirty]:not([data-draft])')){e.preventDefault();e.returnValue=''}});
 async function boot(){
   if(BOOTING)return;BOOTING=true;
   try{await bootInner()}finally{BOOTING=false}
@@ -2272,7 +2278,26 @@ let FORM_PROJECTS=[];
 let PROJECTS_BY_CLIENT={};
 // Task Sheet rows queued for the next task form to append (see sheetToLog).
 let PENDING_SHEET=[];
-async function taskForm(eid,d,r){
+/* ---------- DRAFTS ----------
+   The daily update is the longest form in the product and it used to live only in the
+   modal: a refresh, a closed tab or a slipped Cancel threw away ten minutes of typing.
+   Every change is now snapshotted to localStorage, keyed by employee and day, and offered
+   back the next time that day's form opens. A successful save clears it. */
+const taskDraftKey=(eid,d)=>`merik.draft.task.${eid}.${d}`;
+let TASK_BASELINE='',TASK_FORM_ROW={};
+function taskSnapshot(){return{s:$('t_update_status')?.value||'',r:$('t_remarks')?.value||'',t:collectTasks()}}
+function taskDraftSave(eid,d){if(!$('tasklist'))return; // form already closed (Save or Cancel); a late timer must not write an empty draft
+  const snap=taskSnapshot();
+  try{if(JSON.stringify(snap)===TASK_BASELINE)localStorage.removeItem(taskDraftKey(eid,d));
+  else localStorage.setItem(taskDraftKey(eid,d),JSON.stringify({...snap,at:Date.now()}))}catch(e){}}
+function taskDraftLoad(eid,d){try{return JSON.parse(localStorage.getItem(taskDraftKey(eid,d))||'null')}catch(e){return null}}
+function discardTaskDraft(eid,d){try{localStorage.removeItem(taskDraftKey(eid,d))}catch(e){}
+  document.querySelector('.modal')?.remove();taskForm(eid,d,TASK_FORM_ROW);}
+function closeTaskForm(btn,eid,d){
+  if(JSON.stringify(taskSnapshot())!==TASK_BASELINE&&!confirm('Discard your unsaved changes to this update?'))return;
+  try{localStorage.removeItem(taskDraftKey(eid,d))}catch(e){}
+  btn.closest('.modal').remove();}
+async function taskForm(eid,d,r){TASK_FORM_ROW=r;
   const{data:pjs}=await sb.from('projects').select('name,status,clients(name)').order('name');
   await loadClientCodes();
   const sel=new Set((r.project||'').split(',').map(s=>s.trim()).filter(Boolean));
@@ -2296,8 +2321,8 @@ async function taskForm(eid,d,r){
   <div id="tasklist"></div>
   <label>Remarks (optional)</label><textarea id="t_remarks" rows="2">${esc(r.remarks||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveTask('${eid}','${d}')"><i class="fa-solid fa-circle-check"></i> Save Task</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeTaskForm(this,'${eid}','${d}')">Cancel</button></div></div>`;
+  div.dataset.draft='1';document.body.appendChild(div);
   // Load the on-device time model so we can suggest estimates as tasks are typed.
   loadTaskSamples().catch(()=>{});
   // Seed the task rows from the saved list, or from a legacy single-field update, or one empty row.
@@ -2308,6 +2333,17 @@ async function taskForm(eid,d,r){
   const pend=PENDING_SHEET;PENDING_SHEET=[];
   const rows=(seed||[]).concat(pend);
   (rows.length?rows:[{}]).forEach(addTaskRow);
+  // What the form shows straight from the database is the baseline; a draft only counts
+  // if it differs from that, so a draft equal to the saved row never nags.
+  TASK_BASELINE=JSON.stringify(taskSnapshot());
+  const draft=taskDraftLoad(eid,d);
+  if(draft&&JSON.stringify({s:draft.s,r:draft.r,t:draft.t})!==TASK_BASELINE){
+    $('t_update_status').value=draft.s;$('t_remarks').value=draft.r;
+    $('tasklist').innerHTML='';const dr=(draft.t||[]).concat(pend);(dr.length?dr:[{}]).forEach(addTaskRow);
+    div.querySelector('h2').insertAdjacentHTML('afterend',`<div class="warnbar" id="t_draftbar"><i class="fa-solid fa-clock-rotate-left"></i> Restored your unsaved draft from ${fmtTime(new Date(draft.at))}. <a href="#" onclick="discardTaskDraft('${eid}','${d}');return false">Discard draft</a></div>`);
+  }
+  let draftTimer=null;const queue=()=>{clearTimeout(draftTimer);draftTimer=setTimeout(()=>taskDraftSave(eid,d),300)};
+  ['input','change','click'].forEach(ev=>div.addEventListener(ev,queue));
 }
 // Split total minutes into {h,m} for the hours/minutes duration picker (0 → blank).
 function minToHM(mins){const m=+mins||0;return{h:Math.floor(m/60),m:m%60};}
@@ -2417,6 +2453,7 @@ async function saveTask(eid,d){
     not_working:null};
   const{error}=await sb.from('task_updates').upsert(o,{onConflict:'employee_id,upd_date'});
   if(error)return toast(saveErr(error));
+  try{localStorage.removeItem(taskDraftKey(eid,d))}catch(e){}
   // Stamp any Task Sheet rows that reached a log through this save. Done only on a
   // successful save, so cancelling the form never marks a task as logged.
   const ids=[...new Set(tasks.map(t=>t.sheet_id).filter(Boolean))];
