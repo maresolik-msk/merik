@@ -35,7 +35,7 @@ begin
     where c.contype  = 'f'
       and ref.relname = 'orgs'
       and n.nspname   = 'public'
-      and c.confdeltype <> 'c'          -- 'c' = already ON DELETE CASCADE
+      and c.confdeltype not in ('c','n') -- 'c' = already CASCADE; 'n' = SET NULL, chosen on purpose (feedback, signup_requests)
   loop
     def := r.cdef;
     if def ~ 'ON DELETE' then
