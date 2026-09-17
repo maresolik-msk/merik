@@ -348,8 +348,14 @@ label span{text-transform:none;letter-spacing:0;font-weight:400}
 .hol{background:#FFE8E8!important;color:#8B0000}
 
 /* ---- KPI ---- */
-.kpi{display:flex;gap:14px;flex-wrap:wrap}
-.kpi .card{flex:1;min-width:150px;text-align:center;margin:0}
+.kpi{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.kpi .card{flex:1;min-width:150px;margin:0}
+.kpi-tile{flex:1;min-width:190px;margin:0;display:flex;gap:14px;align-items:flex-start;text-align:left}
+.kpi-tile .kbody{min-width:0}
+.klabel{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kval{font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.2;font-variant-numeric:tabular-nums}
+.ksub{font-size:12px;font-weight:500;color:var(--muted);margin-top:2px}
+.kspark{margin-left:auto;align-self:center;flex:none}
 
 .kpi .n{font-size:28px;font-weight:800;color:var(--navy);letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 
@@ -632,7 +638,10 @@ function av(n){n=(n||'?').trim()||'?';const pr=n.split(/\s+/);const ini=((pr[0][
   const c=AVC[(n.charCodeAt(0)+n.length)%AVC.length];
   return `<span class="av2" style="background:${c}22;color:${c}">${ini}</span>`}
 function pgh(t,sub,action){return `<div class="pghead"><div><h2>${t}</h2><div class="sub">${sub}</div></div><div class="noprint">${action||''}</div></div>`}
-function kpis(arr){return `<div class="kpi" style="margin-bottom:16px">${arr.map(([ic,bg,label,val,sub,vid])=>`<div class="card" style="display:flex;gap:14px;align-items:center;margin:0"><div class="kicon" style="background:${bg}">${ic}</div><div style="text-align:left"><div style="font-size:11.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)">${label}</div><div ${vid?`id="${vid}"`:''} style="font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;color:var(--ink)">${val}</div>${sub?`<div style="font-size:11.5px;color:var(--muted)">${sub}</div>`:''}</div></div>`).join('')}</div>`}
+// One stat tile. kpis() and every page's stat row render through this, so a number looks the same everywhere.
+function tile(ic,bg,col,label,val,sub,subcol,extra,vid){return `<div class="card kpi-tile"><div class="kicon" style="background:${bg}${col?`;color:${col}`:''}">${ic}</div><div class="kbody"><div class="klabel">${label}</div><div class="kval"${vid?` id="${vid}"`:''}>${val}</div>${sub?`<div class="ksub"${subcol?` style="color:${subcol}"`:''}>${sub}</div>`:''}</div>${extra||''}</div>`}
+function kpis(arr){return `<div class="kpi">${arr.map(([ic,bg,label,val,sub,vid])=>tile(ic,bg,null,label,val,sub,null,null,vid)).join('')}</div>`}
+const stat=(ic,bg,col,label,val,sub,subcol,spk)=>tile(ic,bg,col,label,val,sub,subcol,spk?`<div class="kspark">${piSpark(spk,col)}</div>`:'');
 
 // Postgres reports an RLS rejection as "new row violates row-level security
 // policy", which tells the user nothing. In practice it means the signed-in
@@ -756,18 +765,21 @@ function stackTables(){
 }
 // Any table that renders with no rows gets a readable empty state instead of a
 // bare header. One hook here covers every table in the app.
-function emptyStates(){
-  document.querySelectorAll('#main table').forEach(tb=>{
+// root=#main after every render; a modal passes itself, where only tables that
+// declare data-empty get a row (the invoice line-item editor is a table too).
+function emptyStates(root){const inModal=!!root;root=root||$('main');if(!root)return;
+  root.querySelectorAll('table').forEach(tb=>{
     // Payslips and printable documents are layout tables — a "nothing here"
     // row would end up in the printed output.
-    if(tb.closest('.payslip')||tb.closest('#docsheet')||tb.closest('.modal')||tb.classList.contains('noempty'))return;
+    if(tb.closest('.payslip')||tb.closest('#docsheet')||tb.classList.contains('noempty'))return;
+    if(inModal?!tb.dataset.empty:tb.closest('.modal'))return;
     const body=tb.tBodies[0]||tb;
     if([...tb.rows].some(r=>r.cells[0]&&r.cells[0].tagName==='TD'))return;
     const cols=(tb.rows[0]||{cells:[]}).cells.length||1;
     const tr=document.createElement('tr');
     tr.innerHTML=`<td class="emptycell" colspan="${cols}">
       <i class="fa-solid fa-inbox" style="display:block;font-size:24px;opacity:.35;margin-bottom:8px;color:var(--brand)"></i>
-      Nothing here yet.</td>`;
+      ${esc(tb.dataset.empty||'Nothing here yet.')}</td>`;
     body.appendChild(tr);
   });
 }
@@ -936,7 +948,7 @@ new MutationObserver(enhancePasswords).observe(document.documentElement,{childLi
 function modal(html){const div=document.createElement('div');div.className='modal';div.innerHTML=html;
   div.addEventListener('mousedown',e=>{div._bd=e.target===div});
   div.addEventListener('click',e=>{if(e.target===div&&div._bd){div._resolve?div._resolve(div._cancelValue):closeModal(div)}div._bd=false});
-  document.body.appendChild(div);
+  document.body.appendChild(div);emptyStates(div);
   const f=div.querySelector('input:not([type=hidden]):not([type=file]),select,textarea,button');if(f)setTimeout(()=>f.focus(),30);
   return div}
 async function closeModal(div){if(!div||!div.isConnected)return;
@@ -1468,14 +1480,14 @@ async function prevEmp(){
   const{data}=await sb.from('employees').select('*').eq('status','Inactive').order('left_on',{ascending:false});
   const rows=data||[];
   M(pgh('Previous Employees','Former team members. Their attendance, tasks and payslips are preserved — open the relevant month in Attendance or Payroll to see them.','<button class="btn sec" onclick="emp()">‹ Back to Employees</button>')+
-  `<div class="card" style="overflow:auto"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>DOJ</th><th>Last working day</th><th>Monthly CTC</th><th></th></tr>
+  `<div class="card" style="overflow:auto"><table data-empty="No former employees."><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>DOJ</th><th>Last working day</th><th>Monthly CTC</th><th></th></tr>
   ${rows.map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td>
   <td>${e.doj?fmtDate(e.doj):'—'}</td><td style="white-space:nowrap"><span class="badge stA">${e.left_on?fmtDate(e.left_on):'—'}</span></td><td>${e.ctc?inr(e.ctc):''}</td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="empDetail('${e.id}')"><i class="fa-solid fa-eye"></i> View</button>
   <button class="btn sm sec" title="Change the last working day" onclick='editLeftDate("${e.id}",${JSON.stringify(e.full_name||"").replace(/'/g,"&#39;")},"${e.left_on||''}")'><i class="fa-regular fa-calendar"></i> Last day</button>
   <button class="btn sm sec" title="Salary & hike history" onclick="salaryHistory('${e.id}')"><i class="fa-solid fa-arrow-trend-up"></i> Salary</button>
   <button class="btn sm" onclick="restoreEmp('${e.id}')" title="Bring back to the active team"><i class="fa-solid fa-rotate-left"></i> Restore</button></td></tr>`).join('')
-  ||'<tr><td colspan="8" style="text-align:center;color:#889;padding:24px">No former employees.</td></tr>'}</table></div>`);
+  }</table></div>`);
 }
 // ---- Individual employee page: view details, email login credentials, send a document ----
 async function empDetail(eid){
@@ -1589,11 +1601,11 @@ async function salaryHistory(eid){
   const div=modal(`<div class="card" style="max-width:620px"><h2>Salary &amp; Hikes — ${esc(e.full_name)}</h2>
   <div class="kpi" style="margin:0 0 12px"><div class="card" style="margin:0;flex:1"><div style="font-size:12.5px;color:var(--muted)">Current monthly CTC</div><div style="font-size:24px;font-weight:800;color:var(--ink)">${e.ctc?inr(e.ctc):'—'}</div><div class="tl-sub">${e.ctc?inr(e.ctc*12)+' / year':''}</div></div></div>
   <div style="display:flex;justify-content:space-between;align-items:center"><label style="margin:0">Revision history</label><button class="btn sm" onclick="hikeForm('${eid}',${+e.ctc||0})"><i class="fa-solid fa-arrow-trend-up"></i> Revise salary</button></div>
-  <div class="card" style="overflow:auto;padding:0;margin-top:8px"><table class="nopg"><tr><th>Effective from</th><th>Previous</th><th>New</th><th>Change</th><th>Note</th></tr>
+  <div class="card" style="overflow:auto;padding:0;margin-top:8px"><table class="nopg" data-empty="No revisions recorded yet."><tr><th>Effective from</th><th>Previous</th><th>New</th><th>Change</th><th>Note</th></tr>
   ${rows.map(h=>{const pv=+h.previous_ctc||0,nv=+h.new_ctc||0;const pct=pv?Math.round((nv-pv)/pv*100):null;const up=nv>=pv;
     return `<tr><td style="white-space:nowrap">${new Date(h.effective_month+'T00:00:00').toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</td>
     <td>${pv?inr(pv):'—'}</td><td style="font-weight:700">${inr(nv)}</td>
-    <td style="color:${up?'var(--green)':'var(--red)'};font-weight:600">${pct==null?'—':`${up?'▲':'▼'} ${Math.abs(pct)}%`}</td><td style="font-size:12px">${esc(h.note||'')}</td></tr>`;}).join('')||'<tr><td colspan="5" style="color:#889">No revisions recorded yet.</td></tr>'}</table></div>
+    <td style="color:${up?'var(--green)':'var(--red)'};font-weight:600">${pct==null?'—':`${up?'▲':'▼'} ${Math.abs(pct)}%`}</td><td style="font-size:12px">${esc(h.note||'')}</td></tr>`;}).join('')}</table></div>
   <div style="margin-top:12px;text-align:right"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Close</button></div></div>`);
 }
 function hikeForm(eid,curCtc){
@@ -2075,10 +2087,6 @@ async function task(d){
   const start=st.page*ps;const pageRows=display.slice(start,start+ps);
   const segBtn=(p,l)=>`<button class="btn sm ${st.period===p?'':'sec'}" onclick="setTaskPeriod('${p}')">${l}</button>`;
   // Stat cards
-  const stat=(ic,bg,col,label,val,sub,subcol)=>`<div class="card" style="margin:0;flex:1;min-width:210px"><div style="display:flex;gap:14px;align-items:flex-start">
-    <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
-    <div><div style="font-size:12.5px;color:var(--muted)">${label}</div><div style="font-size:26px;font-weight:800;color:var(--ink);line-height:1.15">${val}</div>
-    ${sub?`<div style="font-size:11.5px;color:${subcol||'var(--muted)'};font-weight:600;margin-top:2px">${sub}</div>`:''}</div></div></div>`;
   const R=22,C=2*Math.PI*R;
   const donut=`<div class="card" style="margin:0;flex:1;min-width:210px"><div style="display:flex;gap:14px;align-items:center">
     <svg width="62" height="62" viewBox="0 0 60 60" style="flex:none"><circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--line)" stroke-width="7"/>
@@ -2112,7 +2120,7 @@ async function task(d){
    <button class="tl-icon-btn" onclick="exportTasks()"><i class="fa-solid fa-download"></i> Export</button>
   </div>
   <div class="card" style="overflow:auto;padding:0">
-  <table id="tasktbl"><tr><th>Date</th><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
+  <table id="tasktbl" data-empty="No updates match your filters."><tr><th>Date</th><th>ID</th><th>Name</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
   ${pageRows.map(r=>{const e=empName[r.employee_id]||{};const s=r.update_status||'No Update';
     const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW','Weekend':'stW','Absent':'stA'}[s]||'stA';
     const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
@@ -2125,7 +2133,7 @@ async function task(d){
     <td style="font-size:12.5px">${renderTaskCell(r)}</td>
     <td style="text-align:center">${proofCell(r)}</td>
     <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
-    <td class="noprint"><button class="tl-go" title="Open / edit" onclick='taskForm("${r.employee_id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button></td></tr>`}).join('')||'<tr><td colspan="9" style="text-align:center;color:#889;padding:30px">No updates match your filters.</td></tr>'}</table></div>
+    <td class="noprint"><button class="tl-go" title="Open / edit" onclick='taskForm("${r.employee_id}","${r.upd_date}",${rj})'><i class="fa-solid fa-chevron-right"></i></button></td></tr>`}).join('')}</table></div>
   <div class="tl-foot noprint">
    <span>Showing ${total?start+1:0} to ${Math.min(start+ps,total)} of ${total} entries</span>
    <div class="tl-pages">${taskPageBtns(pages,st.page)}</div>
@@ -2189,10 +2197,10 @@ async function insights(){
     `<div style="display:flex;gap:8px;align-items:center">${modeBtn('month','Month')}${modeBtn('day','Day')}${picker}</div>`)+
   `<div class="warnbar"><i class="fa-solid fa-brain" style="color:var(--brand)"></i> The on-device model learns from logged <b>actual time</b> per task to predict how long similar future tasks will take. The more tasks employees time, the sharper it gets.</div>
   <div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-list-check"></i>','var(--brand-soft)','var(--brand)','Tasks logged',items.length,timed.length+' timed')}
-   ${suStat('<i class="fa-regular fa-clock"></i>','#E6F7EC','var(--green)','Total tracked',fmtMin(totalMin),periodSub)}
-   ${suStat('<i class="fa-solid fa-gauge"></i>','var(--brand-soft)','var(--brand)','Avg / task',timed.length?fmtMin(Math.round(totalMin/timed.length)):'—','across all')}
-   ${suStat('<i class="fa-solid fa-bullseye"></i>','#FFF6E5','var(--amber)','Estimate accuracy',acc==null?'—':acc+'%',withBoth.length+' with estimates')}
+   ${stat('<i class="fa-solid fa-list-check"></i>','var(--brand-soft)','var(--brand)','Tasks logged',items.length,timed.length+' timed')}
+   ${stat('<i class="fa-regular fa-clock"></i>','#E6F7EC','var(--green)','Total tracked',fmtMin(totalMin),periodSub)}
+   ${stat('<i class="fa-solid fa-gauge"></i>','var(--brand-soft)','var(--brand)','Avg / task',timed.length?fmtMin(Math.round(totalMin/timed.length)):'—','across all')}
+   ${stat('<i class="fa-solid fa-bullseye"></i>','#FFF6E5','var(--amber)','Estimate accuracy',acc==null?'—':acc+'%',withBoth.length+' with estimates')}
   </div>
   ${day?dayLog()+'<div style="height:14px"></div>':''}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
@@ -2297,10 +2305,6 @@ function renderProjint(){
   let cards=P;
   if(st.stage)cards=cards.filter(p=>p.currentStage===st.stage);
   if(st.q){const q=st.q.toLowerCase();cards=cards.filter(p=>(p.name+' '+p.client+' '+Object.keys(p.depts).join(' ')).toLowerCase().includes(q));}
-  const kcard=(ic,bg,col,label,val,sub,subcol,spk)=>`<div class="card" style="margin:0;flex:1;min-width:220px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-    <div style="display:flex;gap:12px"><div class="kicon" style="background:${bg};color:${col}">${ic}</div>
-    <div><div style="font-size:12.5px;color:var(--muted)">${label}</div><div style="font-size:26px;font-weight:800;color:var(--ink);line-height:1.1">${val}</div><div style="font-size:11.5px;color:${subcol||'var(--muted)'};font-weight:600">${sub}</div></div></div>
-    ${piSpark(spk,col)}</div></div>`;
   const stageTab=(s,l)=>`<button class="${st.stage===s?'on':''}" onclick="setPiStage('${s}')">${l}</button>`;
   const grid=st.view==='grid';
   const card=(p)=>{const topCat=Object.entries(p.cats).sort((a,b)=>b[1]-a[1])[0];const depts=Object.entries(p.depts).sort((a,b)=>b[1].tasks-a[1].tasks);
@@ -2316,10 +2320,10 @@ function renderProjint(){
   M(pgh('Project Intelligence <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--brand);font-size:16px"></i>','Real-time overview of how projects are progressing across teams and priorities.',
     `<span class="pi-datepill"><i class="fa-regular fa-calendar"></i> ${fmtDate(today())}</span>`)+
   `<div class="kpi" style="margin-bottom:6px">
-   ${kcard('<i class="fa-solid fa-folder-open"></i>','var(--brand-soft)','var(--brand)','Total Projects',P.length,active.length+' active',null,series)}
-   ${kcard('<i class="fa-solid fa-people-group"></i>','#E6F7EC','var(--green)','Departments',kpiDepts.size,'Contributing','var(--green)',series)}
-   ${kcard('<i class="fa-solid fa-fire"></i>','#FDECEA','var(--red)','High-priority Tasks',highTasks,'Flagged by AI','var(--red)',series)}
-   ${kcard('<i class="fa-solid fa-triangle-exclamation"></i>','#FFF6E5','var(--amber)','Blockers',blockers,'Across projects','var(--amber)',series)}
+   ${stat('<i class="fa-solid fa-folder-open"></i>','var(--brand-soft)','var(--brand)','Total Projects',P.length,active.length+' active',null,series)}
+   ${stat('<i class="fa-solid fa-people-group"></i>','#E6F7EC','var(--green)','Departments',kpiDepts.size,'Contributing','var(--green)',series)}
+   ${stat('<i class="fa-solid fa-fire"></i>','#FDECEA','var(--red)','High-priority Tasks',highTasks,'Flagged by AI','var(--red)',series)}
+   ${stat('<i class="fa-solid fa-triangle-exclamation"></i>','#FFF6E5','var(--amber)','Blockers',blockers,'Across projects','var(--amber)',series)}
   </div>
   <div class="pi-toolbar">
    <div class="tl-search" style="flex:1;min-width:220px"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="pi_q" placeholder="Search projects, teams or tasks…" value="${esc(st.q)}" oninput="setPiSearch(this.value)"></div>
@@ -2345,10 +2349,10 @@ async function projintDetail(name){
   `<div class="card"><div style="font-weight:700;color:var(--ink);margin-bottom:2px">Project journey</div><div class="tl-sub" style="margin-bottom:4px">Inferred from task activity — onboarding through delivery.</div>${journeyStepper(p.currentStage)}
    <div class="tl-sub" style="margin-top:6px">${STAGES.map(s=>`${s}: <b>${p.stages[s]||0}</b>`).join(' &nbsp;·&nbsp; ')}</div></div>
   <div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-list-check"></i>','var(--brand-soft)','var(--brand)','Tasks',p.tasks,fmtMin(p.mins)+' tracked')}
-   ${suStat('<i class="fa-solid fa-people-group"></i>','#E6F7EC','var(--green)','Teams',depts.length,people.length+' people')}
-   ${suStat('<i class="fa-solid fa-fire"></i>','#FDECEA','var(--red)','High priority',p.items.filter(i=>i.imp.level==='High').length,p.blockers+' blockers')}
-   ${suStat('<i class="fa-regular fa-clock"></i>','var(--brand-soft)','var(--brand)','Predicted remaining',remN?fmtMin(remEffort):'—',remN+' open tasks')}
+   ${stat('<i class="fa-solid fa-list-check"></i>','var(--brand-soft)','var(--brand)','Tasks',p.tasks,fmtMin(p.mins)+' tracked')}
+   ${stat('<i class="fa-solid fa-people-group"></i>','#E6F7EC','var(--green)','Teams',depts.length,people.length+' people')}
+   ${stat('<i class="fa-solid fa-fire"></i>','#FDECEA','var(--red)','High priority',p.items.filter(i=>i.imp.level==='High').length,p.blockers+' blockers')}
+   ${stat('<i class="fa-regular fa-clock"></i>','var(--brand-soft)','var(--brand)','Predicted remaining',remN?fmtMin(remEffort):'—',remN+' open tasks')}
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
    <div class="card" style="padding:0;overflow:auto"><div style="padding:14px 16px 0;font-weight:700;color:var(--ink)">Team / department split</div>
@@ -2962,7 +2966,7 @@ async function asset(){
     ['<i class="fa-solid fa-user-check"></i>','#E6F7EC','In Use',c('In Use')],
     ['<i class="fa-solid fa-box-open"></i>','#FFE9DC','Available',c('Available')],
     ['<i class="fa-solid fa-screwdriver-wrench"></i>','#FDEBD0','Repair / Retired',c('Repair')+c('Retired')]])+
-  `<div class="card" style="overflow:auto"><table><tr><th>Asset</th><th>Category</th><th>Serial No</th><th>Status</th><th>Assigned To</th><th>Notes</th><th></th></tr>
+  `<div class="card" style="overflow:auto"><table data-empty="No assets yet — add your first one."><tr><th>Asset</th><th>Category</th><th>Serial No</th><th>Status</th><th>Assigned To</th><th>Notes</th><th></th></tr>
   ${list.map(a=>{const e=byId[a.assigned_to];const rj=JSON.stringify(a).replace(/'/g,"&#39;");
     return `<tr><td style="white-space:nowrap">${av(a.name)}<b>${esc(a.name)}</b></td>
     <td>${esc(a.category)}</td><td style="font-size:12px">${a.serial_no?esc(a.serial_no):'<span class="tl-dash">—</span>'}</td>
@@ -2975,7 +2979,7 @@ async function asset(){
       <button class="btn sm sec" onclick="assetHist('${a.id}')" title="Assignment history"><i class="fa-solid fa-clock-rotate-left"></i></button>
       <button class="btn sm sec" onclick='assetForm(${rj})'>Edit</button>
       <button class="btn sm warn" onclick="delAsset('${a.id}')">Del</button></td></tr>`}).join('')
-    ||'<tr><td colspan="7" style="text-align:center;color:#889;padding:30px">No assets yet — add your first one.</td></tr>'}</table></div>`);
+    }</table></div>`);
 }
 function assetForm(a={}){
   const sel=(k,opts,cur)=>`<select id="a_${k}">${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
@@ -3062,7 +3066,7 @@ async function soft(){
   // Usage-based spend only counts once it's logged — say so rather than quietly under-reporting.
   (unlogged.length?`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand)"></i>
     <b>${unlogged.length}</b> usage-based ${unlogged.length===1?'service has':'services have'} no spend logged yet (${unlogged.map(s=>esc(s.name)).join(', ')}), so ${unlogged.length===1?'it isn’t':'they aren’t'} counted in cost / month. Use <b>Spend</b> to log what you were billed.</div>`:'')+
-  `<div class="card" style="overflow:auto"><table><tr><th>Software</th><th>Vendor</th><th>Team</th><th>Seats</th><th>Cost</th><th>Renewal</th><th>Status</th><th></th></tr>
+  `<div class="card" style="overflow:auto"><table data-empty="No software tracked yet — add your first subscription."><tr><th>Software</th><th>Vendor</th><th>Team</th><th>Seats</th><th>Cost</th><th>Renewal</th><th>Status</th><th></th></tr>
   ${list.map(s=>{const u=used[s.id]||0;const pg=isPayg(s);const lt=latest[s.id];
     const d=pg?null:daysTo(s.renewal_date);const rj=JSON.stringify(s).replace(/'/g,"&#39;");
     const over=!pg&&s.seats!=null&&u>s.seats;
@@ -3083,7 +3087,7 @@ async function soft(){
       <button class="btn sm ${pg?'sec':''}" onclick="seatForm('${s.id}')" title="${pg?'Who can log in':'Manage who holds a seat'}">${pg?'Access':'Seats'}</button>
       <button class="btn sm sec" onclick='softForm(${rj})'>Edit</button>
       <button class="btn sm warn" onclick="delSoft('${s.id}')">Del</button></td></tr>`}).join('')
-    ||'<tr><td colspan="8" style="text-align:center;color:#889;padding:30px">No software tracked yet — add your first subscription.</td></tr>'}</table></div>`);
+    }</table></div>`);
 }
 function softForm(s={}){
   const depts=[...new Set(ASSET_EMPS.map(e=>e.department).filter(Boolean))].sort();
@@ -3311,7 +3315,7 @@ async function dops(){
       <button class="btn sm sec" onclick='clientUpdateForm(${JSON.stringify(i).replace(/'/g,"&#39;")})'
         title="Write what the client sees">${i.client_visible?'Client update ✓':'Client update'}</button>
       <button class="btn sm" onclick="resolveIncident('${i.id}')">Resolve</button></td></tr>`).join('')}</table></div>`:'')+
-  `<div class="card" style="overflow:auto"><table><tr><th>Asset</th><th>Client</th><th>Project</th><th>Owner</th><th>SLA</th><th>Health</th><th>Depends on</th><th>Status</th><th></th></tr>
+  `<div class="card" style="overflow:auto"><table data-empty="No digital assets yet — add a client site or API to start watching it."><tr><th>Asset</th><th>Client</th><th>Project</th><th>Owner</th><th>SLA</th><th>Health</th><th>Depends on</th><th>Status</th><th></th></tr>
   ${list.map(a=>{const rj=JSON.stringify(a).replace(/'/g,"&#39;");
     const muted=a.maintenance_until&&new Date(a.maintenance_until)>new Date();
     return `<tr><td style="white-space:nowrap">${av(a.name)}<b>${esc(a.name)}</b>
@@ -3329,13 +3333,13 @@ async function dops(){
       ${a.primary_url?`<button class="btn sm sec" onclick="muteAsset('${a.id}')" title="Deploying? Stop incidents for ${DA_MUTE_MIN} minutes">Mute ${DA_MUTE_MIN}m</button>`:''}
       <button class="btn sm sec" onclick='dopsForm(${rj})'>Edit</button>
       <button class="btn sm warn" onclick="delDops('${a.id}')">Del</button></td></tr>`}).join('')
-    ||'<tr><td colspan="9" style="text-align:center;color:#889;padding:30px">No digital assets yet — add a client site or API to start watching it.</td></tr>'}</table></div>
+    }</table></div>
 
   <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
     <div><h3 style="margin:0">Status pages</h3>
     <div style="font-size:12px;color:#889">A public page you can give a client. Only incidents you have written a client update for appear on it.</div></div>
     <button class="btn sm" onclick="statusPageForm()">＋ New page</button></div>
-  <table><tr><th>Page</th><th>Client</th><th>Link</th><th></th></tr>
+  <table data-empty="No status pages yet."><tr><th>Page</th><th>Client</th><th>Link</th><th></th></tr>
   ${DOPS_PAGES.map(p=>`<tr>
     <td><b>${esc(p.title)}</b>${p.enabled?'':' <span class="badge stA">disabled</span>'}</td>
     <td>${p.client_id?esc(cn[p.client_id]||'—'):'<span style="color:var(--muted)">Whole company</span>'}</td>
@@ -3344,7 +3348,7 @@ async function dops(){
       <button class="btn sm sec" onclick="copyStatusLink(${escArg(p.token)})">Copy</button>
       <a class="btn sm sec" href="${esc(statusUrl(p.token))}" target="_blank" rel="noopener">Open</a>
       <button class="btn sm warn" onclick="delStatusPage('${p.id}')">Del</button></td></tr>`).join('')
-    ||'<tr><td colspan="4" style="text-align:center;color:#889;padding:24px">No status pages yet.</td></tr>'}</table></div>`);
+    }</table></div>`);
   // The probe writes status from Postgres, so the page has to re-read to notice.
   // A stale "operational" is the one value on this page that must not linger.
   // Hold off while a modal is open or the table is being filtered — a refresh
@@ -3649,7 +3653,7 @@ async function warnSet(id,state){
 ---------------------------------------------------------------------------- */
 const hookUrl=t=>`${SB_URL}/functions/v1/hooks?t=${encodeURIComponent(t)}`;
 function repoRows(links,cn,pn,an){
-  if(!links.length)return '<tr><td colspan="5" style="text-align:center;color:#889;padding:24px">No repositories connected yet.</td></tr>';
+  if(!links.length)return '';
   return links.map(l=>{
     // "Connected but silent" and "connected and working" look identical without
     // this, and the usual cause of silence is a webhook that was never saved.
@@ -3765,7 +3769,7 @@ async function devact(){
     <div><h3 style="margin:0">Connected repositories</h3>
     <div style="font-size:12px;color:#889">Merik gives you the URL and secret; you add the webhook in GitHub once.</div></div>
     <button class="btn sm" onclick='repoForm(${JSON.stringify(cls||[]).replace(/'/g,"&#39;")},${JSON.stringify(prjs||[]).replace(/'/g,"&#39;")},${JSON.stringify(assets||[]).replace(/'/g,"&#39;")})'>＋ Connect repository</button></div>
-    <table><tr><th>Repository</th><th>Client</th><th>Project</th><th>Asset</th><th></th></tr>
+    <table data-empty="No repositories connected yet."><tr><th>Repository</th><th>Client</th><th>Project</th><th>Asset</th><th></th></tr>
     ${repoRows(links||[],cn,pn,an)}</table></div>`+
   (list.length?Object.keys(byDay).sort().reverse().map(d=>`<div class="card">
     <h3 style="margin:0 0 10px">${fmtDate(d)} <span style="font-weight:400;color:var(--muted);font-size:13px">— ${byDay[d].length} event${byDay[d].length===1?'':'s'}</span></h3>
@@ -4624,10 +4628,6 @@ async function myupd(dstr){
   if(st.page>=pages)st.page=pages-1;if(st.page<0)st.page=0;
   const start=st.page*ps,pageRows=display.slice(start,start+ps);
   const segBtn=(p,l)=>`<button class="btn sm ${st.period===p?'':'sec'}" onclick="setMyPeriod('${p}')">${l}</button>`;
-  const stat=(ic,bg,col,label,val,sub,subcol)=>`<div class="card" style="margin:0;flex:1;min-width:200px"><div style="display:flex;gap:14px;align-items:flex-start">
-    <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
-    <div><div style="font-size:12.5px;color:var(--muted)">${label}</div><div style="font-size:26px;font-weight:800;color:var(--ink);line-height:1.15">${val}</div>
-    ${sub?`<div style="font-size:11.5px;color:${subcol||'var(--muted)'};font-weight:600;margin-top:2px">${sub}</div>`:''}</div></div></div>`;
   const R=22,C=2*Math.PI*R;
   const donut=`<div class="card" style="margin:0;flex:1;min-width:200px"><div style="display:flex;gap:14px;align-items:center">
     <svg width="62" height="62" viewBox="0 0 60 60" style="flex:none"><circle cx="30" cy="30" r="${R}" fill="none" stroke="var(--line)" stroke-width="7"/>
@@ -4657,7 +4657,7 @@ async function myupd(dstr){
    <div class="tl-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="mysearch" placeholder="Search my updates…" value="${esc(st.search)}" oninput="setMySearch(this.value)"></div>
   </div>
   <div class="card" style="overflow:auto;padding:0">
-  <table id="tasktbl"><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
+  <table id="tasktbl" data-empty="No updates in this period."><tr><th>Date</th><th>Status</th><th>Client / Project</th><th>Tasks</th><th>Proof</th><th>Remarks</th><th></th></tr>
   ${pageRows.map(r=>{const s=r.update_status||'No Update';
     const cls2={'Update Shared':'stP','No Update':'stA','WFH':'stL','Leave':'stH','Sick Leave':'stOL','Holiday':'stW','Weekend':'stW','Absent':'stA'}[s]||'stA';
     const tm=r.created_at?new Date(r.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
@@ -4669,7 +4669,7 @@ async function myupd(dstr){
     <td style="font-size:12.5px">${renderTaskCell(r)}</td>
     <td style="text-align:center">${proofCell(r)}</td>
     <td style="max-width:150px;font-size:12px">${cell(r.remarks)}</td>
-    <td class="noprint">${action}</td></tr>`}).join('')||'<tr><td colspan="7" style="text-align:center;color:#889;padding:30px">No updates in this period.</td></tr>'}</table></div>
+    <td class="noprint">${action}</td></tr>`}).join('')}</table></div>
   <div class="tl-foot noprint">
    <span>Showing ${total?start+1:0} to ${Math.min(start+ps,total)} of ${total} entries</span>
    <div class="tl-pages">${pageBtnsFn(pages,st.page,'setMyPage')}</div>
@@ -4711,12 +4711,12 @@ async function mywfh(){
   <div><label>Type</label><select id="w_status" onchange="wfhEstimate()">${['WFH','Leave','Sick Leave','Emergency Leave','Half Day'].map(s=>`<option>${s}</option>`).join('')}</select></div>
   <div><label>Reason</label><input id="w_reason"></div><div><button class="btn" onclick="reqWfh()">Submit</button></div></div>
   <div id="w_est" class="tl-sub" style="margin-top:10px"></div></div>
-  <div class="card"><table><tr><th>Dates</th><th>Leave used</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
+  <div class="card"><table data-empty="No requests yet."><tr><th>Dates</th><th>Leave used</th><th>Type</th><th>Reason</th><th>Approved</th><th></th></tr>
   ${MY_LEAVE.map(r=>{const e=r.end_date||r.req_date,cost=leaveDays(r),ap=r.approved||'Pending';
   return `<tr><td style="white-space:nowrap">${e!==r.req_date?`${fmtDate(r.req_date)} → ${fmtDate(e)}`:fmtDate(r.req_date)}</td>
   <td>${cost?leaveNum(cost)+' day'+(cost===1?'':'s'):'—'}</td><td>${r.status}</td><td>${esc(r.reason)}</td>
   <td><span class="badge ${ap==='Yes'?'stP':ap==='No'?'stA':'stL'}">${ap}</span></td>
-  <td class="noprint">${ap==='Pending'?`<button class="btn sm sec" onclick="withdrawWfh('${r.id}')"><i class="fa-solid fa-xmark"></i> Withdraw</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="6" style="text-align:center;color:#889;padding:30px">No requests yet.</td></tr>'}</table></div>`);
+  <td class="noprint">${ap==='Pending'?`<button class="btn sm sec" onclick="withdrawWfh('${r.id}')"><i class="fa-solid fa-xmark"></i> Withdraw</button>`:''}</td></tr>`}).join('')}</table></div>`);
   wfhEstimate();
 }
 // What this request will actually cost, before it is sent — the part people were
@@ -4808,7 +4808,7 @@ async function mynotes(){
       <div><label>Estimated time</label>${hmField('ts-est',{h:'',m:''})}</div>
       <div><button class="nx-btn-brand" onclick="addSheetTask()"><i class="fa-solid fa-plus"></i> Add Task</button></div>
     </div>
-    <div style="overflow:auto"><table style="margin-top:12px"><tr><th style="width:34px"></th><th>Task</th><th>Client / Project</th><th>Est. Time</th><th>Added</th><th>Logged</th><th></th></tr>
+    <div style="overflow:auto"><table style="margin-top:12px" data-empty="No tasks on your sheet yet."><tr><th style="width:34px"></th><th>Task</th><th>Client / Project</th><th>Est. Time</th><th>Added</th><th>Logged</th><th></th></tr>
     ${SHEET.map(t=>{const lk=sheetLocked(t);const onToday=String(t.last_logged_on||'').slice(0,10)===today();
       return `<tr><td><input type="checkbox" class="nx-checkbox" ${t.done?'checked':''} onchange="toggleSheetDone('${t.id}',this.checked)" title="Mark done"></td>
       <td style="max-width:280px;${t.done?'text-decoration:line-through;color:#99a':''}">${esc(t.task)}</td>
@@ -4825,7 +4825,7 @@ async function mynotes(){
         ${lk?`<button class="btn sm sec" disabled title="Reported in a task log on ${fmtDate(t.first_logged_on)} — the details are locked. You can still mark it done."><i class="fa-solid fa-lock"></i></button>`
             :`<button class="btn sm sec" onclick="editSheetTask('${t.id}')">Edit</button>`}
         <button class="btn sm warn" onclick="delSheetTask('${t.id}')"><i class="fa-solid fa-trash-can"></i></button></td></tr>`}).join('')
-      ||'<tr><td colspan="7" style="text-align:center;color:#889;padding:22px">No tasks on your sheet yet.</td></tr>'}</table></div>
+      }</table></div>
     ${SHEET.length?`<div class="nx-divider">${SHEET.length} task${SHEET.length===1?'':'s'}</div>`:''}
   </div>
 
@@ -4932,10 +4932,10 @@ async function myfb(){
     <div style="max-width:200px"><label>Category</label><select id="fb_cat">${FB_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
     <label>Your feedback / requirement</label><textarea id="fb_msg" rows="3" placeholder="Describe your feedback or requirement…"></textarea>
     <div style="margin-top:10px"><button class="btn" onclick="sendFb()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button></div></div>
-  <div class="card"><table><tr><th>Date</th><th>Category</th><th>Feedback</th><th>Status</th><th>Admin Reply</th></tr>
+  <div class="card"><table data-empty="No feedback submitted yet."><tr><th>Date</th><th>Category</th><th>Feedback</th><th>Status</th><th>Admin Reply</th></tr>
   ${(data||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td><td>${esc(r.category)}</td>
   <td style="max-width:320px">${esc(r.message)}</td><td><span class="badge ${fbBadge(r.status)}">${esc(r.status)}</span></td>
-  <td style="max-width:260px;font-size:12px;color:#445">${esc(r.admin_reply||'—')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:#889">No feedback submitted yet.</td></tr>'}</table></div>`);
+  <td style="max-width:260px;font-size:12px;color:#445">${esc(r.admin_reply||'—')}</td></tr>`).join('')}</table></div>`);
 }
 async function sendFb(){const msg=$('fb_msg').value.trim();if(!msg)return toast('Please write your feedback.');
   // org_id / employee_id are filled by trg_setactor_feedback from the caller's
@@ -4956,20 +4956,16 @@ async function adminfb(){
     <div style="max-width:200px"><label>Category</label><select id="afb_cat">${FB_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
     <label>Your feedback / requirement</label><textarea id="afb_msg" rows="4" placeholder="Describe your feedback or requirement…"></textarea>
     <div style="margin-top:10px"><button class="btn" onclick="sendAdminFb()"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button></div></div>
-  <div class="card"><table><tr><th>Date</th><th>Category</th><th>Feedback</th><th>Status</th><th>Merik Reply</th></tr>
+  <div class="card"><table data-empty="You haven’t submitted any feedback yet."><tr><th>Date</th><th>Category</th><th>Feedback</th><th>Status</th><th>Merik Reply</th></tr>
   ${(data||[]).map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td><td>${esc(r.category)}</td>
   <td style="max-width:320px">${esc(r.message)}</td><td><span class="badge ${fbBadge(r.status)}">${esc(r.status)}</span></td>
   <td style="max-width:260px;font-size:12px;color:#445">${esc(r.admin_reply||'—')}</td></tr>`).join('')
-  ||'<tr><td colspan="5" style="color:#889">You haven’t submitted any feedback yet.</td></tr>'}</table></div>`);
+  }</table></div>`);
 }
 async function sendAdminFb(){const msg=$('afb_msg').value.trim();if(!msg)return toast('Please write your feedback.');
   const{error}=await sb.from('feedback').insert({category:$('afb_cat').value,message:msg});
   error?toast(saveErr(error)):adminfb()}
 /* ================= MERIK SUPER ADMIN — product management ================= */
-const suStat=(ic,bg,col,label,val,sub)=>`<div class="card" style="margin:0;flex:1;min-width:190px"><div style="display:flex;gap:14px;align-items:flex-start">
-  <div class="kicon" style="background:${bg};color:${col}">${ic}</div>
-  <div><div style="font-size:12.5px;color:var(--muted)">${label}</div><div style="font-size:26px;font-weight:800;color:var(--ink);line-height:1.15">${val}</div>
-  ${sub?`<div style="font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px">${sub}</div>`:''}</div></div></div>`;
 // ---- Super admin: AI control (providers/keys, kill switch, per-feature, per-tenant, spend cap) ----
 // The superadmin adds a key for any provider here. Keys are sent to the `ai` edge
 // function, which encrypts them (AES-GCM, master key in its AI_ENCRYPTION_KEY
@@ -5011,21 +5007,21 @@ async function suai(){
   AI_STATE={s,orgs:orgs||[],enBy,calls,keys:K};
   M(pgh('AI Control','Manage AI providers &amp; keys and Merik-wide AI settings. Nothing here is visible to tenants.')+
   `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-robot"></i>','var(--brand-soft)','var(--brand)','AI status',s.enabled?'On':'Off',s.enabled?'live for enabled tenants':'all requests refused')}
-   ${suStat('<i class="fa-solid fa-plug"></i>','var(--brand-soft)','var(--brand)','Active provider',activeKey?AI_PROV_LABEL[activeKey.provider].split(' ')[0]:'None',activeKey?(activeKey.model||'⚠ no model'):'add a key below')}
-   ${suStat('<i class="fa-solid fa-bolt"></i>','#E6F7EC','var(--green)','Calls this month',totalCalls,'across all tenants')}
-   ${suStat('<i class="fa-solid fa-building"></i>','#FFF6E5','var(--amber)','Tenants enabled',orgsOn+' / '+(orgs||[]).length,'')}
+   ${stat('<i class="fa-solid fa-robot"></i>','var(--brand-soft)','var(--brand)','AI status',s.enabled?'On':'Off',s.enabled?'live for enabled tenants':'all requests refused')}
+   ${stat('<i class="fa-solid fa-plug"></i>','var(--brand-soft)','var(--brand)','Active provider',activeKey?AI_PROV_LABEL[activeKey.provider].split(' ')[0]:'None',activeKey?(activeKey.model||'⚠ no model'):'add a key below')}
+   ${stat('<i class="fa-solid fa-bolt"></i>','#E6F7EC','var(--green)','Calls this month',totalCalls,'across all tenants')}
+   ${stat('<i class="fa-solid fa-building"></i>','#FFF6E5','var(--amber)','Tenants enabled',orgsOn+' / '+(orgs||[]).length,'')}
   </div>
   ${encOn?'':`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i> Encryption isn't configured — you can't save keys until the <code>AI_ENCRYPTION_KEY</code> secret is set on the <code>ai</code> edge function. Generate one with <code>openssl rand -base64 32</code>.</div>`}
   <div class="pghead"><div><h2 style="font-size:17px">Provider keys</h2><div class="sub">Add a key for any provider. The active one is used for every AI request. Keys are encrypted — only the last 4 digits are ever shown.</div></div><div class="noprint"><button class="btn" onclick="suaiKeyForm()"><i class="fa-solid fa-plus"></i> Add key</button></div></div>
-  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Provider</th><th>Label</th><th>Model</th><th>Key</th><th>Active</th><th></th></tr>
+  <div class="card" style="overflow:auto;padding:0"><table data-empty="No provider keys yet — add one to switch AI on."><tr><th>Provider</th><th>Label</th><th>Model</th><th>Key</th><th>Active</th><th></th></tr>
   ${K.map(k=>{const on=k.id===s.active_key_id;return `<tr><td><b>${esc(AI_PROV_LABEL[k.provider]||k.provider)}</b>${k.enabled?'':' <span class="badge stA">disabled</span>'}</td>
    <td>${esc(k.label||'—')}${k.provider==='custom'&&k.base_url?`<div class="tl-sub">${esc(k.base_url)}</div>`:''}</td>
    <td>${k.model?esc(k.model):'<span style="color:var(--red)">⚠ none</span>'}</td>
    <td style="white-space:nowrap;font-family:monospace">····${esc(k.key_last4||'')}</td>
    <td>${on?'<span class="badge stP">Active</span>':`<button class="btn sm sec" onclick="suaiSetActive('${k.id}')">Use</button>`}</td>
    <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suaiKeyToggle('${k.id}',${k.enabled?'false':'true'})">${k.enabled?'Disable':'Enable'}</button>
-   <button class="btn sm warn" onclick="suaiDelKey('${k.id}')">Delete</button></td></tr>`}).join('')||'<tr><td colspan="6" style="color:#889">No provider keys yet — add one to switch AI on.</td></tr>'}</table></div>
+   <button class="btn sm warn" onclick="suaiDelKey('${k.id}')">Delete</button></td></tr>`}).join('')}</table></div>
   <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
     <div><h2 style="font-size:16px;margin:0">Master switch</h2>
     <div class="tl-sub" style="margin-top:4px">Off means every AI request in Merik is refused, for every tenant, whatever the settings below say. Takes effect immediately.</div></div>
@@ -5039,11 +5035,11 @@ async function suai(){
     <div style="max-width:320px"><label>Monthly calls per tenant</label><input id="ai_cap" type="number" min="0" value="${s.monthly_call_cap}" onchange="suaiCap(this.value)">
     <div class="tl-sub" style="margin-top:4px">A tenant that hits this is refused until next month. Failed calls don't count.</div></div></div>
   <div class="pghead"><div><h2 style="font-size:17px">Tenants</h2><div class="sub">AI is off for a tenant until you switch it on here. New tenants get nothing by default.</div></div></div>
-  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Workspace</th><th>Calls this month</th><th>Status</th><th></th></tr>
+  <div class="card" style="overflow:auto;padding:0"><table data-empty="No tenants yet."><tr><th>Workspace</th><th>Calls this month</th><th>Status</th><th></th></tr>
   ${(orgs||[]).map(o=>{const on=!!enBy[o.id];const c=calls[o.id]||0;const capped=c>=s.monthly_call_cap;return `<tr><td><b>${esc(o.name)}</b></td>
    <td>${c}${capped?' <span class="badge stA">capped</span>':''}</td>
    <td><span class="badge ${on?'stP':'stL'}">${on?'Enabled':'Off'}</span></td>
-   <td class="noprint"><button class="btn sm ${on?'sec':''}" onclick="suaiOrg('${o.id}',${on?'false':'true'})">${on?'Disable':'Enable'}</button></td></tr>`}).join('')||'<tr><td colspan="4" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
+   <td class="noprint"><button class="btn sm ${on?'sec':''}" onclick="suaiOrg('${o.id}',${on?'false':'true'})">${on?'Disable':'Enable'}</button></td></tr>`}).join('')}</table></div>`);
 }
 let AI_STATE=null;
 /* ============================== PRODUCT HEALTH ================================
@@ -5190,11 +5186,11 @@ async function suhealth(){
         rangeBtn(1,'24 hours')+' '+rangeBtn(7,'7 days')+' '+rangeBtn(30,'30 days')+
         ' <button class="btn sm sec" onclick="phRescan()"><i class="fa-solid fa-rotate-right"></i> Rescan</button>')+
   `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-triangle-exclamation"></i>','#FADBD8','var(--red)','Open warnings',live.length,
+   ${stat('<i class="fa-solid fa-triangle-exclamation"></i>','#FADBD8','var(--red)','Open warnings',live.length,
             live.length?live.filter(w=>w.state==='open').length+' awaiting a decision':'nothing needs a decision')}
-   ${suStat('<i class="fa-solid fa-bug"></i>','#FFF6E5','var(--amber)','Distinct issues',list.length,occurrences+' occurrences')}
-   ${suStat('<i class="fa-solid fa-building"></i>','var(--brand-soft)','var(--brand)','Tenants affected',allTenants.size,'of '+((orgs||[]).length)+' workspaces')}
-   ${suStat('<i class="fa-solid fa-shield-halved"></i>','#D5F5E3','var(--green)','Fixes that held',fixed.length?held+' / '+fixed.length:'—',broke?broke+' came back':(fresh+' new in 24h'))}
+   ${stat('<i class="fa-solid fa-bug"></i>','#FFF6E5','var(--amber)','Distinct issues',list.length,occurrences+' occurrences')}
+   ${stat('<i class="fa-solid fa-building"></i>','var(--brand-soft)','var(--brand)','Tenants affected',allTenants.size,'of '+((orgs||[]).length)+' workspaces')}
+   ${stat('<i class="fa-solid fa-shield-halved"></i>','#D5F5E3','var(--green)','Fixes that held',fixed.length?held+' / '+fixed.length:'—',broke?broke+' came back':(fresh+' new in 24h'))}
   </div>`+
   (werr?`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i>
     Warnings couldn't be read. Has the <code>20260908_product_health_signals</code> migration been applied?</div>`:'')+
@@ -5336,17 +5332,17 @@ async function suoverview(){
   const active=(orgs||[]).filter(o=>o.status!=='Suspended').length;
   M(pgh('Merik — Product Overview','Everything across every tenant, at a glance.')+
   `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-building"></i>','var(--brand-soft)','var(--brand)','Tenants',(orgs||[]).length,active+' active')}
-   ${suStat('<i class="fa-solid fa-users"></i>','var(--brand-soft)','var(--brand)','Users',users.length,'across all tenants')}
-   ${suStat('<i class="fa-solid fa-id-badge"></i>','#E6F7EC','var(--green)','Employees',(emps||[]).length,'')}
-   ${suStat('<i class="fa-solid fa-user-plus"></i>','#FFE9DC','var(--amber)','Pending Signups',pend,'awaiting review')}
-   ${suStat('<i class="fa-solid fa-comment-dots"></i>','#FDECEA','var(--red)','Open Feedback',openFb,'')}
+   ${stat('<i class="fa-solid fa-building"></i>','var(--brand-soft)','var(--brand)','Tenants',(orgs||[]).length,active+' active')}
+   ${stat('<i class="fa-solid fa-users"></i>','var(--brand-soft)','var(--brand)','Users',users.length,'across all tenants')}
+   ${stat('<i class="fa-solid fa-id-badge"></i>','#E6F7EC','var(--green)','Employees',(emps||[]).length,'')}
+   ${stat('<i class="fa-solid fa-user-plus"></i>','#FFE9DC','var(--amber)','Pending Signups',pend,'awaiting review')}
+   ${stat('<i class="fa-solid fa-comment-dots"></i>','#FDECEA','var(--red)','Open Feedback',openFb,'')}
   </div>
   <div class="pghead"><div><h2 style="font-size:17px">Tenants</h2></div><div class="noprint"><button class="btn" onclick="suAddTenant()"><i class="fa-solid fa-plus"></i> New Tenant</button></div></div>
-  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Tenant</th><th>Status</th><th>Employees</th><th>Users</th><th>Created</th><th></th></tr>
+  <div class="card" style="overflow:auto;padding:0"><table data-empty="No tenants yet."><tr><th>Tenant</th><th>Status</th><th>Employees</th><th>Users</th><th>Created</th><th></th></tr>
   ${(orgs||[]).map(o=>`<tr><td><b>${esc(o.name)}</b></td><td><span class="badge ${o.status==='Suspended'?'stA':'stP'}">${esc(o.status||'Active')}</span></td>
   <td>${empByOrg[o.id]||0}</td><td>${usrByOrg[o.id]||0}</td><td style="white-space:nowrap">${fmtDate(o.created_at.slice(0,10))}</td>
-  <td class="noprint"><button class="tl-go" title="Open tenant" onclick="suTenant('${o.id}')"><i class="fa-solid fa-chevron-right"></i></button></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
+  <td class="noprint"><button class="tl-go" title="Open tenant" onclick="suTenant('${o.id}')"><i class="fa-solid fa-chevron-right"></i></button></td></tr>`).join('')}</table></div>`);
 }
 async function sutenants(){
   const [{data:orgs},{data:emps},ures]=await Promise.all([
@@ -5357,12 +5353,12 @@ async function sutenants(){
   const empByOrg={};(emps||[]).forEach(e=>{empByOrg[e.org_id]=(empByOrg[e.org_id]||0)+1});
   const usrByOrg={};users.forEach(u=>{if(u.org_id)usrByOrg[u.org_id]=(usrByOrg[u.org_id]||0)+1});
   M(pgh('Tenants','Every company using Merik.','<button class="btn" onclick="suAddTenant()"><i class="fa-solid fa-plus"></i> New Tenant</button>')+
-  `<div class="card" style="overflow:auto;padding:0"><table><tr><th>Tenant</th><th>Status</th><th>Plan</th><th>Employees</th><th>Users</th><th>Created</th><th></th></tr>
+  `<div class="card" style="overflow:auto;padding:0"><table data-empty="No tenants yet."><tr><th>Tenant</th><th>Status</th><th>Plan</th><th>Employees</th><th>Users</th><th>Created</th><th></th></tr>
   ${(orgs||[]).map(o=>`<tr><td><b>${esc(o.name)}</b></td><td><span class="badge ${o.status==='Suspended'?'stA':'stP'}">${esc(o.status||'Active')}</span></td>
   <td>${esc(o.plan||'—')}</td><td>${empByOrg[o.id]||0}</td><td>${usrByOrg[o.id]||0}</td><td style="white-space:nowrap">${fmtDate(o.created_at.slice(0,10))}</td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick='suEditTenant(${JSON.stringify(o).replace(/'/g,"&#39;")})'>Edit</button>
   <button class="btn sm ${o.status==='Suspended'?'':'sec'}" onclick="suSetTenantStatus('${o.id}','${o.status==='Suspended'?'Active':'Suspended'}')">${o.status==='Suspended'?'Activate':'Suspend'}</button>
-  <button class="tl-go" title="Open" onclick="suTenant('${o.id}')"><i class="fa-solid fa-chevron-right"></i></button></td></tr>`).join('')||'<tr><td colspan="7" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
+  <button class="tl-go" title="Open" onclick="suTenant('${o.id}')"><i class="fa-solid fa-chevron-right"></i></button></td></tr>`).join('')}</table></div>`);
 }
 function suAddTenant(){
   const div=modal(`<div class="card"><h2>New Tenant</h2>
@@ -5439,18 +5435,18 @@ async function suTenant(id){
   const paidNet=(pay||[]).filter(p=>p.pay_status==='Paid').reduce((a,p)=>a+ +(p.net||0),0);
   M(pgh(esc(org?.name||'Tenant'),`Full data for this tenant. <span class="badge ${org?.status==='Suspended'?'stA':'stP'}">${esc(org?.status||'Active')}</span>`,`<button class="btn sec" onclick="sutenants()">‹ All tenants</button> <button class="btn" onclick='suEditTenant(${JSON.stringify(org||{}).replace(/'/g,"&#39;")})'><i class="fa-solid fa-pen"></i> Edit</button>`)+
   `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-id-badge"></i>','var(--brand-soft)','var(--brand)','Employees',(emps||[]).length,(emps||[]).filter(e=>e.status==='Active').length+' active')}
-   ${suStat('<i class="fa-solid fa-calendar-check"></i>','#E6F7EC','var(--green)','Attendance rows',(att||[]).length,'')}
-   ${suStat('<i class="fa-solid fa-circle-check"></i>','var(--brand-soft)','var(--brand)','Task updates',(tasks||[]).length,'recent 50 shown')}
-   ${suStat('<i class="fa-solid fa-money-bill-wave"></i>','#FFF6E5','var(--amber)','Payroll (paid)',inr(paidNet),(pay||[]).length+' records')}
-   ${suStat('<i class="fa-solid fa-handshake"></i>','#FDECEA','var(--red)','Clients / Projects',(cls||[]).length+' / '+(pjs||[]).length,'')}
+   ${stat('<i class="fa-solid fa-id-badge"></i>','var(--brand-soft)','var(--brand)','Employees',(emps||[]).length,(emps||[]).filter(e=>e.status==='Active').length+' active')}
+   ${stat('<i class="fa-solid fa-calendar-check"></i>','#E6F7EC','var(--green)','Attendance rows',(att||[]).length,'')}
+   ${stat('<i class="fa-solid fa-circle-check"></i>','var(--brand-soft)','var(--brand)','Task updates',(tasks||[]).length,'recent 50 shown')}
+   ${stat('<i class="fa-solid fa-money-bill-wave"></i>','#FFF6E5','var(--amber)','Payroll (paid)',inr(paidNet),(pay||[]).length+' records')}
+   ${stat('<i class="fa-solid fa-handshake"></i>','#FDECEA','var(--red)','Clients / Projects',(cls||[]).length+' / '+(pjs||[]).length,'')}
   </div>
   <div class="pghead"><div><h2 style="font-size:17px">Employees</h2></div></div>
-  <div class="card" style="overflow:auto;padding:0"><table><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Type</th><th>Status</th></tr>
-  ${(emps||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td><span class="badge ${e.status==='Active'?'stP':'stA'}">${esc(e.status)}</span></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No employees.</td></tr>'}</table></div>
+  <div class="card" style="overflow:auto;padding:0"><table data-empty="No employees."><tr><th>ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Type</th><th>Status</th></tr>
+  ${(emps||[]).map(e=>`<tr><td>${esc(e.emp_code)}</td><td style="white-space:nowrap">${av(e.full_name)}<b>${esc(e.full_name)}</b></td><td>${esc(e.department)}</td><td>${esc(e.designation)}</td><td>${esc(e.employment_type)}</td><td><span class="badge ${e.status==='Active'?'stP':'stA'}">${esc(e.status)}</span></td></tr>`).join('')}</table></div>
   <div class="pghead" style="margin-top:8px"><div><h2 style="font-size:17px">Recent task updates</h2></div></div>
-  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Date</th><th>Employee</th><th>Status</th><th>Project</th></tr>
-  ${(tasks||[]).map(t=>`<tr><td style="white-space:nowrap">${fmtDate(t.upd_date)}</td><td>${esc(empName[t.employee_id]||'—')}</td><td>${esc(t.update_status)}</td><td>${esc(t.project)}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#889">No task updates.</td></tr>'}</table></div>`);
+  <div class="card" style="overflow:auto;padding:0"><table data-empty="No task updates."><tr><th>Date</th><th>Employee</th><th>Status</th><th>Project</th></tr>
+  ${(tasks||[]).map(t=>`<tr><td style="white-space:nowrap">${fmtDate(t.upd_date)}</td><td>${esc(empName[t.employee_id]||'—')}</td><td>${esc(t.update_status)}</td><td>${esc(t.project)}</td></tr>`).join('')}</table></div>`);
 }
 // ---- Super admin: all users across tenants ----
 let SU_USERS=[];
@@ -5461,9 +5457,9 @@ async function suusers(){
   const roleBadge=r=>({superadmin:'stW',admin:'stP',employee:'stL'}[r]||'stL');
   M(pgh('Users','Every account across all tenants.','<button class="btn" onclick="suCreateUser()"><i class="fa-solid fa-plus"></i> New User</button>')+
   `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-user-shield"></i>','var(--brand-soft)','var(--brand)','Super Admins',SU_USERS.filter(u=>u.role==='superadmin').length,'')}
-   ${suStat('<i class="fa-solid fa-user-tie"></i>','var(--brand-soft)','var(--brand)','Tenant Admins',SU_USERS.filter(u=>u.role==='admin').length,'')}
-   ${suStat('<i class="fa-solid fa-user"></i>','#E6F7EC','var(--green)','Employees',SU_USERS.filter(u=>u.role==='employee').length,'')}
+   ${stat('<i class="fa-solid fa-user-shield"></i>','var(--brand-soft)','var(--brand)','Super Admins',SU_USERS.filter(u=>u.role==='superadmin').length,'')}
+   ${stat('<i class="fa-solid fa-user-tie"></i>','var(--brand-soft)','var(--brand)','Tenant Admins',SU_USERS.filter(u=>u.role==='admin').length,'')}
+   ${stat('<i class="fa-solid fa-user"></i>','#E6F7EC','var(--green)','Employees',SU_USERS.filter(u=>u.role==='employee').length,'')}
   </div>
   <div class="card" style="overflow:auto;padding:0"><table><tr><th>Email</th><th>Name</th><th>Tenant</th><th>Role</th><th></th></tr>
   ${SU_USERS.map(u=>`<tr><td>${esc(u.email||'—')}</td><td>${esc(u.employee||'—')}</td><td>${esc(u.org_name||'<span style="color:var(--brand);font-weight:700">Merik (product)</span>')}</td>
@@ -5524,10 +5520,10 @@ async function suanalytics(){
   const card=(title,inner)=>`<div class="card"><div style="font-weight:700;color:var(--ink);margin-bottom:6px">${title}</div>${inner}</div>`;
   M(pgh('Platform Analytics','Growth and engagement across all tenants.')+
   `<div class="kpi" style="margin-bottom:16px">
-   ${suStat('<i class="fa-solid fa-building"></i>','var(--brand-soft)','var(--brand)','Total Tenants',(orgs||[]).length,(orgs||[]).filter(o=>o.status!=='Suspended').length+' active')}
-   ${suStat('<i class="fa-solid fa-id-badge"></i>','#E6F7EC','var(--green)','Total Employees',(emps||[]).length,(emps||[]).filter(e=>e.status==='Active').length+' active')}
-   ${suStat('<i class="fa-solid fa-user-plus"></i>','#FFE9DC','var(--amber)','Signups',(sr||[]).length,srApp+' approved')}
-   ${suStat('<i class="fa-solid fa-percent"></i>','var(--brand-soft)','var(--brand)','Approval Rate',(sr||[]).length?Math.round(srApp/(sr||[]).length*100)+'%':'—','of all requests')}
+   ${stat('<i class="fa-solid fa-building"></i>','var(--brand-soft)','var(--brand)','Total Tenants',(orgs||[]).length,(orgs||[]).filter(o=>o.status!=='Suspended').length+' active')}
+   ${stat('<i class="fa-solid fa-id-badge"></i>','#E6F7EC','var(--green)','Total Employees',(emps||[]).length,(emps||[]).filter(e=>e.status==='Active').length+' active')}
+   ${stat('<i class="fa-solid fa-user-plus"></i>','#FFE9DC','var(--amber)','Signups',(sr||[]).length,srApp+' approved')}
+   ${stat('<i class="fa-solid fa-percent"></i>','var(--brand-soft)','var(--brand)','Approval Rate',(sr||[]).length?Math.round(srApp/(sr||[]).length*100)+'%':'—','of all requests')}
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
    ${card('New tenants / month',suBars(tenantsM,'var(--brand)'))}
@@ -5543,13 +5539,13 @@ async function suann(){
   const kb=k=>({info:'stL',warning:'stH',success:'stP'}[k]||'stL');
   M(pgh('Announcements','Broadcast product news to your tenants.','<button class="btn" onclick="suAnnForm()"><i class="fa-solid fa-plus"></i> New Announcement</button>')+
   `<div class="warnbar"><i class="fa-solid fa-circle-info" style="color:var(--brand)"></i> Active announcements appear as a banner inside every tenant's portal (all users, or admins only).</div>
-  <div class="card" style="overflow:auto;padding:0"><table><tr><th>Title</th><th>Audience</th><th>Type</th><th>Active</th><th>Created</th><th></th></tr>
+  <div class="card" style="overflow:auto;padding:0"><table data-empty="No announcements yet."><tr><th>Title</th><th>Audience</th><th>Type</th><th>Active</th><th>Created</th><th></th></tr>
   ${(data||[]).map(r=>`<tr><td><b>${esc(r.title)}</b><div class="tl-sub">${esc((r.body||'').slice(0,80))}</div></td>
   <td>${r.audience==='admins'?'Admins':'Everyone'}</td><td><span class="badge ${kb(r.kind)}">${esc(r.kind)}</span></td>
   <td><span class="badge ${r.active?'stP':'stA'}">${r.active?'Live':'Off'}</span></td>
   <td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td>
   <td class="noprint" style="white-space:nowrap"><button class="btn sm sec" onclick="suAnnToggle('${r.id}',${r.active?'false':'true'})">${r.active?'Turn off':'Turn on'}</button>
-  <button class="btn sm warn" onclick="suAnnDel('${r.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No announcements yet.</td></tr>'}</table></div>`);
+  <button class="btn sm warn" onclick="suAnnDel('${r.id}')">Delete</button></td></tr>`).join('')}</table></div>`);
 }
 function suAnnForm(){
   const div=modal(`<div class="card"><h2>New Announcement</h2>
@@ -5583,12 +5579,12 @@ async function signups(){
   const badge=s=>({Pending:'stL',Approved:'stP',Rejected:'stA'}[s]||'stL');
   M(pgh('Signup Requests','New companies requesting a Merik workspace.')+
   kpis([['<i class="fa-solid fa-user-plus"></i>','var(--brand-soft)','Total',rows.length],['<i class="fa-solid fa-hourglass-half"></i>','#FFE9DC','Pending',pend],['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Approved',rows.filter(r=>r.status==='Approved').length]])+
-  `<div class="card"><table><tr><th>Date</th><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Message</th><th>Status</th><th></th></tr>
+  `<div class="card"><table data-empty="No signup requests yet."><tr><th>Date</th><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Message</th><th>Status</th><th></th></tr>
   ${rows.map(r=>`<tr><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td><td><b>${esc(r.company_name)}</b></td>
   <td>${esc(r.contact_name)}</td><td>${esc(r.email)}</td><td>${esc(r.phone||'—')}</td>
   <td style="max-width:240px;font-size:12px">${esc(r.message||'—')}${r.review_notes?`<br><span style="color:#889">Note: ${esc(r.review_notes)}</span>`:''}</td>
   <td><span class="badge ${badge(r.status)}">${esc(r.status)}</span></td>
-  <td class="noprint" style="white-space:nowrap">${r.status==='Pending'?`<button class="btn sm" style="background:var(--green)" onclick="approveSignup('${r.id}',${escArg(r.email)},${escArg(r.company_name)})">Approve</button> <button class="btn sm warn" onclick="rejectSignup('${r.id}')">Reject</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="color:#889">No signup requests yet.</td></tr>'}</table></div>`);
+  <td class="noprint" style="white-space:nowrap">${r.status==='Pending'?`<button class="btn sm" style="background:var(--green)" onclick="approveSignup('${r.id}',${escArg(r.email)},${escArg(r.company_name)})">Approve</button> <button class="btn sm warn" onclick="rejectSignup('${r.id}')">Reject</button>`:'—'}</td></tr>`).join('')}</table></div>`);
 }
 async function approveSignup(id,email,company){
   const pw=await promptDialog(`Approve "${company}" (${email}).\n\nSet an admin password for this account (min 6 characters):`,{type:'password'});
@@ -5612,13 +5608,13 @@ async function fb(){
   const rows=data||[];const open=rows.filter(r=>r.status!=='Done').length;
   M(pgh('Product Feedback','Feedback &amp; requirements from all Merik tenants.')+
   kpis([['<i class="fa-solid fa-comment-dots"></i>','var(--brand-soft)','Total',rows.length],['<i class="fa-solid fa-inbox"></i>','#FFE9DC','Open',open],['<i class="fa-solid fa-circle-check"></i>','#E6F7EC','Done',rows.length-open]])+
-  `<div class="card"><table><tr><th>Date</th><th>Tenant</th><th>Employee</th><th>Category</th><th>Feedback</th><th>Status</th><th>Reply</th></tr>
+  `<div class="card"><table data-empty="No feedback yet."><tr><th>Date</th><th>Tenant</th><th>Employee</th><th>Category</th><th>Feedback</th><th>Status</th><th>Reply</th></tr>
   ${rows.map(r=>`<tr data-fid="${r.id}"><td style="white-space:nowrap">${fmtDate(r.created_at.slice(0,10))}</td>
   <td style="white-space:nowrap">${esc(r.orgs?.name||'—')}</td>
   <td style="white-space:nowrap">${esc(r.employees?.full_name||'—')}</td><td>${esc(r.category)}</td>
   <td style="max-width:320px">${esc(r.message)}</td>
   <td><select onchange="setFbStatus('${r.id}',this.value)" style="width:120px">${FB_STATUS.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
-  <td style="min-width:200px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Reply to employee…" onblur="setFbReply('${r.id}',this.value)">${esc(r.admin_reply||'')}</textarea></td></tr>`).join('')||'<tr><td colspan="7" style="color:#889">No feedback yet.</td></tr>'}</table></div>`);
+  <td style="min-width:200px"><textarea rows="2" style="width:100%;font-size:12px" placeholder="Reply to employee…" onblur="setFbReply('${r.id}',this.value)">${esc(r.admin_reply||'')}</textarea></td></tr>`).join('')}</table></div>`);
 }
 async function setFbStatus(id,v){const{error}=await sb.from('feedback').update({status:v,updated_at:new Date().toISOString()}).eq('id',id);if(error)toast(saveErr(error))}
 async function setFbReply(id,v){const{error}=await sb.from('feedback').update({admin_reply:v||null,updated_at:new Date().toISOString()}).eq('id',id);if(error)toast(saveErr(error))}
@@ -5631,10 +5627,10 @@ async function myslip(){
   // RLS returns only payslips the admin has released (sent).
   const{data}=await sb.from('payroll').select('*').eq('employee_id',ME.employee.id).order('pay_year',{ascending:false}).order('pay_month',{ascending:false});
   M(`<h2>My Payslips</h2><div class="warnbar"><i class="fa-solid fa-circle-info" style="color:var(--brand)"></i> Payslips appear here once released by your admin.</div>
-  <div class="card"><table><tr><th>Month</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Status</th><th></th></tr>
+  <div class="card"><table data-empty="No payslips released yet."><tr><th>Month</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Status</th><th></th></tr>
   ${(data||[]).map(r=>`<tr><td>${MONTHS[r.pay_month-1]} ${r.pay_year}</td><td>${inr(r.gross)}</td><td>${inr(r.total_deductions)}</td><td><b>${inr(r.net)}</b></td>
   <td><span class="badge ${r.pay_status==='Paid'?'stP':'stA'}">${r.pay_status||'Unpaid'}</span></td>
-  <td><button class="btn sm" onclick="slip('${r.employee_id}',${r.pay_year},${r.pay_month})"><i class="fa-solid fa-download"></i> Download</button></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No payslips released yet.</td></tr>'}</table></div>`);
+  <td><button class="btn sm" onclick="slip('${r.employee_id}',${r.pay_year},${r.pay_month})"><i class="fa-solid fa-download"></i> Download</button></td></tr>`).join('')}</table></div>`);
 }
 // Keep the rendered portal tied to the session that actually backs the requests.
 // supabase-js shares its session through localStorage, so signing out or signing
