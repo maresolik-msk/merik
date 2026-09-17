@@ -909,6 +909,40 @@ function bindNotifDismiss(){
     const p=$('notifpanel');if(p&&!p.hidden){closeNotifs();$('notifbtn').focus()}});
 }
 let BOOTING=false;
+/* ---------- DIALOGS ----------
+   One way to open a modal, one way to ask yes/no, one way to ask for a value. Escape and
+   a click on the backdrop close the topmost dialog; a dialog someone has typed in asks
+   first, unless it keeps its own draft (the daily update). The browser's confirm() and
+   prompt() boxes are gone: they looked like a broken page and could not take a password
+   field. */
+function modal(html){const div=document.createElement('div');div.className='modal';div.innerHTML=html;
+  div.addEventListener('mousedown',e=>{div._bd=e.target===div});
+  div.addEventListener('click',e=>{if(e.target===div&&div._bd){div._resolve?div._resolve(div._cancelValue):closeModal(div)}div._bd=false});
+  document.body.appendChild(div);
+  const f=div.querySelector('input:not([type=hidden]):not([type=file]),select,textarea,button');if(f)setTimeout(()=>f.focus(),30);
+  return div}
+async function closeModal(div){if(!div||!div.isConnected)return;
+  if(div.dataset.dirty&&!div.dataset.draft&&!(await confirmDialog('Discard your unsaved changes?',{ok:'Discard',danger:true})))return;
+  div.remove()}
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const all=document.querySelectorAll('.modal');const top=all[all.length-1];
+  if(!top)return;e.preventDefault();top._resolve?top._resolve(top._cancelValue):closeModal(top)});
+// ponytail: the primary button's label and tone come from the message's first word, so
+// the 26 existing call sites did not each need an options object. Pass {ok,danger} to override.
+const DLG_DANGER=/^(Delete|Remove|Disconnect|Discard|Withdraw|Dismiss)$/;
+function confirmDialog(msg,o={}){return new Promise(res=>{
+  const first=String(msg).trim().split(/[\s?.,]/)[0];const danger=o.danger??DLG_DANGER.test(first);const okLabel=o.ok||(danger?first:'OK');
+  const div=modal(`<div class="card" style="width:440px" role="alertdialog" aria-modal="true"><p style="white-space:pre-line;margin:4px 0 18px;font-size:14.5px;color:var(--ink);line-height:1.5">${esc(msg)}</p>
+   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sec" data-x>${esc(o.cancel||'Cancel')}</button><button class="btn${danger?' warn':''}" data-ok>${esc(okLabel)}</button></div></div>`);
+  const done=v=>{div.remove();res(v)};div._resolve=done;div._cancelValue=false;
+  div.querySelector('[data-ok]').onclick=()=>done(true);div.querySelector('[data-x]').onclick=()=>done(false);
+  setTimeout(()=>div.querySelector('[data-ok]').focus(),30);})}
+function promptDialog(msg,o={}){return new Promise(res=>{
+  const div=modal(`<div class="card" style="width:460px" role="dialog" aria-modal="true"><p style="white-space:pre-line;margin:4px 0 12px;font-size:14.5px;color:var(--ink);line-height:1.5">${esc(msg)}</p>
+   <input id="dlg_v" type="${o.type||'text'}" placeholder="${esc(o.placeholder||'')}" autocomplete="${o.type==='password'?'new-password':'off'}" value="${esc(o.value||'')}">
+   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn sec" data-x>Cancel</button><button class="btn" data-ok>${esc(o.ok||'OK')}</button></div></div>`);
+  const inp=div.querySelector('#dlg_v');const done=v=>{div.remove();res(v)};div._resolve=done;div._cancelValue=null;
+  div.querySelector('[data-ok]').onclick=()=>done(inp.value);div.querySelector('[data-x]').onclick=()=>done(null);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done(inp.value)}});setTimeout(()=>inp.focus(),30);})}
 /* ---------- UNSAVED CHANGES ----------
    Typing in any modal marks it dirty; leaving the page then asks first. Modals that keep
    their own draft (data-draft) are exempt, since a reload costs them nothing. */
@@ -1323,14 +1357,12 @@ async function dash(){
     <h3>Couldn't load today</h3><p>${esc(saveErr(eErr||aErr))}</p>
     <button class="btn sec" onclick="go('dash')"><i class="fa-solid fa-rotate-right"></i> Try again</button>
     </div></div>`);
-
   const roster=(emps||[]).filter(e=>employedIn(e,d,d));
   if(!roster.length)return M(head+`<div class="card"><div class="empty">
     <i class="fa-solid fa-users ill"></i><h3>No one on the roster yet</h3>
     <p>Add your team to start tracking attendance, updates and payroll.</p>
     ${can('emp')?`<button class="btn" onclick="empForm()"><i class="fa-solid fa-user-plus"></i> Add Employee</button>`:''}
     </div></div>`);
-
   const A={};(at||[]).forEach(r=>A[r.employee_id]=r);
   const U={};(tu||[]).forEach(r=>U[r.employee_id]=r);
   // Nobody on approved leave or marked absent is chased, or counted in the
@@ -1434,7 +1466,8 @@ async function empDetail(eid){
     sb.from('profiles').select('id').eq('employee_id',eid).maybeSingle()]);
   if(!e)return toast('Employee not found');
   const hasLogin=!!prof;
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:640px">
+  document.querySelectorAll('.modal').forEach(m=>m.remove());
+  const div=modal(`<div class="card" style="max-width:640px">
   <h2>${esc(e.full_name)}</h2>
   <p style="font-size:13px;color:#667;margin-bottom:10px">${esc(e.emp_code)} · ${esc(e.department||'—')} · ${esc(e.designation||'—')}</p>
   <div class="row" style="font-size:13px">
@@ -1458,9 +1491,8 @@ async function empDetail(eid){
   <label>PDF file</label><input id="ed_file" type="file" accept="application/pdf,.pdf">
   <div style="margin-top:10px"><button class="btn sm" onclick="sendEmpDoc('${eid}',${escArg(e.email||'')})"><i class="fa-solid fa-paperclip"></i> Send document</button></div>
   <div id="edDocMsg" style="margin-top:8px;font-size:13px"></div>
-  <div style="margin-top:16px;text-align:right"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div>
-  </div>`;
-  document.querySelectorAll('.modal').forEach(m=>m.remove());document.body.appendChild(div);
+  <div style="margin-top:16px;text-align:right"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Close</button></div>
+  </div>`);
 }
 async function fnMsg(err){let m=err.message;try{const j=await err.context.json();m=j.error||m}catch(_){}
   // Every edge-function failure passes through here on its way to a toast, so
@@ -1496,7 +1528,7 @@ async function sendEmpDoc(eid,email){
 }
 function empForm(e={}){
   const f=(k,l,t='text')=>`<label>${l}</label><input id="f_${k}" type="${t}" value="${esc(e[k]||'')}">`;
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>${e.id?'Edit':'Add'} Employee</h2>
+  const div=modal(`<div class="card"><h2>${e.id?'Edit':'Add'} Employee</h2>
   <div class="row"><div>${f('emp_code','Employee ID')}</div><div>${f('full_name','Full Name')}</div></div>
   <div class="row"><div><label>Department</label><select id="f_department">${['Engineering','Design','Marketing','HR','Finance','Operations','Product','Sales','Legal','Admin'].map(d=>`<option ${e.department===d?'selected':''}>${d}</option>`).join('')}</select></div>
   <div>${f('designation','Designation')}</div>
@@ -1506,8 +1538,7 @@ function empForm(e={}){
   <div class="row"><div>${f('ctc','Monthly CTC (₹)','number')}</div><div><label>Annual CTC</label><span id="f_actc" style="font-weight:700;color:var(--navy)">${e.ctc?inr(e.ctc*12)+' / year':'—'}</span><br><span style="font-size:11px;color:#667">Payroll auto-fills: Basic 50% · HRA 20% · Other 30%</span></div></div>
   <label>Status</label><select id="f_status">${['Active','Inactive','On Leave'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}</select>
   <input type="hidden" id="f_left_on" value="${e.left_on||''}">
-  <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" onclick="saveEmp('${e.id||''}')">Save</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <div style="margin-top:14px;display:flex;gap:8px"><button class="btn" onclick="saveEmp('${e.id||''}')">Save</button><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
   $('f_ctc').addEventListener('input',function(){$('f_actc').textContent=this.value?inr(this.value*12)+' / year':'—'});
 }
 async function saveEmp(id){
@@ -1534,7 +1565,8 @@ async function salaryHistory(eid){
     sb.from('employees').select('id,full_name,emp_code,ctc,doj').eq('id',eid).single(),
     sb.from('salary_history').select('*').eq('employee_id',eid).order('effective_month',{ascending:false})]);
   const rows=(hist||[]);
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:620px"><h2>Salary &amp; Hikes — ${esc(e.full_name)}</h2>
+  document.querySelectorAll('.modal').forEach(m=>m.remove());
+  const div=modal(`<div class="card" style="max-width:620px"><h2>Salary &amp; Hikes — ${esc(e.full_name)}</h2>
   <div class="kpi" style="margin:0 0 12px"><div class="card" style="margin:0;flex:1"><div style="font-size:12.5px;color:var(--muted)">Current monthly CTC</div><div style="font-size:24px;font-weight:800;color:var(--ink)">${e.ctc?inr(e.ctc):'—'}</div><div class="tl-sub">${e.ctc?inr(e.ctc*12)+' / year':''}</div></div></div>
   <div style="display:flex;justify-content:space-between;align-items:center"><label style="margin:0">Revision history</label><button class="btn sm" onclick="hikeForm('${eid}',${+e.ctc||0})"><i class="fa-solid fa-arrow-trend-up"></i> Revise salary</button></div>
   <div class="card" style="overflow:auto;padding:0;margin-top:8px"><table class="nopg"><tr><th>Effective from</th><th>Previous</th><th>New</th><th>Change</th><th>Note</th></tr>
@@ -1542,19 +1574,17 @@ async function salaryHistory(eid){
     return `<tr><td style="white-space:nowrap">${new Date(h.effective_month+'T00:00:00').toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</td>
     <td>${pv?inr(pv):'—'}</td><td style="font-weight:700">${inr(nv)}</td>
     <td style="color:${up?'var(--green)':'var(--red)'};font-weight:600">${pct==null?'—':`${up?'▲':'▼'} ${Math.abs(pct)}%`}</td><td style="font-size:12px">${esc(h.note||'')}</td></tr>`;}).join('')||'<tr><td colspan="5" style="color:#889">No revisions recorded yet.</td></tr>'}</table></div>
-  <div style="margin-top:12px;text-align:right"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
-  document.querySelectorAll('.modal').forEach(m=>m.remove());document.body.appendChild(div);
+  <div style="margin-top:12px;text-align:right"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Close</button></div></div>`);
 }
 function hikeForm(eid,curCtc){
   const nowM=today().slice(0,7);
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Revise Salary</h2>
+  const div=modal(`<div class="card"><h2>Revise Salary</h2>
   <p style="font-size:13px;color:#667;margin-bottom:6px">Current monthly CTC: <b>${curCtc?inr(curCtc):'—'}</b></p>
   <div class="row"><div><label>New monthly CTC (₹)</label><input id="hk_new" type="number" min="0" value="${curCtc||''}"></div>
   <div style="max-width:180px"><label>Effective from</label><input id="hk_month" type="month" value="${nowM}"></div></div>
   <label>Note (optional)</label><input id="hk_note" placeholder="e.g. Annual appraisal, promotion">
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveHike('${eid}',${curCtc||0})">Save revision</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveHike(eid,prevCtc){
   const nv=+$('hk_new').value;if(!nv||nv<=0)return toast('Enter the new monthly CTC.');
@@ -1567,7 +1597,7 @@ async function saveHike(eid,prevCtc){
 }
 async function mkLogin(eid,email,fromDetail){
   if(!email)return toast('Set an email for this employee first (Edit).');
-  const pw=prompt(`Create/resend login for ${email}\n\nEnter a password (min 6 characters):`);
+  const pw=await promptDialog(`Create/resend login for ${email}\n\nEnter a password (min 6 characters):`,{type:'password'});
   if(!pw)return;
   const msgEl=fromDetail?$('edMsg'):null;
   if(msgEl){msgEl.textContent='Creating login…';msgEl.style.color='#667'}
@@ -1591,13 +1621,11 @@ async function mkLogin(eid,email,fromDetail){
 // so attendance/tasks stop after that day, final-month pay pro-rates to it, and
 // every record is preserved under Previous Employees.
 function removeEmp(id,name){
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Remove employee</h2>
+  const div=modal(`<div class="card"><h2>Remove employee</h2>
   <p style="font-size:13px;color:#445;margin:0 0 8px"><b>${esc(name||'')}</b> will be moved to <b>Previous Employees</b>. Their attendance, tasks and payslips are kept — attendance and tasks simply stop after their last working day, and this month's pay is pro-rated to it.</p>
   <label>Last working day</label><input id="rm_date" type="date" value="${today()}" max="${today()}">
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn warn" onclick="doRemoveEmp('${id}')"><i class="fa-solid fa-user-slash"></i> Remove &amp; archive</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function doRemoveEmp(id){
   const d=$('rm_date').value||today();
@@ -1606,19 +1634,17 @@ async function doRemoveEmp(id){
   document.querySelector('.modal').remove();emp();
 }
 // Undo an archive (e.g. removed by mistake): back to Active, clear the last day.
-async function restoreEmp(id){if(!confirm('Restore this employee to the active team?'))return;
+async function restoreEmp(id){if(!await confirmDialog('Restore this employee to the active team?'))return;
   const{error}=await sb.from('employees').update({status:'Active',left_on:null}).eq('id',id);
   if(error)return toast(saveErr(error));prevEmp();}
 // Correct the last working day of an already-archived employee — re-pro-rates
 // their final-month pay and shifts where attendance stops.
 function editLeftDate(id,name,cur){
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Last working day</h2>
+  const div=modal(`<div class="card"><h2>Last working day</h2>
   <p style="font-size:13px;color:#445;margin:0 0 8px">Update the last working day for <b>${esc(name||'')}</b>. Their final month's pay re-pro-rates to this date, and attendance/tasks show up to it.</p>
   <label>Last working day</label><input id="ld_date" type="date" value="${cur?String(cur).slice(0,10):today()}" max="${today()}">
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveLeftDate('${id}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveLeftDate(id){
   const d=$('ld_date').value;if(!d)return toast('Pick the last working day.');
@@ -1725,7 +1751,7 @@ async function addHol(){
 // Deleting a holiday silently changes attendance and payroll for that date, so
 // it gets the same confirmation every other destructive action has.
 async function delHol(id,name,date){
-  if(!confirm(`Delete the holiday "${name}" on ${date}?\n\nAttendance and payroll for that date will be recalculated as a working day.`))return;
+  if(!await confirmDialog(`Delete the holiday "${name}" on ${date}?\n\nAttendance and payroll for that date will be recalculated as a working day.`))return;
   const{error}=await sb.from('holidays').delete().eq('id',id);
   error?toast(saveErr(error)):(toast('Holiday deleted'),hol())}
 
@@ -2333,8 +2359,8 @@ function taskDraftSave(eid,d){if(!$('tasklist'))return; // form already closed (
 function taskDraftLoad(eid,d){try{return JSON.parse(localStorage.getItem(taskDraftKey(eid,d))||'null')}catch(e){return null}}
 function discardTaskDraft(eid,d){try{localStorage.removeItem(taskDraftKey(eid,d))}catch(e){}
   document.querySelector('.modal')?.remove();taskForm(eid,d,TASK_FORM_ROW);}
-function closeTaskForm(btn,eid,d){
-  if(JSON.stringify(taskSnapshot())!==TASK_BASELINE&&!confirm('Discard your unsaved changes to this update?'))return;
+async function closeTaskForm(btn,eid,d){
+  if(JSON.stringify(taskSnapshot())!==TASK_BASELINE&&!await confirmDialog('Discard your unsaved changes to this update?'))return;
   try{localStorage.removeItem(taskDraftKey(eid,d))}catch(e){}
   btn.closest('.modal').remove();}
 async function taskForm(eid,d,r){TASK_FORM_ROW=r;
@@ -2354,15 +2380,14 @@ async function taskForm(eid,d,r){TASK_FORM_ROW=r;
   // Group projects by client, so picking a client narrows the project dropdown to just theirs.
   PROJECTS_BY_CLIENT={};
   FORM_PROJECTS.forEach(p=>{const c=p.client||'Internal';(PROJECTS_BY_CLIENT[c]=PROJECTS_BY_CLIENT[c]||[]).push(p.label)});
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card" style="max-width:920px">
+  const div=modal(`<div class="card" style="max-width:920px">
   <h2>Daily Update — ${fmtDate(d)}</h2>
   <label>Day Status</label><select id="t_update_status">${['Update Shared','No Update','WFH','Leave','Sick Leave','Holiday'].map(s=>`<option ${r.update_status===s?'selected':''}>${s}</option>`).join('')}</select>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><label style="margin:0">Tasks done</label><button class="btn sm" onclick="addTaskRow()"><i class="fa-solid fa-plus"></i> Add task</button></div>
   <div id="tasklist"></div>
   <label>Remarks (optional)</label><textarea id="t_remarks" rows="2">${esc(r.remarks||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveTask('${eid}','${d}')"><i class="fa-solid fa-circle-check"></i> Save Task</button>
-  <button class="btn sec" onclick="closeTaskForm(this,'${eid}','${d}')">Cancel</button></div></div>`;
-  div.dataset.draft='1';document.body.appendChild(div);
+  <button class="btn sec" onclick="closeTaskForm(this,'${eid}','${d}')">Cancel</button></div></div>`);div.dataset.draft='1';
   // Load the on-device time model so we can suggest estimates as tasks are typed.
   loadTaskSamples().catch(()=>{});
   // Seed the task rows from the saved list, or from a legacy single-field update, or one empty row.
@@ -2539,11 +2564,9 @@ async function perf(ym){
 // the admin edits the box below and it's their words that count. Nothing is saved
 // automatically. If AI is off / not enabled for this org, the gateway says so.
 async function perfDraft(empId,ym){
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card" style="max-width:640px"><h2><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--brand)"></i> Draft performance review</h2>
+  const div=modal(`<div class="card" style="max-width:640px"><h2><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--brand)"></i> Draft performance review</h2>
     <div id="pd_body"><div class="tl-sub"><i class="fa-solid fa-spinner fa-spin"></i> Drafting from the task log…</div></div>
-    <div style="margin-top:14px;display:flex;gap:8px"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
-  document.body.appendChild(div);
+    <div style="margin-top:14px;display:flex;gap:8px"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Close</button></div></div>`);
   const body=div.querySelector('#pd_body');
   const r=await aiCall({action:'performance_summary',employee_id:empId,month:ym});
   if(!r.ok){body.innerHTML=`<div class="warnbar"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i> ${esc(r.error||'Could not draft a review.')}</div>`;return;}
@@ -2630,7 +2653,7 @@ async function wfh(){
 // are NOT rolled back here — say so plainly rather than guess which of them the
 // admin has since edited by hand.
 async function delWfh(id,approved,who){
-  if(!confirm(`Remove this request${who?` for ${who}`:''}?\n\n`+
+  if(!await confirmDialog(`Remove this request${who?` for ${who}`:''}?\n\n`+
     (approved?'It was approved, so the day goes back into their leave balance. The attendance already marked for those dates stays — correct it from Daily Attendance if needed.'
              :'It disappears from the log and from their balance.')))return;
   const{error,data}=await sb.from('wfh_leave').delete().eq('id',id).select();
@@ -2809,7 +2832,7 @@ async function sendSlip(eid,y,m,send){
 }
 // Release all saved, PAID full-time payslips for the month at once.
 async function sendAll(y,m){
-  if(!confirm('Release all PAID full-time payslips for this month to employees?'))return;
+  if(!await confirmDialog('Release all PAID full-time payslips for this month to employees?'))return;
   const{data:ft}=await sb.from('employees').select('id').eq('employment_type','Full-time');
   const ids=(ft||[]).map(x=>x.id);
   if(!ids.length)return toast('No full-time employees found.');
@@ -2872,19 +2895,18 @@ async function cli(){
 }
 function cliForm(c={}){
   const f=(k,l)=>`<label>${l}</label><input id="c_${k}" value="${esc(c[k]||'')}">`;
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>${c.id?'Edit':'Add'} Client</h2>
+  const div=modal(`<div class="card"><h2>${c.id?'Edit':'Add'} Client</h2>
   ${f('name','Company / Client Name')}<div class="row"><div>${f('contact_person','Contact Person')}</div><div>${f('phone','Phone')}</div></div>
   <div class="row"><div>${f('email','Email')}</div><div>${f('gstin','GSTIN')}</div></div>
   <label>Address</label><textarea id="c_address" rows="2">${esc(c.address||'')}</textarea>
   <label>Notes</label><textarea id="c_notes" rows="2">${esc(c.notes||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveCli('${c.id||''}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveCli(id){const o={};['name','contact_person','phone','email','gstin','address','notes'].forEach(k=>o[k]=$('c_'+k).value||null);
   const q=id?sb.from('clients').update(o).eq('id',id):sb.from('clients').insert(o);
   const{error}=await q;if(error)return toast(saveErr(error));document.querySelector('.modal').remove();cli()}
-async function delCli(id){if(confirm('Delete client?')){await sb.from('clients').delete().eq('id',id);cli()}}
+async function delCli(id){if(await confirmDialog('Delete client?')){await sb.from('clients').delete().eq('id',id);cli()}}
 
 /* ---------- ASSET MANAGEMENT (hardware + software) ---------- */
 const ASSET_CATS=['Laptop','Desktop','Monitor','Phone','Tool','Other'];
@@ -2936,8 +2958,7 @@ async function asset(){
 }
 function assetForm(a={}){
   const sel=(k,opts,cur)=>`<select id="a_${k}">${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>${a.id?'Edit':'Add'} Asset</h2>
+  const div=modal(`<div class="card"><h2>${a.id?'Edit':'Add'} Asset</h2>
   <label>Asset name</label><input id="a_name" placeholder='e.g. MacBook Pro 14"' value="${esc(a.name||'')}">
   <div class="row"><div><label>Category</label>${sel('category',ASSET_CATS,a.category||'Laptop')}</div>
   <div><label>Serial number</label><input id="a_serial_no" value="${esc(a.serial_no||'')}"></div></div>
@@ -2945,8 +2966,7 @@ function assetForm(a={}){
   <div style="font-size:11.5px;color:#889;margin-top:4px">Use <b>Assign</b> / <b>Return</b> on the list to change who holds it — that keeps the history.</div>
   <label>Notes</label><textarea id="a_notes" rows="2">${esc(a.notes||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveAsset('${a.id||''}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveAsset(id){
   const o={};['name','category','serial_no','status','notes'].forEach(k=>o[k]=$('a_'+k).value||null);
@@ -2955,18 +2975,16 @@ async function saveAsset(id){
   const{error}=await q;if(error)return toast(saveErr(error));
   document.querySelector('.modal').remove();asset();
 }
-async function delAsset(id){if(confirm('Delete this asset? Its assignment history goes with it.')){
+async function delAsset(id){if(await confirmDialog('Delete this asset? Its assignment history goes with it.')){
   const{error}=await sb.from('assets').delete().eq('id',id);if(error)return toast(saveErr(error));asset();}}
 // Assign: close any open holding, open a new one, and mirror the holder onto the asset row.
 function assignForm(id){
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Assign asset</h2>
+  const div=modal(`<div class="card"><h2>Assign asset</h2>
   <label>Assign to</label><select id="as_emp">${ASSET_EMPS.map(e=>`<option value="${e.id}">${esc(e.full_name)} (${esc(e.emp_code)})</option>`).join('')}</select>
   <div class="row"><div><label>From date</label><input id="as_date" type="date" value="${today()}"></div>
   <div><label>Notes</label><input id="as_notes" placeholder="Optional"></div></div>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="doAssign('${id}')">Assign</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function doAssign(id){
   const eid=$('as_emp').value,on=$('as_date').value||today();
@@ -2979,7 +2997,7 @@ async function doAssign(id){
   document.querySelector('.modal').remove();asset();
 }
 async function returnAsset(id){
-  if(!confirm('Mark this asset returned to the store?'))return;
+  if(!await confirmDialog('Mark this asset returned to the store?'))return;
   const d=today();
   await sb.from('asset_assignments').update({returned_on:d}).eq('asset_id',id).is('returned_on',null);
   const{error}=await sb.from('assets').update({assigned_to:null,status:'Available'}).eq('id',id);
@@ -2990,16 +3008,14 @@ async function assetHist(id){
     sb.from('asset_assignments').select('*').eq('asset_id',id).order('assigned_on',{ascending:false}),
     sb.from('employees').select('id,full_name,emp_code')]);
   const byId={};(emps||[]).forEach(e=>byId[e.id]=e);
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Assignment history</h2>
+  const div=modal(`<div class="card"><h2>Assignment history</h2>
   <table><tr><th>Employee</th><th>From</th><th>To</th><th>Notes</th></tr>
   ${(h||[]).map(r=>{const e=byId[r.employee_id];
     return `<tr><td>${e?esc(e.full_name):'<span class="tl-dash">—</span>'}</td><td style="white-space:nowrap">${fmtDate(r.assigned_on)}</td>
     <td style="white-space:nowrap">${r.returned_on?fmtDate(r.returned_on):'<span class="badge stW">Holding now</span>'}</td>
     <td style="font-size:12px">${r.notes?esc(r.notes):'<span class="tl-dash">—</span>'}</td></tr>`}).join('')
     ||'<tr><td colspan="4" style="text-align:center;color:#889;padding:20px">Never assigned yet.</td></tr>'}</table>
-  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
-  document.body.appendChild(div);
+  <div style="margin-top:12px"><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Close</button></div></div>`);
 }
 
 /* ----- software subscriptions (owned by a team, held by employees) ----- */
@@ -3051,8 +3067,7 @@ async function soft(){
 function softForm(s={}){
   const depts=[...new Set(ASSET_EMPS.map(e=>e.department).filter(Boolean))].sort();
   const sel=(k,opts,cur)=>`<select id="s_${k}"${k==='billing_cycle'?' onchange="softPaygToggle()"':''}>${opts.map(o=>`<option ${cur===o?'selected':''}>${o}</option>`).join('')}</select>`;
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>${s.id?'Edit':'Add'} Software</h2>
+  const div=modal(`<div class="card"><h2>${s.id?'Edit':'Add'} Software</h2>
   <div class="row"><div><label>Software name</label><input id="s_name" placeholder="e.g. Figma" value="${esc(s.name||'')}"></div>
   <div><label>Vendor</label><input id="s_vendor" placeholder="e.g. Figma Inc." value="${esc(s.vendor||'')}"></div></div>
   <label>Team / department <span style="color:#889;font-weight:400">— who owns this subscription</span></label>
@@ -3067,8 +3082,7 @@ function softForm(s={}){
   <label>Status</label>${sel('status',['Active','Cancelled'],s.status||'Active')}
   <label>Notes</label><textarea id="s_notes" rows="2">${esc(s.notes||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveSoft('${s.id||''}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);softPaygToggle();
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);softPaygToggle();
 }
 // Seats / fixed cost / renewal are meaningless for a usage-based service — hide them.
 function softPaygToggle(){const pg=$('s_billing_cycle').value===PAYG;
@@ -3087,7 +3101,7 @@ async function saveSoft(id){
   const{error}=await q;if(error)return toast(saveErr(error));
   document.querySelector('.modal').remove();soft();
 }
-async function delSoft(id){if(confirm('Delete this software? Its seat assignments go with it.')){
+async function delSoft(id){if(await confirmDialog('Delete this software? Its seat assignments go with it.')){
   const{error}=await sb.from('software').delete().eq('id',id);if(error)return toast(saveErr(error));soft();}}
 // Seat manager: who on the team actually holds a licence.
 async function seatForm(id){
@@ -3100,8 +3114,7 @@ async function seatForm(id){
   const held=new Set((seats||[]).map(s=>s.employee_id));
   const free=(emps||[]).filter(e=>!held.has(e.id));
   const u=(seats||[]).length,cap=sw?.seats;const pg=sw?isPayg(sw):false;
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>${pg?'Access':'Seats'} — ${esc(sw?.name||'')}</h2>
+  const div=modal(`<div class="card"><h2>${pg?'Access':'Seats'} — ${esc(sw?.name||'')}</h2>
   <p style="font-size:13px;color:var(--muted);margin:0 0 10px">${pg
     ?`${u} ${u===1?'person has':'people have'} access to this service — keep it current so console access leaves with the person.`
     :`${u} of ${cap??'—'} seats used${cap!=null&&u>cap?' <b style="color:var(--red)">— over the seats you bought</b>':''}`}</p>
@@ -3115,8 +3128,7 @@ async function seatForm(id){
     <td>${e?.department?esc(e.department):'<span class="tl-dash">—</span>'}</td>
     <td><button class="btn sm warn" onclick="delSeat('${s.id}','${id}')">Remove</button></td></tr>`}).join('')
     ||`<tr><td colspan="3" style="text-align:center;color:#889;padding:20px">${pg?'Nobody has access yet.':'Nobody holds a seat yet.'}</td></tr>`}</table>
-  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove();soft()">Close</button></div></div>`;
-  document.body.appendChild(div);
+  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove();soft()">Close</button></div></div>`);
 }
 // Monthly spend log — the only honest way to cost a usage-based service.
 async function spendForm(id){
@@ -3125,8 +3137,7 @@ async function spendForm(id){
     sb.from('software').select('name').eq('id',id).single(),
     sb.from('software_spend').select('*').eq('software_id',id).order('spend_month',{ascending:false})]);
   const tot=(rows||[]).reduce((n,r)=>n+(+r.amount||0),0);
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Monthly spend — ${esc(sw&&sw.name||'')}</h2>
+  const div=modal(`<div class="card"><h2>Monthly spend — ${esc(sw&&sw.name||'')}</h2>
   <p style="font-size:13px;color:var(--muted);margin:0 0 10px">Log what you were actually billed each month. Saving a month again updates it.</p>
   <div class="row" style="align-items:flex-end"><div><label>Month</label><input id="sp_month" type="month" value="${today().slice(0,7)}"></div>
   <div><label>Amount billed</label><input id="sp_amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
@@ -3139,8 +3150,7 @@ async function spendForm(id){
     <td><button class="btn sm warn" onclick="delSpend('${r.id}','${id}')">Del</button></td></tr>`).join('')
     ||'<tr><td colspan="4" style="text-align:center;color:#889;padding:20px">No spend logged yet.</td></tr>'}</table>
   ${rows&&rows.length?`<p style="font-size:12px;color:var(--muted);margin-top:8px">${rows.length} ${rows.length===1?'month':'months'} logged · total ${inr(tot)} · average ${inr(Math.round(tot/rows.length))}/month</p>`:''}
-  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove();soft()">Close</button></div></div>`;
-  document.body.appendChild(div);
+  <div style="margin-top:12px"><button class="btn sec" onclick="this.closest('.modal').remove();soft()">Close</button></div></div>`);
 }
 async function saveSpend(id){
   const m=$('sp_month').value,a=$('sp_amount').value;
@@ -3150,7 +3160,7 @@ async function saveSpend(id){
   if(error)return toast(saveErr(error));spendForm(id);
 }
 async function delSpend(rid,id){
-  if(!confirm('Delete this spend entry? It will drop out of the monthly software cost.'))return;
+  if(!await confirmDialog('Delete this spend entry? It will drop out of the monthly software cost.'))return;
   const{error}=await sb.from('software_spend').delete().eq('id',rid);
   if(error)return toast(saveErr(error));toast('Spend entry deleted');spendForm(id);}
 async function addSeat(id){
@@ -3159,7 +3169,7 @@ async function addSeat(id){
   if(error)return toast(saveErr(error));seatForm(id);
 }
 async function delSeat(seatId,id){
-  if(!confirm('Remove this seat? The employee loses access to the tool.'))return;
+  if(!await confirmDialog('Remove this seat? The employee loses access to the tool.'))return;
   const{error}=await sb.from('software_seats').delete().eq('id',seatId);
   if(error)return toast(saveErr(error));toast('Seat removed');seatForm(id);
 }
@@ -3314,7 +3324,6 @@ async function dops(){
       <a class="btn sm sec" href="${esc(statusUrl(p.token))}" target="_blank" rel="noopener">Open</a>
       <button class="btn sm warn" onclick="delStatusPage('${p.id}')">Del</button></td></tr>`).join('')
     ||'<tr><td colspan="4" style="text-align:center;color:#889;padding:24px">No status pages yet.</td></tr>'}</table></div>`);
-
   // The probe writes status from Postgres, so the page has to re-read to notice.
   // A stale "operational" is the one value on this page that must not linger.
   // Hold off while a modal is open or the table is being filtered — a refresh
@@ -3343,8 +3352,7 @@ function depCell(deps,vByP){
 }
 function depForm(assetId,assetName){
   const mine={};DOPS_DEPS.filter(d=>d.asset_id===assetId).forEach(d=>mine[d.provider]=d.criticality);
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>What ${esc(assetName)} depends on</h2>
+  const div=modal(`<div class="card"><h2>What ${esc(assetName)} depends on</h2>
   <div style="font-size:12.5px;color:#889;margin-bottom:10px">A <b>hard</b> dependency means the asset cannot work without it — when that vendor reports a major outage, this asset's incidents are recorded but nobody is paged. <b>Soft</b> dependencies never suppress.</div>
   <table><tr><th>Vendor</th><th>Status now</th><th>Depends</th></tr>
   ${DOPS_VENDORS.map(v=>`<tr>
@@ -3357,8 +3365,7 @@ function depForm(assetId,assetName){
       <option value="soft" ${mine[v.provider]==='soft'?'selected':''}>soft</option></select></td></tr>`).join('')}
   </table>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveDeps('${assetId}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveDeps(assetId){
   const want={};DOPS_VENDORS.forEach(v=>{const c=$('dep_'+v.provider).value;if(c)want[v.provider]=c});
@@ -3386,8 +3393,7 @@ async function copyStatusLink(token){
   catch(e){toast('Could not copy — use Open and copy from the address bar','warn')}
 }
 function statusPageForm(){
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>New status page</h2>
+  const div=modal(`<div class="card"><h2>New status page</h2>
   <label>Page heading <span style="color:#889;font-weight:400">— the client's name, not a URL</span></label>
   <input id="sp_title" placeholder="e.g. Acme Corp">
   <label>Client</label>
@@ -3397,8 +3403,7 @@ function statusPageForm(){
   <textarea id="sp_intro" rows="2" placeholder="Live status of the services we run for you."></textarea>
   <div style="font-size:11.5px;color:#889;margin-top:6px">Anyone with the link can read the page. It shows service names, uptime and approved incident updates — never URLs, error messages or other clients.</div>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveStatusPage()">Create</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveStatusPage(){
   const title=$('sp_title').value.trim();
@@ -3415,15 +3420,14 @@ async function saveStatusPage(){
   document.querySelector('.modal').remove();dops();
 }
 async function delStatusPage(id){
-  if(!confirm('Delete this status page? Its link stops working immediately.'))return;
+  if(!await confirmDialog('Delete this status page? Its link stops working immediately.'))return;
   const{error}=await sb.from('status_pages').delete().eq('id',id);
   if(error)return toast(saveErr(error));dops();
 }
 // The approval gate (§10.3). Nothing reaches a client automatically: a human
 // writes the wording and publishes it, and can unpublish it again.
 function clientUpdateForm(i){
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>What the client sees</h2>
+  const div=modal(`<div class="card"><h2>What the client sees</h2>
   <div style="font-size:12.5px;color:#889;margin-bottom:10px">Internally this is
     “${esc(i.title)}”. The client never sees that, the URL, or the error — only what you write here.</div>
   <label>Client-safe summary</label>
@@ -3432,8 +3436,7 @@ function clientUpdateForm(i){
     <input type="checkbox" id="cu_visible" ${i.client_visible?'checked':''} style="width:16px;height:16px;margin:0">
     Publish this on the status page</label>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveClientUpdate('${i.id}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveClientUpdate(id){
   const summary=$('cu_summary').value.trim(),visible=$('cu_visible').checked;
@@ -3451,8 +3454,7 @@ async function saveClientUpdate(id){
 function dopsForm(a={}){
   const sel=(k,opts,cur,txt)=>`<select id="d_${k}">${opts.map(o=>`<option value="${o}" ${cur===o?'selected':''}>${txt?txt(o):o.replace('_',' ')}</option>`).join('')}</select>`;
   const pick=(k,rows,cur,lbl)=>`<select id="d_${k}"><option value="">—</option>${rows.map(r=>`<option value="${r.id}" ${cur===r.id?'selected':''}>${esc(lbl(r))}</option>`).join('')}</select>`;
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>${a.id?'Edit':'Add'} digital asset</h2>
+  const div=modal(`<div class="card"><h2>${a.id?'Edit':'Add'} digital asset</h2>
   <label>Name</label><input id="d_name" placeholder="e.g. Acme Corp website" value="${esc(a.name||'')}">
   <label>URL</label><input id="d_primary_url" placeholder="https://example.com" value="${esc(a.primary_url||'')}">
   <div style="font-size:11.5px;color:#889;margin-top:4px">Give it a URL and we start checking it within five minutes. Leave it blank to register the asset without monitoring.</div>
@@ -3471,8 +3473,7 @@ function dopsForm(a={}){
 &lt;script&gt;Merik.init({ key: "${esc(a.ingest_key)}" });&lt;/script&gt;</textarea>
   <button class="btn sm sec" style="margin-top:4px" onclick="copyVal('d_snippet')">Copy snippet</button>`:''}
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveDops('${a.id||''}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveDops(id){
   const o={};['name','primary_url','kind','environment','client_id','project_id','owner_employee_id','criticality','sla_tier']
@@ -3488,7 +3489,7 @@ async function saveDops(id){
   document.querySelector('.modal').remove();dops();
 }
 async function delDops(id){
-  if(!confirm('Delete this asset? Its checks and incident history go with it.'))return;
+  if(!await confirmDialog('Delete this asset? Its checks and incident history go with it.'))return;
   const{error}=await sb.from('digital_assets').delete().eq('id',id);if(error)return toast(saveErr(error));dops();
 }
 // "We're deploying, shut up for 30 minutes." The probe keeps checking and still
@@ -3503,7 +3504,7 @@ async function ackIncident(id){
   if(error)return toast(saveErr(error));dops();
 }
 async function resolveIncident(id){
-  if(!confirm('Mark this incident resolved?'))return;
+  if(!await confirmDialog('Mark this incident resolved?'))return;
   const now=new Date().toISOString();
   const{error}=await sb.from('incidents').update({state:'resolved',resolved_at:now,updated_at:now}).eq('id',id);
   if(error)return toast(saveErr(error));dops();
@@ -3599,7 +3600,7 @@ async function warns(){
   },60000);
 }
 async function warnSet(id,state){
-  if(state==='dismissed'&&!confirm('Dismiss this warning? It will not re-alert while the same deviation continues.'))return;
+  if(state==='dismissed'&&!await confirmDialog('Dismiss this warning? It will not re-alert while the same deviation continues.'))return;
   const{error}=await sb.from('early_warnings')
     .update({state,updated_at:new Date().toISOString()}).eq('id',id);
   if(error)return toast(saveErr(error));warns();
@@ -3643,8 +3644,7 @@ function repoRows(links,cn,pn,an){
 }
 function repoForm(clients,projects,assets){
   const opts=(rows,lbl)=>rows.map(r=>`<option value="${r.id}">${esc(lbl(r))}</option>`).join('');
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Connect a repository</h2>
+  const div=modal(`<div class="card"><h2>Connect a repository</h2>
   <label>Repository <span style="color:#889;font-weight:400">— owner/name, exactly as on GitHub</span></label>
   <input id="rl_repo" placeholder="acme-agency/acme-website">
   <div class="row"><div><label>Client</label><select id="rl_client"><option value="">—</option>${opts(clients,r=>r.name)}</select></div>
@@ -3653,8 +3653,7 @@ function repoForm(clients,projects,assets){
   <select id="rl_asset"><option value="">—</option>${opts(assets,r=>r.name)}</select>
   <div style="font-size:11.5px;color:#889;margin-top:8px">Merik generates the webhook URL and secret. You paste them into GitHub once — nothing of the client's is stored here.</div>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveRepoLink()">Create</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveRepoLink(){
   const repo=$('rl_repo').value.trim();
@@ -3669,14 +3668,13 @@ async function saveRepoLink(){
   document.querySelector('.modal').remove();repoSetup(data);
 }
 async function delRepoLink(id){
-  if(!confirm('Disconnect this repository? Its webhook stops working immediately. Past activity is kept.'))return;
+  if(!await confirmDialog('Disconnect this repository? Its webhook stops working immediately. Past activity is kept.'))return;
   const{error}=await sb.from('repo_links').delete().eq('id',id);
   if(error)return toast(saveErr(error));devact();
 }
 // The whole point: the exact two values to paste, and nothing to substitute.
 function repoSetup(l){
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Connect ${esc(l.repo)} in GitHub</h2>
+  const div=modal(`<div class="card"><h2>Connect ${esc(l.repo)} in GitHub</h2>
   <div style="font-size:12.5px;color:#889;margin-bottom:10px">One-time, in the repository's own settings. Anyone with admin on the repo can do it — no Merik access needed.</div>
   <ol style="font-size:13.5px;line-height:1.9;padding-left:20px;margin:0 0 12px">
     <li>GitHub → the repository → <b>Settings</b> → <b>Webhooks</b> → <b>Add webhook</b></li>
@@ -3694,8 +3692,7 @@ function repoSetup(l){
   </ol>
   <div style="font-size:11.5px;color:#889">Activity appears on this page within seconds of the next push. If nothing arrives, GitHub's <b>Recent Deliveries</b> tab shows the reason — <code>401</code> means the secret does not match.</div>
   <div style="margin-top:12px;display:flex;gap:8px">
-    <button class="btn" onclick="this.closest('.modal').remove();devact()">Done</button></div></div>`;
-  document.body.appendChild(div);
+    <button class="btn" onclick="this.closest('.modal').remove();devact()">Done</button></div></div>`);
 }
 async function copyVal(id){const el=$(id);
   try{await navigator.clipboard.writeText(el.value);toast('Copied')}
@@ -4106,7 +4103,7 @@ async function prjfixApply(i){
   const project=document.querySelector(`.pfx-pj[data-i="${i}"]`).value;
   if(!client||!project)return toast('Pick a client and a project first.');
   const label=projLabel(project,client);
-  if(!confirm(`Attach all ${v.occ.length} entries using “${v.value}” to:\n\n${label}\n\nThis rewrites those task updates.`))return;
+  if(!await confirmDialog(`Attach all ${v.occ.length} entries using “${v.value}” to:\n\n${label}\n\nThis rewrites those task updates.`))return;
   const ids=[...new Set(v.occ.map(o=>o.id))];
   try{
     let n=0;
@@ -4129,15 +4126,14 @@ async function prjfixApplyOne(i,j){
 
 async function prjForm(p){
   const{data:cls}=await sb.from('clients').select('id,name').order('name');
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Edit Project</h2>
+  const div=modal(`<div class="card"><h2>Edit Project</h2>
   <label>Project Name</label><input id="pe_name" value="${esc(p.name||'')}">
   <div class="row"><div><label>Client</label><select id="pe_client"><option value="">— Internal —</option>${(cls||[]).map(c=>`<option value="${c.id}" ${p.client_id===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
   <div><label>Status</label><select id="pe_status">${['Active','On Hold','Completed'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div>
   <div class="row"><div style="max-width:200px"><label>Start Date</label><input id="pe_start" type="date" value="${(p.start_date||'').slice(0,10)}"></div></div>
   <label>Description</label><textarea id="pe_desc" rows="3">${esc(p.description||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveProjEdit('${p.id}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveProjEdit(id){
   const name=$('pe_name').value.trim();if(!name)return toast('Project name is required.');
@@ -4168,7 +4164,7 @@ async function addPrj(){
 }
 async function updPrj(id,v){await sb.from('projects').update({status:v}).eq('id',id)}
 async function updDesc(id,v){const{error}=await sb.from('projects').update({description:v||null}).eq('id',id);if(error)toast(saveErr(error))}
-async function delPrj(id){if(confirm('Delete project?')){await sb.from('projects').delete().eq('id',id);prj()}}
+async function delPrj(id){if(await confirmDialog('Delete project?')){await sb.from('projects').delete().eq('id',id);prj()}}
 
 async function orgset(){
   const o=ME.org||{};
@@ -4222,7 +4218,7 @@ async function docForm(t,d={}){
   const{data:clients}=await sb.from('clients').select('id,name').order('name');
   if(!clients||!clients.length){toast('Add a client first (Clients page).');return}
   const items=d.items||[{desc:'',qty:1,rate:0}];
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>${d.id?'Edit':'New'} ${isQ?'Quote':'Invoice'}</h2>
+  const div=modal(`<div class="card"><h2>${d.id?'Edit':'New'} ${isQ?'Quote':'Invoice'}</h2>
   <div class="row"><div><label>${isQ?'Quote':'Invoice'} No.</label><input id="d_no" value="${esc(isQ?(d.quote_no||''):(d.invoice_no||''))}" placeholder="${isQ?'Q':'INV'}-${new Date().getFullYear()}-001"></div>
   <div><label>Client</label><select id="d_client">${(clients||[]).map(c=>`<option value="${c.id}" ${d.client_id===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div></div>
   <div class="row"><div><label>Date</label><input id="d_date" type="date" value="${(isQ?d.quote_date:d.invoice_date)||today()}"></div>
@@ -4235,8 +4231,7 @@ async function docForm(t,d={}){
   <p id="dtot" style="text-align:right;font-weight:700;margin-top:8px"></p>
   <label>Notes</label><textarea id="d_notes" rows="2">${esc(d.notes||'')}</textarea>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveDoc('${t}','${d.id||''}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);wireDoc();
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);wireDoc();
 }
 function addDocRow(){$('ditems').insertAdjacentHTML('beforeend',docRow({desc:'',qty:1,rate:0}));wireDoc()}
 function docRow(it){return`<tr class="dit"><td><input class="di" data-k="desc" value="${esc(it.desc)}"></td>
@@ -4261,7 +4256,7 @@ async function saveDoc(t,id){
   const{error}=await q;if(error)return toast(saveErr(error));
   document.querySelector('.modal').remove();docList(t);
 }
-async function delDoc(t,id){if(confirm('Delete?')){await sb.from(t).delete().eq('id',id);docList(t)}}
+async function delDoc(t,id){if(await confirmDialog('Delete?')){await sb.from(t).delete().eq('id',id);docList(t)}}
 async function quoteToInvoice(qid){
   const{data:q}=await sb.from('quotes').select('*').eq('id',qid).single();
   const no='INV-'+Date.now().toString().slice(-6);
@@ -4321,7 +4316,7 @@ async function saveDocHtml(t,id){
   toast(error?saveErr(error):'Saved ✔ — this edited layout will be used every time you open this document.');
 }
 async function resetDocHtml(t,id){
-  if(!confirm('Discard manual edits and go back to the auto-generated layout?'))return;
+  if(!await confirmDialog('Discard manual edits and go back to the auto-generated layout?'))return;
   await sb.from(t).update({custom_html:null}).eq('id',id);docPrint(t,id);
 }
 
@@ -4361,7 +4356,6 @@ async function mydash(){
     <h3>Couldn't load today</h3><p>${esc(saveErr(aErr))}</p>
     <button class="btn sec" onclick="go('mydash')"><i class="fa-solid fa-rotate-right"></i> Try again</button>
     </div></div>`);
-
   const rec=(a||[]).find(r=>r.att_date===d)||{},prev=(a||[]).find(r=>r.att_date===yest);
   const upd=(t||[])[0],shared=upd&&upd.update_status==='Update Shared',noUpd=upd&&upd.update_status==='No Update';
   TODAY_UPD=upd||null;
@@ -4721,14 +4715,14 @@ async function reqWfh(){
   const type=$('w_status').value,cost=leaveDays({status:type,req_date:from,end_date:to});
   // Over balance is allowed — emergencies happen and the admin decides — but never silently.
   const left=leaveBal(MY_LEAVE,ME.employee.doj,from).available-cost;
-  if(left<0&&!confirm(`This is ${leaveNum(-left)} day(s) more leave than you have earned. Your admin may treat the excess as unpaid. Send it anyway?`))return;
+  if(left<0&&!await confirmDialog(`This is ${leaveNum(-left)} day(s) more leave than you have earned. Your admin may treat the excess as unpaid. Send it anyway?`))return;
   const{error}=await sb.from('wfh_leave').insert({employee_id:ME.employee.id,req_date:from,end_date:to,status:type,reason:$('w_reason').value||null});
   error?toast(saveErr(error)):(toast('Request submitted for approval'),mywfh())}
 // A mistyped request could only be fixed by asking an admin to reject it, which
 // left a permanent "rejected" mark against the employee for their own typo.
 // Only ever touches a still-Pending row of the caller's own; RLS enforces the rest.
 async function withdrawWfh(id){
-  if(!confirm('Withdraw this request? Your admin will no longer see it.'))return;
+  if(!await confirmDialog('Withdraw this request? Your admin will no longer see it.'))return;
   // approved is 'Pending' on new rows but null on older ones — filtering on the
   // literal alone silently matched nothing and looked exactly like a permission failure.
   const{error,data}=await sb.from('wfh_leave').delete()
@@ -4858,15 +4852,13 @@ async function addSheetTask(){
 function editSheetTask(id){
   const t=SHEET.find(x=>x.id===id);if(!t)return;
   const cls=sheetClients();const cur=t.client||cls[0]||'Internal';
-  const div=document.createElement('div');div.className='modal';
-  div.innerHTML=`<div class="card"><h2>Edit task</h2>
+  const div=modal(`<div class="card"><h2>Edit task</h2>
   <label>Task</label><input id="te_task" value="${esc(t.task||'')}">
   <div class="row"><div><label>Client</label><select id="te_client" onchange="$('te_project').innerHTML=tsProjOpts(this.value,'')">${cls.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
   <div><label>Project</label><select id="te_project">${tsProjOpts(cur,t.project||'')}</select></div></div>
   <label>Estimated time</label>${hmField('te-est',minToHM(t.est_min))}
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="saveSheetTask('${id}')">Save</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function saveSheetTask(id){
   const task=$('te_task').value.trim();if(!task)return toast('Write the task first.');
@@ -4878,7 +4870,7 @@ async function saveSheetTask(id){
 }
 async function toggleSheetDone(id,done){const{error}=await sb.from('emp_tasks').update({done}).eq('id',id);
   error?toast(saveErr(error)):mynotes()}
-async function delSheetTask(id){if(!confirm('Remove this task from your sheet? Anything already reported in a task log stays there.'))return;
+async function delSheetTask(id){if(!await confirmDialog('Remove this task from your sheet? Anything already reported in a task log stays there.'))return;
   const{error}=await sb.from('emp_tasks').delete().eq('id',id);error?toast(saveErr(error)):mynotes()}
 // Open today's task log with this sheet task appended as a new row. The sheet is
 // only stamped as logged once the update is actually saved (see saveTask).
@@ -4899,7 +4891,7 @@ async function toggleTodo(id,done){const{error}=await sb.from('emp_notes').updat
 // A note or to-do is typed work with no other copy — deleting one on a single
 // stray click, with no confirm and no undo, loses it for good.
 async function delNote(id,kind){
-  if(!confirm(`Delete this ${kind==='todo'?'to-do':'note'}? This cannot be undone.`))return;
+  if(!await confirmDialog(`Delete this ${kind==='todo'?'to-do':'note'}? This cannot be undone.`))return;
   const{error}=await sb.from('emp_notes').delete().eq('id',id);
   error?toast(saveErr(error)):(toast('Deleted'),mynotes())}
 const FB_CATS=['Product','Requirement','Bug','Improvement','Other'];
@@ -5281,15 +5273,14 @@ async function suaiCap(v){const n=parseInt(v,10);if(!Number.isFinite(n)||n<0)ret
 async function suaiOrg(orgId,on){const{error}=await sb.from('ai_org_access').upsert({org_id:orgId,enabled:on,granted_by:ME.user.id,granted_at:new Date().toISOString()});if(error)return toast(saveErr(error));suai();}
 // --- Provider keys ---
 function suaiKeyForm(){
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Add provider key</h2>
+  const div=modal(`<div class="card"><h2>Add provider key</h2>
   <label>Provider</label><select id="ak_prov" onchange="suaiKeyProv()">${AI_PROVIDERS.map(([id,l])=>`<option value="${id}">${l}</option>`).join('')}</select>
   <div id="ak_basewrap" style="display:none"><label>Base URL <span style="color:#889;font-weight:400">— OpenAI-compatible endpoint</span></label><input id="ak_base" placeholder="https://api.example.com/v1"></div>
   <label>Label <span style="color:#889;font-weight:400">— optional, for you</span></label><input id="ak_label" placeholder="e.g. Production Claude">
   <label>Model</label><input id="ak_model" placeholder="claude-opus-4-8">
   <label>API key</label><input id="ak_key" type="password" autocomplete="off" placeholder="paste the provider's secret key">
   <div class="warnbar" style="margin-top:12px"><i class="fa-solid fa-lock" style="color:var(--green)"></i> The key is encrypted before it's stored. Only its last 4 digits are ever shown again.</div>
-  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suaiSaveKey()">Save key</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);suaiKeyProv();
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suaiSaveKey()">Save key</button><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);suaiKeyProv();
 }
 function suaiKeyProv(){const p=$('ak_prov').value;const meta=AI_PROVIDERS.find(x=>x[0]===p);
   $('ak_basewrap').style.display=meta&&meta[3]?'block':'none';
@@ -5305,7 +5296,7 @@ async function suaiSaveKey(){
 }
 async function suaiSetActive(id){const r=await aiCall({action:'set_active',id});if(!r.ok)return toast(r.error);suai();}
 async function suaiKeyToggle(id,on){const{error}=await sb.from('ai_provider_keys').update({enabled:on}).eq('id',id);if(error)return toast(saveErr(error));suai();}
-async function suaiDelKey(id){if(!confirm('Delete this provider key? Any AI features using it will stop until you activate another.'))return;const r=await aiCall({action:'delete_key',id});if(!r.ok)return toast(r.error);suai();}
+async function suaiDelKey(id){if(!await confirmDialog('Delete this provider key? Any AI features using it will stop until you activate another.'))return;const r=await aiCall({action:'delete_key',id});if(!r.ok)return toast(r.error);suai();}
 async function suoverview(){
   const [{data:orgs},{data:emps},{data:sr},{data:fbk},ures]=await Promise.all([
     sb.from('orgs').select('id,name,status,created_at').order('created_at',{ascending:false}),
@@ -5350,14 +5341,13 @@ async function sutenants(){
   <button class="tl-go" title="Open" onclick="suTenant('${o.id}')"><i class="fa-solid fa-chevron-right"></i></button></td></tr>`).join('')||'<tr><td colspan="7" style="color:#889">No tenants yet.</td></tr>'}</table></div>`);
 }
 function suAddTenant(){
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New Tenant</h2>
+  const div=modal(`<div class="card"><h2>New Tenant</h2>
   <label>Company name</label><input id="ten_name" placeholder="Acme Inc.">
   <label>Plan (optional)</label><input id="ten_plan" placeholder="Free / Pro / Enterprise">
   <label>Modules</label><select id="ten_preset">${MODULE_PRESETS.map(([id,l])=>`<option value="${id}">${l}</option>`).join('')}</select>
   <div class="warnbar" style="margin-top:12px">Optionally create the tenant's first admin login now.</div>
   <div class="row"><div><label>Admin email (optional)</label><input id="ten_email" type="email"></div><div><label>Admin password</label><input id="ten_pw" placeholder="min 6 chars"></div></div>
-  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveNewTenant()">Create</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveNewTenant()">Create</button><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function suSaveNewTenant(){
   const name=$('ten_name').value.trim();if(!name)return toast('Company name is required.');
@@ -5372,7 +5362,7 @@ async function suSaveNewTenant(){
   document.querySelector('.modal').remove();sutenants();
 }
 function suEditTenant(o){
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>Edit Tenant</h2>
+  const div=modal(`<div class="card"><h2>Edit Tenant</h2>
   <label>Company name</label><input id="ten_name" value="${esc(o.name||'')}">
   <div class="row"><div><label>Plan</label><input id="ten_plan" value="${esc(o.plan||'')}"></div>
   <div><label>Status</label><select id="ten_status">${['Active','Suspended'].map(s=>`<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div>
@@ -5384,8 +5374,7 @@ function suEditTenant(o){
   <p style="font-size:11.5px;color:#889;margin-top:4px">Dashboard, Employees &amp; Settings are always available. Unchecking a module hides its pages from this tenant's admins and employees.</p>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveTenant('${o.id}')">Save</button>
   <button class="btn warn" onclick="suDelTenant('${o.id}',${escArg(o.name)})">Delete tenant</button>
-  <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 function suModulePreset(id){const keys=MODULE_PRESETS.find(([p])=>p===id)[2];
   document.querySelectorAll('#ten_modules input').forEach(c=>c.checked=keys.includes(c.dataset.mk))}
@@ -5402,7 +5391,7 @@ async function suSetTenantStatus(id,status){const{error}=await sb.from('orgs').u
 // sign in to a workspace that no longer existed. It also silently failed
 // against the org foreign keys until 20260810_org_delete_cascade.sql.
 async function suDelTenant(id,name){
-  const typed=prompt(`Delete tenant "${name}"?\n\nThis permanently removes the org and all its data — employees, attendance, payroll, tasks, clients, assets — and every login belonging to it. This cannot be undone.\n\nType the tenant name to confirm:`);
+  const typed=await promptDialog(`Delete tenant "${name}"?\n\nThis permanently removes the org and all its data — employees, attendance, payroll, tasks, clients, assets — and every login belonging to it. This cannot be undone.\n\nType the tenant name to confirm:`);
   if(typed===null)return;
   if(typed.trim()!==name)return toast('Name did not match — nothing was deleted.');
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'delete_org',org_id:id,confirm_name:typed.trim()}});
@@ -5460,13 +5449,12 @@ async function suusers(){
 }
 async function suCreateUser(){
   const{data:orgs}=await sb.from('orgs').select('id,name').order('name');
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New User</h2>
+  const div=modal(`<div class="card"><h2>New User</h2>
   <div class="row"><div><label>Email</label><input id="nu_email" type="email"></div><div><label>Password</label><input id="nu_pw" placeholder="min 6 chars"></div></div>
   <div class="row"><div><label>Tenant</label><select id="nu_org" onchange="suRoleOpts()"><option value="">— Merik (product owner) —</option>${(orgs||[]).map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')}</select></div>
   <div><label>Role</label><select id="nu_role"></select></div></div>
   <p style="font-size:12px;color:#889;margin-top:4px">A tenant user is an <b>admin</b> or <b>employee</b>. <b>Super admin</b> is a Merik product-owner account with no tenant.</p>
-  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveUser()">Create</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);suRoleOpts();
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveUser()">Create</button><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);suRoleOpts();
 }
 // Role options depend on whether a tenant is chosen: tenants get admin/employee, product owner gets superadmin.
 function suRoleOpts(){const org=$('nu_org').value;const roles=org?['admin','employee']:['superadmin'];
@@ -5483,10 +5471,10 @@ async function suSaveUser(){
 async function suSetRole(id,role){
   if(role==='superadmin')return toast('A tenant user cannot be made super admin — that role is Merik-only.');
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_role',user_id:id,role}});if(error||data?.error)toast('Failed: '+(data?.error||await fnMsg(error)));}
-async function suResetPw(id,email){const pw=prompt(`Set a new password for ${email} (min 6 chars):`);if(pw===null)return;if(pw.length<6)return toast('Too short.');
+async function suResetPw(id,email){const pw=await promptDialog(`Set a new password for ${email} (min 6 chars):`,{type:'password'});if(pw===null)return;if(pw.length<6)return toast('Too short.');
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'set_password',user_id:id,password:pw}});
   if(error||data?.error)return toast('Failed: '+(data?.error||await fnMsg(error)));toast(`✔ Password updated.\n\nEmail: ${email}\nPassword: ${pw}`);}
-async function suDelUser(id,email){if(!confirm(`Delete user ${email}? This removes their login permanently.`))return;
+async function suDelUser(id,email){if(!await confirmDialog(`Delete user ${email}? This removes their login permanently.`))return;
   const{data,error}=await sb.functions.invoke('su-manage',{body:{action:'delete_user',user_id:id}});
   if(error||data?.error)return toast('Failed: '+(data?.error||await fnMsg(error)));suusers();}
 // ---- Super admin: platform analytics ----
@@ -5540,13 +5528,12 @@ async function suann(){
   <button class="btn sm warn" onclick="suAnnDel('${r.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="6" style="color:#889">No announcements yet.</td></tr>'}</table></div>`);
 }
 function suAnnForm(){
-  const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New Announcement</h2>
+  const div=modal(`<div class="card"><h2>New Announcement</h2>
   <label>Title</label><input id="an_title" placeholder="e.g. New payroll export is live">
   <label>Message</label><textarea id="an_body" rows="3" placeholder="What's new…"></textarea>
   <div class="row"><div><label>Audience</label><select id="an_audience"><option value="all">Everyone</option><option value="admins">Admins only</option></select></div>
   <div><label>Type</label><select id="an_kind"><option value="info">Info</option><option value="success">Success</option><option value="warning">Warning</option></select></div></div>
-  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suAnnSave()">Publish</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
-  document.body.appendChild(div);
+  <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suAnnSave()">Publish</button><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function suAnnSave(){
   const title=$('an_title').value.trim();if(!title)return toast('Title is required.');
@@ -5554,7 +5541,7 @@ async function suAnnSave(){
   if(error)return toast(saveErr(error));document.querySelector('.modal').remove();suann();
 }
 async function suAnnToggle(id,active){const{error}=await sb.from('announcements').update({active}).eq('id',id);if(error)return toast(saveErr(error));suann();}
-async function suAnnDel(id){if(!confirm('Delete this announcement?'))return;const{error}=await sb.from('announcements').delete().eq('id',id);if(error)return toast(saveErr(error));suann();}
+async function suAnnDel(id){if(!await confirmDialog('Delete this announcement?'))return;const{error}=await sb.from('announcements').delete().eq('id',id);if(error)return toast(saveErr(error));suann();}
 // Active announcements banner shown inside tenant portals.
 async function annBanner(){
   if(!ME.employee&&ME.profile?.role!=='admin')return '';
@@ -5580,7 +5567,7 @@ async function signups(){
   <td class="noprint" style="white-space:nowrap">${r.status==='Pending'?`<button class="btn sm" style="background:var(--green)" onclick="approveSignup('${r.id}',${escArg(r.email)},${escArg(r.company_name)})">Approve</button> <button class="btn sm warn" onclick="rejectSignup('${r.id}')">Reject</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="8" style="color:#889">No signup requests yet.</td></tr>'}</table></div>`);
 }
 async function approveSignup(id,email,company){
-  const pw=prompt(`Approve "${company}" (${email}).\n\nSet an admin password for this account (min 6 characters):`);
+  const pw=await promptDialog(`Approve "${company}" (${email}).\n\nSet an admin password for this account (min 6 characters):`,{type:'password'});
   if(pw===null)return;
   if(pw.length<6)return toast('Password must be at least 6 characters.');
   const{data,error}=await sb.functions.invoke('review-signup',{body:{request_id:id,action:'approve',password:pw}});
@@ -5589,7 +5576,7 @@ async function approveSignup(id,email,company){
   signups();
 }
 async function rejectSignup(id){
-  const notes=prompt('Reject this request?\n\nOptional reason (shown in the log):');
+  const notes=await promptDialog('Reject this request?\n\nOptional reason (shown in the log):');
   if(notes===null)return;
   const{data,error}=await sb.functions.invoke('review-signup',{body:{request_id:id,action:'reject',notes:notes||null}});
   if(error||data?.error)return toast('Reject failed: '+(data?.error||await fnMsg(error)));
