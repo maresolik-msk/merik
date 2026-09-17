@@ -155,6 +155,8 @@ tbody tr:hover td{background:var(--surface)}
 #side .navscroll{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
 #side .brand{display:flex;flex:none;align-items:center;gap:11px;padding:20px 18px;font-size:17px;font-weight:700;letter-spacing:-.2px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #side .brand img{height:32px;border-radius:8px;flex:none}
+#side .brand img.wm{height:22px;width:auto;border-radius:0}
+#side .brand img.mk{display:none}
 /* Nav search — 25 items in one list is a scroll hunt without it */
 .navfind{position:relative;margin:12px 12px 4px}
 .navfind i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#7e7d78;font-size:12px;pointer-events:none}
@@ -240,6 +242,7 @@ tbody tr:hover td{background:var(--surface)}
 #topbar{display:none;align-items:center;gap:12px;height:56px;padding:0 14px;background:var(--sidebar);color:#fff;position:fixed;top:0;left:0;right:0;z-index:60;box-shadow:0 2px 10px rgba(0,0,0,.25)}
 #topbar #hamb{background:rgba(255,255,255,.1);border:none;color:#fff;width:40px;height:40px;border-radius:10px;font-size:18px;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:none;padding:0}
 #topbar img{height:28px;border-radius:6px}
+#topbar img.tb-wm{height:20px;width:auto;border-radius:0}
 #topbar .tb-name{font-weight:700;font-size:16px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #overlay{display:none;position:fixed;inset:0;background:rgba(20,20,25,.5);z-index:55}
 #side .side-close{display:none}
@@ -251,8 +254,9 @@ tbody tr:hover td{background:var(--surface)}
 body.nav-mini #side{width:68px}
 body.nav-mini #side .brand{flex-direction:column;gap:10px;padding:14px 0}
 body.nav-mini #side .brand .side-mini{margin:0}
+body.nav-mini #side .brand img.mk{display:block}
 body.nav-mini #side .side-mini i{transform:rotate(180deg)}
-body.nav-mini #side .brand-nm,body.nav-mini #side .navfind,body.nav-mini #side a .lbl,body.nav-mini #side .grp,body.nav-mini #side .ufoot .who,body.nav-mini #side .navempty{display:none}
+body.nav-mini #side .brand img.wm,body.nav-mini #side .navfind,body.nav-mini #side a .lbl,body.nav-mini #side .grp,body.nav-mini #side .ufoot .who,body.nav-mini #side .navempty{display:none}
 body.nav-mini #side .grpitems[hidden]{display:block}
 body.nav-mini #side .grpitems{border-top:1px solid rgba(255,255,255,.08);margin:8px 0 0;padding:6px 12px 0}
 body.nav-mini #side a{justify-content:center;padding:10px 0;margin:2px 12px}
@@ -1212,15 +1216,16 @@ function renderShell(){
   } else ALLOWED_VIEWS=null;
   const first=groups[0][1][0][0];HOME_VIEW=first;
   const nm=ME.employee?.full_name||ME.user.email;
-  const orgnm=esc(ME.org?.name||"Workspace");const logo=ME.org?.logo||LOGO;
+  // The shell is Merik's: the tenant's own logo belongs on their documents (payslips, quotes, invoices), not the nav.
+  const orgnm=esc(ME.org?.name||"Workspace");const logo=LOGO;
   const gid=g=>'grp-'+g.toLowerCase().replace(/[^a-z]+/g,'-');
   $('root').innerHTML=`<div id="app">
   <div id="topbar" class="noprint"><button id="hamb" onclick="toggleSide()" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
-  <img src="${logo}" alt=""><span class="tb-name">${orgnm}</span></div>
+  <img class="tb-wm" src="../assets/images/wordmark-white.png" alt="Merik"></div>
   <div id="overlay" onclick="closeSide()"></div>
   <nav id="side" aria-label="Main">
   <button class="side-close" onclick="closeSide()" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
-  <div class="brand"><img src="${logo}" alt=""><span class="brand-nm">${orgnm}</span><button class="side-mini" onclick="toggleMini()" title="Collapse menu" aria-label="Collapse menu"><i class="fa-solid fa-angles-left"></i></button></div>
+  <div class="brand"><img class="wm" src="../assets/images/wordmark-white.png" alt="Merik"><img class="mk" src="${logo}" alt="Merik"><button class="side-mini" onclick="toggleMini()" title="Collapse menu" aria-label="Collapse menu"><i class="fa-solid fa-angles-left"></i></button></div>
   <div class="navfind"><i class="fa-solid fa-magnifying-glass"></i>
     <input type="search" id="navq" placeholder="Search menu…" aria-label="Search menu" oninput="filterNav(this.value)"></div>
   <div class="navscroll">
