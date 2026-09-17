@@ -72,9 +72,9 @@ function template(heading: string, lead: string, cta: string, link: string): str
   <img src="https://www.merik.in/assets/images/wordmark.png" alt="Merik" width="102" height="24" style="display:block;margin-bottom:28px">
   <h1 style="font-size:20px;margin:0 0 12px">${heading}</h1>
   <p style="font-size:15px;line-height:1.6;color:#55555f;margin:0 0 24px">${lead}</p>
-  <a href="${link}" style="display:inline-block;background:#D93A31;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:8px">${cta}</a>
+  <a href="${link}" style="display:inline-block;background:#CA3934;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:8px">${cta}</a>
   <p style="font-size:13px;line-height:1.6;color:#8a8a94;margin:26px 0 0">If the button doesn't work, paste this into your browser:<br>
-    <a href="${link}" style="color:#D93A31;word-break:break-all">${link}</a></p>
+    <a href="${link}" style="color:#CA3934;word-break:break-all">${link}</a></p>
   <p style="font-size:13px;line-height:1.6;color:#8a8a94;margin:18px 0 0">If you didn't ask for this, you can ignore this email — nothing changes until the link is used.</p>
 </div>`;
 }

@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     }
     await admin.from('profiles').upsert({ id: userId, role: 'employee', employee_id: emp.id, org_id: emp.org_id });
 
-    return new Response(JSON.stringify({ ok: true, email: emp.email }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ok: true, email: emp.email, name: emp.full_name }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
   }
