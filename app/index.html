@@ -21,9 +21,10 @@
   --brand:#D93A31;--brand-d:#BC2E26;--brand-soft:#FCEEEC;
   --bg:#F7F6F3;--card:#ffffff;--line:#ECECEC;--ink:#15161A;--body:#41454E;--muted:#767B85;
   --surface:#F7F6F3;              /* warm tint for headers, tab rails, zebra rows */
-  --green:#1E8449;--amber:#B45309;--red:#C0392B;--radius:14px;
+  --green:#1E8449;--amber:#B45309;--red:#C0392B;--radius:10px;
+  --input:#CFCBC3;--destructive:#8E1F17;--shadow-card:0 1px 2px rgba(0,0,0,.035);
   --sidebar:#17181C;--sidebar-2:#1F2024;  /* ink-dark nav, not navy */
-  --radius-sm:10px;
+  --radius-sm:8px;
   /* legacy aliases — do not use in new code */
   --navy:var(--ink);--deep:var(--brand);--mid:var(--brand);--lblue:var(--brand-soft);--orange:var(--brand);
   --shadow:0 1px 2px rgba(20,20,25,.04),0 6px 20px rgba(20,20,25,.07);
@@ -32,7 +33,7 @@
 /* ============ DARK THEME ============ */
 :root[data-theme="dark"]{
   --bg:#141416;--card:#1C1C20;--line:#2C2C31;--ink:#F2F1EE;--body:#C9C8C4;--muted:#94938E;
-  --surface:#232327;--brand-soft:rgba(217,58,49,.16);--sidebar:#0F0F11;--sidebar-2:#17171A;
+  --surface:#232327;--brand-soft:rgba(217,58,49,.16);--sidebar:#0F0F11;--sidebar-2:#17171A;--input:#3A3B42;--destructive:#E88079;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4);--shadow-lg:0 22px 55px rgba(0,0,0,.55);
 }
 [data-theme="dark"] h1,[data-theme="dark"] h2,[data-theme="dark"] h3{color:var(--ink)}
@@ -44,8 +45,6 @@
 [data-theme="dark"] #tasktbl tr:hover td{background:#26262b}
 [data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:#131316;color:var(--ink);border-color:#34343a}
 [data-theme="dark"] input::placeholder,[data-theme="dark"] textarea::placeholder{color:#7d7c78}
-[data-theme="dark"] .btn.sec{background:#26262b;color:var(--ink);border-color:#34343a}
-[data-theme="dark"] .btn.sec:hover{background:#2f2f35;color:#fff}
 [data-theme="dark"] .card{background:var(--card);border-color:var(--line)}
 [data-theme="dark"] .tl-icon-btn,[data-theme="dark"] .pg-btn,[data-theme="dark"] .tl-go{background:var(--card);color:var(--body);border-color:#34343a}
 [data-theme="dark"] .pg-btn:hover:not(:disabled),[data-theme="dark"] .tl-icon-btn:hover,[data-theme="dark"] .tl-go:hover{background:#26262b}
@@ -73,37 +72,37 @@ body{background:var(--bg);color:var(--ink);font-size:14px;font-family:'Inter',-a
 button{cursor:pointer;font-family:inherit}
 
 /* ---- Buttons ---- */
-.btn{background:var(--deep);color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;box-shadow:0 2px 6px rgba(20,20,25,.18)}
-.btn:hover{background:#0f1f3c;transform:translateY(-1px);box-shadow:0 6px 16px rgba(20,20,25,.26)}
-.btn:active{transform:translateY(0)}
-.btn.sec{background:var(--surface);color:var(--navy);box-shadow:none;border:1px solid var(--line)}
-.btn.sec:hover{background:var(--surface);color:var(--navy)}
-.btn.warn{background:var(--orange);box-shadow:0 2px 8px rgba(217,58,49,.3)}
-.btn.warn:hover{background:#d75b20}
-.btn.sm{padding:5px 11px;font-size:12px;border-radius:8px}
+.btn{background:var(--brand);color:#fff;border:1px solid var(--brand);min-height:40px;padding:8px 16px;border-radius:10px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:color .15s,background-color .15s,border-color .15s,transform .15s;box-shadow:0 2px 6px rgba(20,20,25,.18)}
+.btn:hover{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn:active{transform:translateY(1px)}
+.btn.sec{background:var(--card);color:var(--ink);box-shadow:none;border-color:var(--input)}
+.btn.sec:hover{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.warn{background:var(--card);color:var(--destructive);border-color:var(--destructive);box-shadow:none}
+.btn.warn:hover{background:var(--destructive);border-color:var(--destructive);color:#fff}
+.btn.sm{min-height:32px;padding:4px 12px;font-size:12px;border-radius:8px}
 
 /* ---- Forms ---- */
-input,select,textarea{padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;width:100%;font-family:inherit;color:var(--ink);background:#fff;transition:border-color .12s ease,box-shadow .12s ease}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--mid);box-shadow:0 0 0 3px rgba(217,58,49,.14)}
+input,select,textarea{padding:9px 11px;border:1px solid var(--input);border-radius:10px;font-size:13.5px;width:100%;font-family:inherit;color:var(--ink);background:#fff;transition:border-color .12s ease,box-shadow .12s ease}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 2px rgba(217,58,49,.35)}
 input::placeholder,textarea::placeholder{color:var(--muted)}
-label{font-size:11.5px;font-weight:600;color:var(--muted);display:block;margin:10px 0 4px;letter-spacing:.2px}
+label{font-size:11px;font-weight:600;color:var(--muted);display:block;margin:10px 0 5px;letter-spacing:.06em;text-transform:uppercase}
 
 /* ---- Tables ---- */
 table{border-collapse:separate;border-spacing:0;width:100%;background:#fff;border-radius:12px;overflow:hidden}
 th{background:var(--surface);color:var(--navy);padding:11px 10px;font-size:11.5px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;border-bottom:2px solid var(--line);z-index:1}
 table tr th:first-child{border-top-left-radius:12px}table tr th:last-child{border-top-right-radius:12px}
-td{padding:10px;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink)}
+td{padding:10px;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:none}
 tr:nth-child(even) td{background:var(--surface)}
 tbody tr:hover td{background:var(--surface)}
 
 /* ---- Cards ---- */
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:var(--shadow-card)}
 .pghead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;flex-wrap:wrap}
 .pghead h2{margin-bottom:3px;font-size:23px;letter-spacing:-.4px}
 .sub{color:var(--muted);font-size:13.5px}
-.kicon{width:52px;height:52px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:var(--shadow);color:var(--ink)}
-.kicon i{font-size:22px}
+.kicon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--brand)}
+.kicon i{font-size:17px}
 #side a .ic i{font-size:15px}
 .btn i{font-size:12.5px}
 .av2{display:inline-flex;width:30px;height:30px;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:11.5px;margin-right:8px;vertical-align:middle;color:#fff;background:var(--mid)}
@@ -174,8 +173,9 @@ tbody tr:hover td{background:var(--surface)}
 #side a .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #side a:hover{background:rgba(255,255,255,.06);color:#fff}
 #side a:hover .ic{color:#c9c7c1}
-#side a.act{background:var(--brand);color:#fff;font-weight:600;box-shadow:0 4px 14px rgba(217,58,49,.35)}
-#side a.act .ic{color:#fff}
+#side a.act{background:rgba(255,255,255,.06);color:var(--brand);font-weight:600;box-shadow:none;position:relative}
+#side a.act::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:4px;height:26px;border-radius:0 4px 4px 0;background:var(--brand)}
+#side a.act .ic{color:var(--brand)}
 #side a:focus-visible,#side .grp:focus-visible{outline:2px solid #fff;outline-offset:-2px}
 #side .sep{display:none}
 #side .navempty{color:#807f7a;font-size:12.5px;text-align:center;padding:18px 12px}
@@ -332,6 +332,7 @@ h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
 
 /* ---- Modal ---- */
 .modal{position:fixed;inset:0;background:rgba(20,20,25,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;animation:fadein .15s ease}
+.pw{position:relative}.pw input{padding-right:40px}.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);cursor:pointer;padding:6px 8px;border-radius:6px;font-size:13px}.pw-eye:hover{color:var(--ink);background:var(--surface)}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .modal .card{width:640px;max-width:95vw;max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg);margin:0}
 
@@ -342,9 +343,9 @@ h2{color:var(--navy);margin-bottom:12px;font-size:20px;letter-spacing:-.3px}
 
 /* ---- KPI ---- */
 .kpi{display:flex;gap:14px;flex-wrap:wrap}
-.kpi .card{flex:1;min-width:150px;text-align:center;margin:0;transition:transform .15s ease,box-shadow .15s ease}
-.kpi .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
-.kpi .n{font-size:28px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+.kpi .card{flex:1;min-width:150px;text-align:center;margin:0}
+
+.kpi .n{font-size:28px;font-weight:800;color:var(--navy);letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 
 /* ---- Login ---- */
 #login{max-width:380px;margin:90px auto;padding:32px;border-radius:18px;box-shadow:var(--shadow-lg);border-top:4px solid var(--orange)}
@@ -409,14 +410,14 @@ input.miss,textarea.miss{border-color:var(--red);background:#FDECEA}
 
 /* ---- Empty states ---- */
 .empty{text-align:center;padding:44px 20px;color:var(--muted)}
-.empty .ill{font-size:38px;color:var(--brand);opacity:.32;margin-bottom:14px;display:block}
+.empty .ill{width:48px;height:48px;border-radius:12px;background:var(--brand-soft);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 14px}
 .empty h3{font-size:16px;color:var(--ink);margin-bottom:6px}
 .empty p{font-size:13.5px;max-width:380px;margin:0 auto 16px}
 td.emptycell{text-align:center;color:var(--muted);padding:30px 12px;font-size:13.5px}
 
 /* ---- Focus visibility (keyboard users) ---- */
-:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
-.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:1px}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
 .auth-full{width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:22px}
 @media(max-width:840px){.auth-brand{display:none}.auth-panel{width:100%;box-shadow:none;margin:0 auto}}
 .warnbar{background:#FFF3E5;color:#A34A00;border-left:4px solid var(--orange);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
@@ -625,7 +626,7 @@ function av(n){n=(n||'?').trim()||'?';const pr=n.split(/\s+/);const ini=((pr[0][
   const c=AVC[(n.charCodeAt(0)+n.length)%AVC.length];
   return `<span class="av2" style="background:${c}22;color:${c}">${ini}</span>`}
 function pgh(t,sub,action){return `<div class="pghead"><div><h2>${t}</h2><div class="sub">${sub}</div></div><div class="noprint">${action||''}</div></div>`}
-function kpis(arr){return `<div class="kpi" style="margin-bottom:16px">${arr.map(([ic,bg,label,val,sub,vid])=>`<div class="card" style="display:flex;gap:14px;align-items:center;margin:0"><div class="kicon" style="background:${bg}">${ic}</div><div style="text-align:left"><div style="font-size:12.5px;color:var(--muted)">${label}</div><div ${vid?`id="${vid}"`:''} style="font-size:21px;font-weight:800;color:var(--ink)">${val}</div>${sub?`<div style="font-size:11.5px;color:var(--muted)">${sub}</div>`:''}</div></div>`).join('')}</div>`}
+function kpis(arr){return `<div class="kpi" style="margin-bottom:16px">${arr.map(([ic,bg,label,val,sub,vid])=>`<div class="card" style="display:flex;gap:14px;align-items:center;margin:0"><div class="kicon" style="background:${bg}">${ic}</div><div style="text-align:left"><div style="font-size:11.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)">${label}</div><div ${vid?`id="${vid}"`:''} style="font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px;color:var(--ink)">${val}</div>${sub?`<div style="font-size:11.5px;color:var(--muted)">${sub}</div>`:''}</div></div>`).join('')}</div>`}
 
 // Postgres reports an RLS rejection as "new row violates row-level security
 // policy", which tells the user nothing. In practice it means the signed-in
@@ -643,6 +644,8 @@ function saveErr(error){
    sites keep working — they just stop freezing the page behind a native modal.
    ponytail: the tone is inferred from the wording rather than passed at every
    call site; pass an explicit type as the 2nd arg where it matters. */
+// Point at the field that is wrong instead of only saying so in a toast; the mark clears on the next edit.
+function miss(el,msg){if(el){el.classList.add('miss');el.addEventListener('input',()=>el.classList.remove('miss'),{once:true});el.scrollIntoView({block:'center'});el.focus()}return toast(msg)}
 function toastType(m){
   // Order matters: "could not save" must read as a failure, not as a save.
   if(/(fail|error|cannot|can't|could ?n[o']t|unable|invalid|not found|denied|permission|too large|missing|already exists)/i.test(m))return 'err';
@@ -909,6 +912,15 @@ function bindNotifDismiss(){
     const p=$('notifpanel');if(p&&!p.hidden){closeNotifs();$('notifbtn').focus()}});
 }
 let BOOTING=false;
+/* ---------- PASSWORD EYE ----------
+   Every password box gets a show/hide toggle, wherever it is rendered: the observer catches
+   fields added by innerHTML, so no form has to remember to ask for one. */
+function enhancePasswords(){document.querySelectorAll('input[type=password]:not([data-eye])').forEach(i=>{i.dataset.eye='1';
+  const w=document.createElement('div');w.className='pw';i.replaceWith(w);w.appendChild(i);
+  const b=document.createElement('button');b.type='button';b.className='pw-eye';b.tabIndex=-1;b.title='Show password';b.setAttribute('aria-label','Show password');b.innerHTML='<i class="fa-regular fa-eye"></i>';
+  b.onclick=()=>{const show=i.type==='password';i.type=show?'text':'password';b.innerHTML=`<i class="fa-regular fa-eye${show?'-slash':''}"></i>`;b.title=show?'Hide password':'Show password';b.setAttribute('aria-label',b.title);i.focus()};
+  w.appendChild(b)})}
+new MutationObserver(enhancePasswords).observe(document.documentElement,{childList:true,subtree:true});
 /* ---------- DIALOGS ----------
    One way to open a modal, one way to ask yes/no, one way to ask for a value. Escape and
    a click on the backdrop close the topmost dialog; a dialog someone has typed in asks
@@ -1423,7 +1435,7 @@ async function dash(){
     the employee's Payslips page stays empty until you send.
     <a href="#" onclick="go('pay');return false">Open Payroll ›</a></div>`:'';
 
-  M(head+strip+`<div class="card">${body}</div>`+warns);
+  M(head+warns+strip+`<div class="card">${body}</div>`);
 }
 
 /* ---------- EMPLOYEES ---------- */
@@ -1542,6 +1554,8 @@ function empForm(e={}){
   $('f_ctc').addEventListener('input',function(){$('f_actc').textContent=this.value?inr(this.value*12)+' / year':'—'});
 }
 async function saveEmp(id){
+  if(!$('f_full_name').value.trim())return miss($('f_full_name'),'Enter the employee’s full name.');
+  if(!$('f_emp_code').value.trim())return miss($('f_emp_code'),'Enter an Employee ID.');
   const o={};['emp_code','full_name','department','designation','employment_type','email','doj','pan','uan','bank_account','ctc','status'].forEach(k=>o[k]=$('f_'+k)?($('f_'+k).value||null):undefined);
   // Keep the last working day in step with status: set it when archiving (default
   // today), clear it when the employee is active — mirrors the Remove/Restore flow.
@@ -2502,7 +2516,8 @@ async function saveTask(eid,d){
   const tasks=collectTasks();
   // Estimated and Actual time are mandatory on every task row.
   const bad=tasks.findIndex(t=>!t.est_min||!t.act_min);
-  if(bad>-1)return toast(`Task ${bad+1}: Estimated time and Actual time are required (enter a value above 0).`);
+  if(bad>-1){const rows=[...document.querySelectorAll('#tasklist .taskrow')].filter(r=>r.querySelector('.tk-task').value.trim());
+    return miss(rows[bad]?.querySelector(!tasks[bad].est_min?'.tk-est-h':'.tk-act-h'),`Task ${bad+1}: Estimated time and Actual time are required (enter a value above 0).`)}
   const projUnion=[...new Set(tasks.map(t=>t.project).filter(Boolean))].join(', ');
   const o={employee_id:eid,upd_date:d,
     update_status:$('t_update_status').value||null,
@@ -5346,7 +5361,7 @@ function suAddTenant(){
   <label>Plan (optional)</label><input id="ten_plan" placeholder="Free / Pro / Enterprise">
   <label>Modules</label><select id="ten_preset">${MODULE_PRESETS.map(([id,l])=>`<option value="${id}">${l}</option>`).join('')}</select>
   <div class="warnbar" style="margin-top:12px">Optionally create the tenant's first admin login now.</div>
-  <div class="row"><div><label>Admin email (optional)</label><input id="ten_email" type="email"></div><div><label>Admin password</label><input id="ten_pw" placeholder="min 6 chars"></div></div>
+  <div class="row"><div><label>Admin email (optional)</label><input id="ten_email" type="email"></div><div><label>Admin password</label><input id="ten_pw" type="password" autocomplete="new-password" placeholder="min 6 chars"></div></div>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveNewTenant()">Create</button><button class="btn sec" onclick="closeModal(this.closest('.modal'))">Cancel</button></div></div>`);
 }
 async function suSaveNewTenant(){
@@ -5450,7 +5465,7 @@ async function suusers(){
 async function suCreateUser(){
   const{data:orgs}=await sb.from('orgs').select('id,name').order('name');
   const div=modal(`<div class="card"><h2>New User</h2>
-  <div class="row"><div><label>Email</label><input id="nu_email" type="email"></div><div><label>Password</label><input id="nu_pw" placeholder="min 6 chars"></div></div>
+  <div class="row"><div><label>Email</label><input id="nu_email" type="email"></div><div><label>Password</label><input id="nu_pw" type="password" autocomplete="new-password" placeholder="min 6 chars"></div></div>
   <div class="row"><div><label>Tenant</label><select id="nu_org" onchange="suRoleOpts()"><option value="">— Merik (product owner) —</option>${(orgs||[]).map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')}</select></div>
   <div><label>Role</label><select id="nu_role"></select></div></div>
   <p style="font-size:12px;color:#889;margin-top:4px">A tenant user is an <b>admin</b> or <b>employee</b>. <b>Super admin</b> is a Merik product-owner account with no tenant.</p>
