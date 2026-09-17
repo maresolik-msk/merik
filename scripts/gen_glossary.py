@@ -176,19 +176,6 @@ def build():
   </div>
 </section>
 
-<section class="soft">
-  <div class="wrap">
-    <div class="cta-wrap reveal">
-      <h2>These numbers should calculate themselves</h2>
-      <p>Merik computes payable days, loss of pay and payslips from the attendance your team already records — so the terms above stop being things you work out by hand.</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" href="/request-access?from=/glossary">Request your workspace →</a>
-        <a class="btn btn-ghost" href="/blog/">Read the guides</a>
-      </div>
-    </div>
-  </div>
-</section>
-
 {footer()}
 
 {CHROME_JS}

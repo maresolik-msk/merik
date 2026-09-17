@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/site.css?v=10">
+<link rel="stylesheet" href="assets/css/site.css?v=11">
 <script>document.documentElement.className+=' js';</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="application/ld+json">
@@ -99,52 +99,12 @@
         "@type": "Answer",
         "text": "You request a workspace and the Merik team sets it up and emails your admin login; there is no IT project on your side. Once you have added your people, most teams are running daily attendance and task logging from the first day, and complete their first payroll run in the same month, because attendance data is captured from the start."
       }
-    },
-    {
-      "@type": "Question",
-      "name": "Is my company data isolated from other companies?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. Merik is multi-tenant and every company gets one isolated workspace, enforced in the Postgres database by row-level security rather than only in application code. One company's users cannot read another company's rows."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does Merik work for remote and field teams?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. Employees check in and out from their own device and the location is captured and reverse-geocoded to a readable place name, so \"present\" means something verifiable for field staff. Work-from-home is a separate request type that is approved and recorded like leave."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can Merik handle clients, projects and invoicing?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. Merik includes client records, projects per client, line-item quotes that convert into invoices, and project-level intelligence that rolls up the hours logged in the daily task log against each client and project."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does Merik use AI, and is it optional?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Merik has an optional AI layer that can draft performance summaries and quotes for a human to edit. It is off unless enabled, gated per feature and per company with a monthly call cap, and drafts are always reviewed by a person before use. Core features work with AI switched off entirely."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can Merik monitor our websites and client sites?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. The Digital Operations module checks the websites, web apps and APIs you register — per client, if you run client properties — from the outside every few minutes: availability, response time, HTTP status and SSL expiry. Merik learns each site's normal behaviour and raises an early warning when it drifts, opens incidents assigned to the asset's owner, and produces monthly SLA reports and client-facing status pages. A one-line browser snippet also reports JavaScript errors from real visitors."
-      }
     }
   ]
 }
 </script>
 </head>
-<body>
+<body class="lp">
 
 <div class="progress" id="progress" aria-hidden="true"></div>
 
@@ -168,394 +128,102 @@
 </header>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="grid-lines" aria-hidden="true"></div>
-  <div class="wrap">
-    <span class="pill live"><span class="dot"></span><span class="pt"><b>HR + Attendance + Payroll + Tasks</b> — one workspace</span></span>
-    <h1>Run your entire workforce<br>without <span class="rotator"><span>spreadsheets.</span><span>five tools.</span><span>re-keying.</span><span>month-end panic.</span></span></h1>
-    <p class="lead">Merik brings employees, attendance, leave, payroll, daily tasks, clients and assets into one secure company workspace — so the numbers you record on Monday are the numbers payroll uses on the 30th.</p>
-    <div class="hero-cta">
-      <a class="btn btn-primary" href="/request-access">Request your workspace →</a>
-      <a class="btn btn-outline" href="#tour">Take the 60-second tour</a>
-    </div>
-    <div class="trust">
-      <span><span class="check">✓</span> Free to start</span>
-      <span><span class="check">✓</span> Set up for you, at no cost</span>
-      <span><span class="check">✓</span> Employee self-service included</span>
-      <span><span class="check">✓</span> No card required</span>
+<section class="lp-hero">
+  <div class="wrap lp-hero-grid">
+    <div class="lp-hero-txt">
+      <h1>Run your team without the spreadsheets.</h1>
+      <p class="lp-lead">Employees, attendance, leave, payroll, daily tasks, clients and assets in one company workspace. The numbers you record on Monday are the numbers payroll uses on the 30th.</p>
+      <div class="lp-cta">
+        <a class="btn btn-primary" href="#request">Request your workspace</a>
+        <a class="lp-link" href="/app/">Sign in</a>
+      </div>
+      <p class="lp-facts">Free to start <span>&middot;</span> Set up for you <span>&middot;</span> No card</p>
     </div>
 
-    <!-- Interactive hero screenshots -->
-    <div class="shot-tabs" role="tablist" aria-label="Product screenshots">
-      <button role="tab" aria-selected="true" aria-controls="shot-dash" data-shot="shot-dash">Dashboard</button>
-      <button role="tab" aria-selected="false" aria-controls="shot-att" data-shot="shot-att">Attendance</button>
-      <button role="tab" aria-selected="false" aria-controls="shot-pay" data-shot="shot-pay">Payroll</button>
-      <button role="tab" aria-selected="false" aria-controls="shot-task" data-shot="shot-task">Task Log</button>
-    </div>
-
-    <div class="hero-shot">
-      <div class="float-chip a"><span class="ic">✓</span><div>Attendance marked<small>Geolocated check-in</small></div></div>
-      <div class="float-chip b"><span class="ic">₹</span><div>Payslips emailed<small>142 in one run</small></div></div>
-
-      <div class="shot-panel on" id="shot-dash" role="tabpanel">
-        <div class="mock">
-          <div class="mock-top"><i></i><i></i><i></i><span>app.merik.in / dashboard</span></div>
-          <div class="mock-body">
-            <div class="mock-side">
-              <div class="mlogo"><img src="/assets/images/logo-96.png" alt="" width="22" height="22"> Merik</div>
-              <a class="on">Dashboard</a><a>Employees</a><a>Attendance</a><a>Payroll</a><a>Task Log</a><a>Clients</a>
-            </div>
-            <div class="mock-main">
-              <div class="mtitle">Workforce Dashboard</div>
-              <div class="stat-row">
-                <div class="stat"><b>142</b><small>Employees</small></div>
-                <div class="stat"><b>96%</b><small>Present today</small></div>
-                <div class="stat"><b>8</b><small>On leave</small></div>
-              </div>
-              <div class="mrow"><span class="av" style="background:#2563A8">AK</span> Anita Kumar <span class="tag g">Present</span></div>
-              <div class="mrow"><span class="av" style="background:#CA3934">RS</span> Ravi Sharma <span class="tag o">Half day</span></div>
-              <div class="mrow"><span class="av" style="background:#1E8449">PN</span> Priya Nair <span class="tag g">Present</span></div>
-              <div class="mrow"><span class="av" style="background:#6C3483">MG</span> Meera Gupta <span class="tag g">Present</span></div>
-            </div>
-          </div>
-        </div>
+    <!-- The product, drawn with the app's own shell styles -->
+    <div class="lp-app" aria-hidden="true">
+      <div class="lp-side">
+        <div class="lp-brand"><img src="/assets/images/wordmark-badge.png" alt="" width="90" height="28"></div>
+        <a class="act"><svg class="ico"><use href="/assets/icons.svg#i-bar-chart"/></svg>Dashboard</a>
+        <div class="lp-grp">People</div>
+        <a><svg class="ico"><use href="/assets/icons.svg#i-users"/></svg>Employees</a>
+        <a><svg class="ico"><use href="/assets/icons.svg#i-calendar-check"/></svg>Attendance</a>
+        <a><svg class="ico"><use href="/assets/icons.svg#i-building"/></svg>WFH &amp; Leave</a>
+        <div class="lp-grp">Work</div>
+        <a><svg class="ico"><use href="/assets/icons.svg#i-circle-check"/></svg>Task Log</a>
+        <a><svg class="ico"><use href="/assets/icons.svg#i-handshake"/></svg>Clients</a>
+        <div class="lp-grp">Money</div>
+        <a><svg class="ico"><use href="/assets/icons.svg#i-banknote"/></svg>Payroll</a>
+        <div class="lp-side-foot"><span class="av">SK</span><div><b>Sanjay K.</b><small>Admin</small></div></div>
       </div>
-
-      <div class="shot-panel" id="shot-att" role="tabpanel">
-        <div class="mock">
-          <div class="mock-top"><i></i><i></i><i></i><span>app.merik.in / attendance</span></div>
-          <div class="mock-body">
-            <div class="mock-side">
-              <div class="mlogo"><img src="/assets/images/logo-96.png" alt="" width="22" height="22"> Merik</div>
-              <a>Dashboard</a><a>Employees</a><a class="on">Attendance</a><a>Payroll</a><a>Task Log</a><a>Clients</a>
-            </div>
-            <div class="mock-main">
-              <div class="mtitle">Attendance — today</div>
-              <div class="stat-row">
-                <div class="stat"><b>134</b><small>Checked in</small></div>
-                <div class="stat"><b>3</b><small>Late</small></div>
-                <div class="stat"><b>5</b><small>WFH approved</small></div>
-              </div>
-              <div class="mrow"><span class="av" style="background:#2563A8">AK</span> 09:42 · Andheri East <span class="tag g">In</span></div>
-              <div class="mrow"><span class="av" style="background:#CA3934">RS</span> 10:18 · Powai <span class="tag o">Late</span></div>
-              <div class="mrow"><span class="av" style="background:#1E8449">PN</span> 09:05 · Home <span class="tag g">WFH</span></div>
-              <div class="mrow"><span class="av" style="background:#6C3483">MG</span> 09:31 · Bandra <span class="tag g">In</span></div>
-            </div>
-          </div>
+      <div class="lp-main">
+        <div class="lp-pgh"><h4>Dashboard</h4><span>Wednesday, 17 September</span></div>
+        <div class="lp-kpis">
+          <div class="lp-tile"><div class="kicon"><svg class="ico"><use href="/assets/icons.svg#i-calendar-check"/></svg></div><div><div class="klabel">Present today</div><div class="kval">22<small>/24</small></div><div class="ksub">2 on approved leave</div></div></div>
+          <div class="lp-tile"><div class="kicon"><svg class="ico"><use href="/assets/icons.svg#i-clock"/></svg></div><div><div class="klabel">Late marks</div><div class="kval">1</div><div class="ksub">after 10:00</div></div></div>
+          <div class="lp-tile"><div class="kicon"><svg class="ico"><use href="/assets/icons.svg#i-circle-check"/></svg></div><div><div class="klabel">Tasks logged</div><div class="kval">19</div><div class="ksub">5.8 h average</div></div></div>
+          <div class="lp-tile"><div class="kicon"><svg class="ico"><use href="/assets/icons.svg#i-banknote"/></svg></div><div><div class="klabel">Payroll</div><div class="kval">Ready</div><div class="ksub">26 payable days</div></div></div>
         </div>
-      </div>
-
-      <div class="shot-panel" id="shot-pay" role="tabpanel">
-        <div class="mock">
-          <div class="mock-top"><i></i><i></i><i></i><span>app.merik.in / payroll</span></div>
-          <div class="mock-body">
-            <div class="mock-side">
-              <div class="mlogo"><img src="/assets/images/logo-96.png" alt="" width="22" height="22"> Merik</div>
-              <a>Dashboard</a><a>Employees</a><a>Attendance</a><a class="on">Payroll</a><a>Task Log</a><a>Clients</a>
-            </div>
-            <div class="mock-main">
-              <div class="mtitle">Payroll — July</div>
-              <div class="stat-row">
-                <div class="stat"><b>142</b><small>Payslips</small></div>
-                <div class="stat"><b>0</b><small>Manual edits</small></div>
-                <div class="stat"><b>26</b><small>Payable days</small></div>
-              </div>
-              <div class="mrow"><span class="av" style="background:#2563A8">AK</span> 22 days paid <span class="tag g">Ready</span></div>
-              <div class="mrow"><span class="av" style="background:#CA3934">RS</span> 20 days · 1 LOP <span class="tag o">Review</span></div>
-              <div class="mrow"><span class="av" style="background:#1E8449">PN</span> 23 days paid <span class="tag g">Ready</span></div>
-              <div class="mrow"><span class="av" style="background:#6C3483">MG</span> 22 days paid <span class="tag g">Ready</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="shot-panel" id="shot-task" role="tabpanel">
-        <div class="mock">
-          <div class="mock-top"><i></i><i></i><i></i><span>app.merik.in / task-log</span></div>
-          <div class="mock-body">
-            <div class="mock-side">
-              <div class="mlogo"><img src="/assets/images/logo-96.png" alt="" width="22" height="22"> Merik</div>
-              <a>Dashboard</a><a>Employees</a><a>Attendance</a><a>Payroll</a><a class="on">Task Log</a><a>Clients</a>
-            </div>
-            <div class="mock-main">
-              <div class="mtitle">Task Log — today</div>
-              <div class="stat-row">
-                <div class="stat"><b>96</b><small>Entries</small></div>
-                <div class="stat"><b>7.4h</b><small>Avg logged</small></div>
-                <div class="stat"><b>4</b><small>Blockers</small></div>
-              </div>
-              <div class="mrow"><span class="av" style="background:#2563A8">AK</span> Landing page copy · 3h <span class="tag g">Done</span></div>
-              <div class="mrow"><span class="av" style="background:#CA3934">RS</span> Client SEO audit · 2h <span class="tag o">Blocked</span></div>
-              <div class="mrow"><span class="av" style="background:#1E8449">PN</span> Invoice draft · 1.5h <span class="tag g">Done</span></div>
-              <div class="mrow"><span class="av" style="background:#6C3483">MG</span> Onboarding docs · 2h <span class="tag g">Done</span></div>
-            </div>
-          </div>
+        <div class="lp-card">
+          <div class="lp-ch">Attendance today <span>Live</span></div>
+          <table>
+            <tr><td><span class="av" style="background:#2563A8">AK</span>Anita Kumar</td><td>09:42 &middot; Andheri East</td><td><em class="g">Present</em></td></tr>
+            <tr><td><span class="av" style="background:#CA3934">RS</span>Ravi Sharma</td><td>10:18 &middot; Powai</td><td><em class="o">Late</em></td></tr>
+            <tr><td><span class="av" style="background:#1E8449">PN</span>Priya Nair</td><td>09:05 &middot; Home</td><td><em class="b">WFH</em></td></tr>
+            <tr><td><span class="av" style="background:#6C3483">MG</span>Meera Gupta</td><td>09:31 &middot; Bandra</td><td><em class="g">Present</em></td></tr>
+          </table>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- MARQUEE -->
-<div class="marquee" aria-hidden="true">
-  <div class="marquee-track">
-    <span><i>◆</i> Employees</span><span><i>◆</i> Attendance</span><span><i>◆</i> Leave &amp; WFH</span><span><i>◆</i> Payroll</span><span><i>◆</i> Payslips</span><span><i>◆</i> Daily Tasks</span><span><i>◆</i> Task Insights</span><span><i>◆</i> Clients</span><span><i>◆</i> Projects</span><span><i>◆</i> Quotes</span><span><i>◆</i> Invoices</span><span><i>◆</i> Assets</span><span><i>◆</i> Software Spend</span><span><i>◆</i> Performance</span><span><i>◆</i> Holidays</span>
-    <span><i>◆</i> Employees</span><span><i>◆</i> Attendance</span><span><i>◆</i> Leave &amp; WFH</span><span><i>◆</i> Payroll</span><span><i>◆</i> Payslips</span><span><i>◆</i> Daily Tasks</span><span><i>◆</i> Task Insights</span><span><i>◆</i> Clients</span><span><i>◆</i> Projects</span><span><i>◆</i> Quotes</span><span><i>◆</i> Invoices</span><span><i>◆</i> Assets</span><span><i>◆</i> Software Spend</span><span><i>◆</i> Performance</span><span><i>◆</i> Holidays</span>
-  </div>
-</div>
-
-<!-- ANSWER BOX (AEO) -->
-<section style="padding:64px 0 0">
+<!-- WHAT YOU GET -->
+<section class="lp-sec">
   <div class="wrap">
-    <div class="answer-box reveal">
-      <h2>What is Merik?</h2>
-      <p><b>Merik is an all-in-one workforce management platform for small and growing businesses.</b> It combines employee management, attendance tracking, leave and work-from-home requests, monthly payroll and payslips, daily task tracking, client and project management, quotes and invoices, asset tracking — and Digital Operations, which watches the websites and APIs you run and warns you before they fail — in one secure company workspace.</p>
-      <p>Every company gets an isolated workspace enforced at the database level. Employees get self-service — they mark their own attendance, request leave, log daily work and download payslips — so HR stops being the bottleneck for routine requests. Merik is free to start, and a workspace takes under five minutes to create.</p>
+    <div class="lp-head">
+      <h2>Five things your team does every day, in one workspace.</h2>
+      <p>Each module reads from the others, so nothing is typed twice. Start with just attendance and daily tasks, and switch the rest on when you need it.</p>
     </div>
-  </div>
-</section>
-
-<!-- INTERACTIVE PRODUCT TOUR -->
-<section id="tour">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Interactive tour</div>
-      <h2>Click a module. See what it actually does.</h2>
-      <p>Nine connected modules sharing one dataset — so nothing has to be typed twice.</p>
-    </div>
-
-    <div class="tour">
-      <div class="tour-nav" role="tablist" aria-label="Modules">
-        <button class="tour-btn" role="tab" aria-selected="true" data-tour="t-att">
-          <span class="ic"><svg class="ico"><use href="/assets/icons.svg#i-clock"/></svg></span><span><b>Attendance</b><small>Geolocated check-in, late marks, half-days</small></span>
-        </button>
-        <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-leave">
-          <span class="ic"><svg class="ico"><use href="/assets/icons.svg#i-calendar-check"/></svg></span><span><b>Leave &amp; WFH</b><small>Requests, approvals, balances that stay right</small></span>
-        </button>
-        <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-pay">
-          <span class="ic"><svg class="ico"><use href="/assets/icons.svg#i-banknote"/></svg></span><span><b>Payroll &amp; Payslips</b><small>Computed server-side from days actually worked</small></span>
-        </button>
-        <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-task">
-          <span class="ic"><svg class="ico"><use href="/assets/icons.svg#i-circle-check"/></svg></span><span><b>Daily Tasks</b><small>Time spent, blockers, proof links, per project</small></span>
-        </button>
-        <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-client">
-          <span class="ic"><svg class="ico"><use href="/assets/icons.svg#i-receipt"/></svg></span><span><b>Clients &amp; Invoices</b><small>Projects, quotes, invoices, profitability</small></span>
-        </button>
-        <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-asset">
-          <span class="ic"><svg class="ico"><use href="/assets/icons.svg#i-laptop"/></svg></span><span><b>Assets &amp; Software</b><small>Who has which laptop, and what SaaS costs</small></span>
-        </button>
-        <button class="tour-btn" role="tab" aria-selected="false" data-tour="t-ops">
-          <span class="ic"><svg class="ico"><use href="/assets/icons.svg#i-radio-tower"/></svg></span><span><b>Digital Operations</b><small>Sites &amp; APIs watched, warned before they fail</small></span>
-        </button>
-      </div>
-
-      <div class="tour-panels">
-        <div class="tour-panel on" id="t-att" role="tabpanel">
-          <div class="tour-card">
-            <div class="th"><h3>Attendance — live today</h3><span>142 employees</span></div>
-            <div class="rows">
-              <div class="trow"><span class="av" style="background:#2563A8">AK</span><b>Anita Kumar</b><span class="meta">09:42 · Andheri East</span><span class="tag g">Present</span></div>
-              <div class="trow"><span class="av" style="background:#CA3934">RS</span><b>Ravi Sharma</b><span class="meta">10:18 · Powai</span><span class="tag o">Late</span></div>
-              <div class="trow"><span class="av" style="background:#1E8449">PN</span><b>Priya Nair</b><span class="meta">09:05 · Home</span><span class="tag g">WFH</span></div>
-              <div class="trow"><b>Present today</b><span class="bar"><i style="width:96%"></i></span><span class="meta">96%</span></div>
-            </div>
-            <div class="tour-foot"><a href="/modules">See the attendance module →</a><a href="/blog/geolocation-attendance-field-teams">Attendance for field teams →</a></div>
-          </div>
-        </div>
-
-        <div class="tour-panel" id="t-leave" role="tabpanel">
-          <div class="tour-card">
-            <div class="th"><h3>Leave &amp; WFH requests</h3><span>3 pending</span></div>
-            <div class="rows">
-              <div class="trow"><span class="av" style="background:#6C3483">MG</span><b>Meera Gupta</b><span class="meta">12–14 Aug · Casual</span><span class="tag o">Pending</span></div>
-              <div class="trow"><span class="av" style="background:#2563A8">AK</span><b>Anita Kumar</b><span class="meta">18 Aug · WFH</span><span class="tag g">Approved</span></div>
-              <div class="trow"><span class="av" style="background:#1E8449">PN</span><b>Priya Nair</b><span class="meta">5 Aug · Sick</span><span class="tag g">Approved</span></div>
-              <div class="trow"><b>Paid balance used</b><span class="bar"><i style="width:64%"></i></span><span class="meta">64%</span></div>
-            </div>
-            <div class="tour-foot"><a href="/blog/leave-management-small-business">Paid vs unpaid leave →</a><a href="/blog/leave-encashment-carry-forward">Encashment &amp; carry-forward →</a></div>
-          </div>
-        </div>
-
-        <div class="tour-panel" id="t-pay" role="tabpanel">
-          <div class="tour-card">
-            <div class="th"><h3>Payroll — July run</h3><span>Computed server-side</span></div>
-            <div class="rows">
-              <div class="trow"><b>Payable days</b><span class="meta">26 working days · holidays excluded</span></div>
-              <div class="trow"><span class="av" style="background:#CA3934">RS</span><b>Ravi Sharma</b><span class="meta">20 paid · 1 LOP · 1 half-day</span><span class="tag o">Review</span></div>
-              <div class="trow"><span class="av" style="background:#2563A8">AK</span><b>Anita Kumar</b><span class="meta">22 paid · 0 LOP</span><span class="tag g">Ready</span></div>
-              <div class="trow"><b>Run completed</b><span class="bar"><i style="width:100%"></i></span><span class="meta">142/142</span></div>
-            </div>
-            <div class="tour-foot"><a href="/blog/attendance-to-payroll-automation">Stop re-keying numbers →</a><a href="/blog/loss-of-pay-calculation-explained">How LOP is calculated →</a></div>
-          </div>
-        </div>
-
-        <div class="tour-panel" id="t-task" role="tabpanel">
-          <div class="tour-card">
-            <div class="th"><h3>Task log — today</h3><span>96 entries</span></div>
-            <div class="rows">
-              <div class="trow"><b>Landing page copy</b><span class="meta">Rajvi · 3.0h</span><span class="tag g">Done</span></div>
-              <div class="trow"><b>Client SEO audit</b><span class="meta">Shrutham · 2.0h</span><span class="tag o">Blocked</span></div>
-              <div class="trow"><b>Estimate vs actual</b><span class="bar"><i style="width:82%"></i></span><span class="meta">82% within range</span></div>
-              <div class="trow"><b>Hours logged today</b><span class="bar"><i style="width:74%"></i></span><span class="meta">7.4h avg</span></div>
-            </div>
-            <div class="tour-foot"><a href="/blog/daily-task-tracking-small-teams">Daily task tracking →</a><a href="/blog/time-estimates-vs-actuals">Estimates vs actuals →</a></div>
-          </div>
-        </div>
-
-        <div class="tour-panel" id="t-client" role="tabpanel">
-          <div class="tour-card">
-            <div class="th"><h3>Clients &amp; projects</h3><span>Quote → invoice</span></div>
-            <div class="rows">
-              <div class="trow"><b>Rajvi Packaging</b><span class="meta">4 projects · 128h logged</span><span class="tag g">Active</span></div>
-              <div class="trow"><b>Shrutham Media</b><span class="meta">2 projects · 61h logged</span><span class="tag g">Active</span></div>
-              <div class="trow"><b>Quote #Q-2041</b><span class="meta">Converted to invoice</span><span class="tag o">Sent</span></div>
-              <div class="trow"><b>Retainer utilisation</b><span class="bar"><i style="width:88%"></i></span><span class="meta">88%</span></div>
-            </div>
-            <div class="tour-foot"><a href="/blog/quote-to-invoice-workflow">Quote to invoice workflow →</a><a href="/blog/project-profitability-from-task-hours">Project profitability →</a></div>
-          </div>
-        </div>
-
-        <div class="tour-panel" id="t-asset" role="tabpanel">
-          <div class="tour-card">
-            <div class="th"><h3>Assets &amp; software</h3><span>Assigned &amp; tracked</span></div>
-            <div class="rows">
-              <div class="trow"><b>MacBook Air M2</b><span class="meta">Anita Kumar · since Mar 2026</span><span class="tag g">Assigned</span></div>
-              <div class="trow"><b>Dell Latitude 5440</b><span class="meta">Unassigned · in store</span><span class="tag o">Available</span></div>
-              <div class="trow"><b>Design suite seats</b><span class="bar"><i style="width:70%"></i></span><span class="meta">7/10 used</span></div>
-              <div class="trow"><b>Monthly SaaS spend</b><span class="meta">Tracked per tool</span><span class="tag g">₹ tracked</span></div>
-            </div>
-            <div class="tour-foot"><a href="/blog/it-asset-management-small-business">IT asset register →</a><a href="/blog/software-subscription-spend-management">Cut SaaS waste →</a></div>
-          </div>
-        </div>
-
-        <div class="tour-panel" id="t-ops" role="tabpanel">
-          <div class="tour-card">
-            <div class="th"><h3>Digital Operations — live</h3><span>Checked every 5 min</span></div>
-            <div class="rows">
-              <div class="trow"><b>Acme Corp website</b><span class="meta">99.98% · 30 days</span><span class="tag g">Operational</span></div>
-              <div class="trow"><b>Orders API</b><span class="meta">p95 3.2× its normal · deploy 24 min ago</span><span class="tag o">Early warning</span></div>
-              <div class="trow"><b>Client portal</b><span class="meta">SSL renews in 41 days</span><span class="tag g">Operational</span></div>
-              <div class="trow"><b>Health — error budget left</b><span class="bar"><i style="width:92%"></i></span><span class="meta">92</span></div>
-            </div>
-            <div class="tour-foot"><a href="/blog/proactive-application-monitoring">Proactive monitoring →</a><a href="/blog/api-failure-detection">Detect API failures →</a></div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ul class="lp-mods">
+      <li><svg class="ico"><use href="/assets/icons.svg#i-users"/></svg><b>Employees</b><span>One record per person: department, designation, CTC, documents and their own login.</span></li>
+      <li><svg class="ico"><use href="/assets/icons.svg#i-calendar-check"/></svg><b>Attendance &amp; leave</b><span>Geolocated check-in, late marks, and leave or WFH approvals that update the record themselves.</span></li>
+      <li><svg class="ico"><use href="/assets/icons.svg#i-banknote"/></svg><b>Payroll &amp; payslips</b><span>Monthly runs computed from the days already recorded. Payslips emailed in one go.</span></li>
+      <li><svg class="ico"><use href="/assets/icons.svg#i-circle-check"/></svg><b>Daily tasks</b><span>What everyone worked on, the hours and the blockers, per client and project.</span></li>
+      <li><svg class="ico"><use href="/assets/icons.svg#i-receipt"/></svg><b>Clients &amp; invoices</b><span>Projects, quotes that turn into invoices, and the hours behind each one.</span></li>
+    </ul>
+    <p class="lp-more">Also assets and software, performance reviews and website monitoring. <a href="/modules">See every module</a></p>
   </div>
 </section>
 
-<!-- BENTO FEATURES -->
-<section class="soft" id="features">
+<!-- THE DIFFERENCE -->
+<section class="lp-sec lp-white">
   <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Everything in one place</div>
-      <h2>One suite for the whole employee lifecycle</h2>
-      <p>From the day someone joins to the day payroll runs — without switching tools or re-typing numbers.</p>
+    <div class="lp-head">
+      <h2>The month-end you have now, and the one you could have.</h2>
+      <p>Drag the handle.</p>
     </div>
-
-    <div class="bento">
-      <div class="b w3 reveal">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-users"/></svg></div>
-        <h3>Employee management</h3>
-        <p>One source of truth for departments, designations, salary history and documents — with per-employee detail pages, login provisioning and clean offboarding.</p>
-        <div class="chiplist"><span>Directory</span><span>CTC history</span><span>Documents</span><span>Offboarding</span></div>
-      </div>
-      <div class="b w3 dark reveal d1">
-        <div class="ficon" style="background:rgba(202,57,52,.2);color:#fff"><svg class="ico"><use href="/assets/icons.svg#i-clock"/></svg></div>
-        <h3>Attendance that payroll can trust</h3>
-        <p>Geolocated check-in and check-out, late marks, half-days and a live company-wide view — captured once, on the day, by the person it belongs to.</p>
-        <div class="b-viz"><i style="height:44%"></i><i style="height:66%"></i><i style="height:52%"></i><i style="height:82%"></i><i style="height:71%"></i><i style="height:94%"></i><i style="height:60%"></i><i style="height:88%"></i></div>
-      </div>
-      <div class="b w2 reveal">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-calendar-check"/></svg></div>
-        <h3>Leave &amp; WFH</h3>
-        <p>Requests with date ranges, one-tap approval, and paid vs unpaid tracked separately so month-end stays accurate.</p>
-      </div>
-      <div class="b w2 reveal d1">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-banknote"/></svg></div>
-        <h3>Payroll &amp; payslips</h3>
-        <p>Monthly runs computed on the server from attendance already recorded. Payslips generated and emailed in bulk.</p>
-      </div>
-      <div class="b w2 reveal d2">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-circle-check"/></svg></div>
-        <h3>Daily task log</h3>
-        <p>Time spent, status, blockers and proof links per client and project — with CSV export and full-text search.</p>
-      </div>
-      <div class="b w3 reveal">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-bar-chart"/></svg></div>
-        <h3>Task insights &amp; project intelligence</h3>
-        <p>Per-project rollups, contributor breakdowns and a time estimator that learns from your own history — it backtests its own weights against tasks whose real duration you already know, instead of guessing.</p>
-        <div class="chiplist"><span>Estimate vs actual</span><span>Project stages</span><span>Contributor mix</span><span>Sparklines</span></div>
-      </div>
-      <div class="b w3 reveal d1">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-receipt"/></svg></div>
-        <h3>Clients, quotes &amp; invoices</h3>
-        <p>Client records, projects per client, line-item quotes that convert straight into invoices — and the hours your team logged sitting right next to them.</p>
-        <div class="chiplist"><span>Clients</span><span>Projects</span><span>Quotes</span><span>Invoices</span></div>
-      </div>
-      <div class="b w2 reveal">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-laptop"/></svg></div>
-        <h3>Assets &amp; software</h3>
-        <p>Hardware register with assignment history, plus software seats and monthly spend per tool.</p>
-      </div>
-      <div class="b w2 reveal d1">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-star"/></svg></div>
-        <h3>Performance reviews</h3>
-        <p>Monthly reviews grounded in the task log and attendance the employee already filed.</p>
-      </div>
-      <div class="b w2 reveal d2">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-building"/></svg></div>
-        <h3>Isolated workspaces</h3>
-        <p>One workspace per company, enforced by row-level security in Postgres — not just in app code.</p>
-      </div>
-      <div class="b w3 dark reveal">
-        <div class="ficon" style="background:rgba(202,57,52,.2);color:#fff"><svg class="ico"><use href="/assets/icons.svg#i-radio-tower"/></svg></div>
-        <h3>Digital Operations — sites &amp; APIs, watched</h3>
-        <p>Register the websites and APIs you run — yours or your clients' — and Merik checks them from the outside every few minutes: uptime, response time, SSL expiry. Incidents open automatically, assigned to whoever owns the asset, with the deploy that landed just before shown on the timeline.</p>
-        <div class="chiplist"><span>Uptime checks</span><span>SSL expiry</span><span>Auto-assigned incidents</span><span>SLA reports</span></div>
-      </div>
-      <div class="b w3 reveal d1">
-        <div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-bell-ring"/></svg></div>
-        <h3>Early warnings, before the outage</h3>
-        <p>Merik learns each site's normal — latency, error rate, browser errors — and warns when behaviour drifts well outside it, with a risk score, a confidence score and the evidence. One warning per problem, not twenty alerts. A browser snippet catches the JavaScript errors uptime checks can't see.</p>
-        <div class="chiplist"><span>Measured baselines</span><span>Risk + confidence</span><span>Browser errors</span><span>Status pages</span></div>
-      </div>
-    </div>
-
-    <div style="text-align:center;margin-top:40px" class="reveal"><a class="btn btn-outline" href="/features">Explore all features →</a></div>
-  </div>
-</section>
-
-<!-- BEFORE / AFTER -->
-<section>
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">The difference</div>
-      <h2>Drag the handle. This is the month-end you're choosing between.</h2>
-      <p>Left: five spreadsheets and a WhatsApp group. Right: one workspace.</p>
-    </div>
-    <div class="compare reveal" id="compare">
+    <div class="compare" id="compare">
       <div class="cmp-pane cmp-before">
         <h4>Spreadsheets &amp; chat</h4>
         <ul>
-          <li><em>✕</em> Attendance lives in a sheet someone forgets to update</li>
-          <li><em>✕</em> Leave is approved in chat and never reaches the sheet</li>
-          <li><em>✕</em> Payroll starts with re-typing 140 rows by hand</li>
-          <li><em>✕</em> A wrong payslip can't be traced back to a source</li>
-          <li><em>✕</em> Nobody knows which laptop is with whom</li>
-          <li><em>✕</em> "How many hours did we put into this client?" — nobody knows</li>
+          <li><em>&#x2715;</em> Attendance lives in a sheet someone forgets to update</li>
+          <li><em>&#x2715;</em> Leave is approved in chat and never reaches the sheet</li>
+          <li><em>&#x2715;</em> Payroll starts with re-typing 140 rows by hand</li>
+          <li><em>&#x2715;</em> A wrong payslip can't be traced back to a source</li>
+          <li><em>&#x2715;</em> Nobody knows which laptop is with whom</li>
+          <li><em>&#x2715;</em> "How many hours did we put into this client?" Nobody knows</li>
         </ul>
       </div>
       <div class="cmp-pane cmp-after" id="cmpAfter">
         <h4>With Merik</h4>
         <ul>
-          <li><em>✓</em> Employees mark their own attendance, with location</li>
-          <li><em>✓</em> Approved leave updates the attendance record itself</li>
-          <li><em>✓</em> Payroll reads the days already recorded — zero re-keying</li>
-          <li><em>✓</em> Every payslip traces back to dated, auditable entries</li>
-          <li><em>✓</em> Every asset has an owner and an assignment history</li>
-          <li><em>✓</em> Hours roll up per client and project, automatically</li>
+          <li><em>&#x2713;</em> Employees mark their own attendance, with location</li>
+          <li><em>&#x2713;</em> Approved leave updates the attendance record itself</li>
+          <li><em>&#x2713;</em> Payroll reads the days already recorded. Zero re-keying</li>
+          <li><em>&#x2713;</em> Every payslip traces back to dated, auditable entries</li>
+          <li><em>&#x2713;</em> Every asset has an owner and an assignment history</li>
+          <li><em>&#x2713;</em> Hours roll up per client and project, automatically</li>
         </ul>
       </div>
       <div class="cmp-handle" id="cmpHandle"></div>
@@ -564,345 +232,129 @@
   </div>
 </section>
 
-<!-- ROI CALCULATOR -->
-<section class="soft" id="calculator">
+<!-- COST -->
+<section class="lp-sec" id="calculator">
   <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Interactive</div>
+    <div class="lp-head">
       <h2>What is month-end admin costing you?</h2>
-      <p>Move the sliders. The estimate updates live — it is your inputs, not our marketing numbers.</p>
+      <p>Move the sliders. Every number comes from your inputs, not ours.</p>
     </div>
-
-    <div class="calc reveal">
+    <div class="calc">
       <div>
         <div class="calc-field">
           <label for="cEmp">How many employees? <output id="oEmp">25</output></label>
           <input type="range" id="cEmp" min="5" max="300" step="1" value="25">
         </div>
         <div class="calc-field">
-          <label for="cHours">Hours spent on attendance, leave &amp; payroll admin per month <output id="oHours">14</output></label>
+          <label for="cHours">Hours on attendance, leave &amp; payroll admin per month <output id="oHours">14</output></label>
           <input type="range" id="cHours" min="2" max="80" step="1" value="14">
         </div>
         <div class="calc-field">
-          <label for="cRate">Cost of that admin time, per hour (₹) <output id="oRate">500</output></label>
+          <label for="cRate">Cost of that admin time, per hour (&#8377;) <output id="oRate">500</output></label>
           <input type="range" id="cRate" min="100" max="3000" step="50" value="500">
         </div>
         <div class="calc-field" style="margin-bottom:0">
-          <label for="cErr">Payslip corrections you make in a typical month <output id="oErr">3</output></label>
+          <label for="cErr">Payslip corrections in a typical month <output id="oErr">3</output></label>
           <input type="range" id="cErr" min="0" max="30" step="1" value="3">
         </div>
       </div>
-
       <div class="calc-out">
         <div class="cap">Admin cost per year</div>
-        <div class="big" id="oYear">₹72,000</div>
+        <div class="big" id="oYear">&#8377;72,000</div>
         <hr>
         <div class="sub">Hours back per year<b id="oHrsYear">144 hours</b></div>
         <div style="height:16px"></div>
         <div class="sub">Payslip corrections avoided per year<b id="oErrYear">36 corrections</b></div>
         <hr>
-        <a class="btn btn-primary" href="/app/" style="width:100%">Get those hours back →</a>
-        <p class="calc-note">Assumes Merik removes about 75% of the manual admin (re-keying, chasing timesheets, rebuilding sheets) because attendance, leave and payroll share one dataset. Your own inputs drive every number above — adjust them to match your team. <a href="/roi" style="color:#fff;text-decoration:underline">See the full method and where the hours go →</a></p>
+        <a class="btn btn-primary" href="#request" style="width:100%">Get those hours back</a>
+        <p class="calc-note">Assumes Merik removes about 75% of the manual admin (re-keying, chasing timesheets, rebuilding sheets) because attendance, leave and payroll share one dataset. Your own inputs drive every number. <a href="/roi">See the full method</a>.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section id="how">
+<!-- STEPS -->
+<section class="lp-sec lp-white">
   <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Up and running fast</div>
-      <h2>Get your team on board in three steps</h2>
-      <p>No lengthy onboarding, no IT project. Create a workspace and start managing today.</p>
+    <div class="lp-head">
+      <h2>Up and running in three steps. No IT project.</h2>
     </div>
-    <div class="steps">
-      <div class="step reveal"><h3>Request your workspace</h3><p>Tell us about your team. We create your isolated company workspace and email your admin login — free, no card.</p></div>
-      <div class="step reveal d1"><h3>Add your people</h3><p>Add each employee with their department, designation and CTC, and create their login. They get their own dashboard from day one.</p></div>
-      <div class="step reveal d2"><h3>Run daily operations</h3><p>Track attendance and tasks each day, approve leave, and let payroll flow from the data you already captured.</p></div>
-    </div>
-    <div style="text-align:center;margin-top:44px" class="reveal"><a class="btn btn-outline" href="/how-it-works">See the full walkthrough →</a></div>
-  </div>
-</section>
-
-<!-- USE CASES -->
-<section class="soft">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Built for how you actually work</div>
-      <h2>Pick the team that looks like yours</h2>
-    </div>
-
-    <div class="uses reveal">
-      <div class="use-tabs" role="tablist" aria-label="Team types">
-        <button role="tab" aria-selected="true" data-use="u-agency">Agencies &amp; studios</button>
-        <button role="tab" aria-selected="false" data-use="u-office">Offices &amp; back-office</button>
-        <button role="tab" aria-selected="false" data-use="u-field">Field &amp; multi-site teams</button>
-        <button role="tab" aria-selected="false" data-use="u-remote">Remote &amp; hybrid</button>
-      </div>
-
-      <div class="use-panel on" id="u-agency" role="tabpanel">
-        <div>
-          <h3>Every hour ties back to a client</h3>
-          <p>Your team logs daily work against a client and project, so you can finally answer "did that retainer make money?" without rebuilding a timesheet from memory. Quotes convert into invoices, and project rollups show where the hours actually went.</p>
-          <ul class="flist">
-            <li><span class="ok">✓</span> Hours per client, project and person</li>
-            <li><span class="ok">✓</span> Quote → invoice in one flow</li>
-            <li><span class="ok">✓</span> Estimate vs actual on every task</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h4>Retainer — Rajvi Packaging</h4>
-          <div class="pcard"><div class="r"><b>Hours logged</b><span class="num">128</span></div></div>
-          <div class="pcard"><div class="r"><b>Retainer hours</b><span class="num">145</span></div></div>
-          <div class="pcard"><div class="r"><b>Utilisation</b><span class="num">88%</span></div></div>
-        </div>
-      </div>
-
-      <div class="use-panel" id="u-office" role="tabpanel">
-        <div>
-          <h3>Month-end stops being a fire drill</h3>
-          <p>Attendance, leave and holidays feed one payroll run. Nobody re-types a register into a salary sheet, and every payslip traces back to dated entries you can show an employee who disagrees.</p>
-          <ul class="flist">
-            <li><span class="ok">✓</span> Payable days computed from real attendance</li>
-            <li><span class="ok">✓</span> Bulk payslip generation and email</li>
-            <li><span class="ok">✓</span> Paid vs unpaid leave kept separate</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h4>Payroll — July</h4>
-          <div class="pcard"><div class="r"><b>Payslips generated</b><span class="num">142</span></div></div>
-          <div class="pcard"><div class="r"><b>Manual re-keying</b><span class="num">0</span></div></div>
-          <div class="pcard"><div class="r"><b>Working days</b><span class="num">26</span></div></div>
-        </div>
-      </div>
-
-      <div class="use-panel" id="u-field" role="tabpanel">
-        <div>
-          <h3>"Present" means something you can verify</h3>
-          <p>Staff check in from their own phone and the location is captured and turned into a readable place name. You see who started where, without buying a biometric device for every site.</p>
-          <ul class="flist">
-            <li><span class="ok">✓</span> Geolocated check-in and check-out</li>
-            <li><span class="ok">✓</span> Reverse-geocoded place names, not raw coordinates</li>
-            <li><span class="ok">✓</span> Late marks and half-days by rule, not by argument</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h4>Check-ins — today</h4>
-          <div class="pcard"><div class="r"><span class="av" style="background:#2563A8">AK</span><b>Andheri East</b><span class="num">09:42</span></div></div>
-          <div class="pcard"><div class="r"><span class="av" style="background:#CA3934">RS</span><b>Powai</b><span class="num">10:18</span></div></div>
-          <div class="pcard"><div class="r"><span class="av" style="background:#1E8449">PN</span><b>Bandra</b><span class="num">09:05</span></div></div>
-        </div>
-      </div>
-
-      <div class="use-panel" id="u-remote" role="tabpanel">
-        <div>
-          <h3>Visibility without hovering</h3>
-          <p>A daily task log with time spent, blockers and proof links gives you the same signal as a standup — without the standing meeting. Work-from-home is a request type that's approved and recorded, not an unwritten arrangement.</p>
-          <ul class="flist">
-            <li><span class="ok">✓</span> Async daily updates, written once</li>
-            <li><span class="ok">✓</span> Blockers surfaced the day they happen</li>
-            <li><span class="ok">✓</span> WFH approved and reflected in attendance</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h4>Today's task log</h4>
-          <div class="pcard"><div class="r"><b>Landing page copy</b><span class="tag g" style="margin-left:auto">Done</span></div></div>
-          <div class="pcard"><div class="r"><b>Client SEO audit</b><span class="tag o" style="margin-left:auto">Blocked</span></div></div>
-          <div class="pcard"><div class="r"><b>Invoice draft</b><span class="tag g" style="margin-left:auto">Done</span></div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- STATS BAND (count-up) -->
-<div class="band">
-  <div class="wrap" style="padding:66px 24px">
-    <div><div class="n"><span class="cnt" data-to="8">0</span><span>+</span></div><div class="l">Integrated modules</div></div>
-    <div><div class="n"><span class="cnt" data-to="1">0</span></div><div class="l">Workspace for all of HR</div></div>
-    <div><div class="n"><span class="cnt" data-to="100">0</span><span>%</span></div><div class="l">Employee self-service</div></div>
-    <div><div class="n">&lt;<span class="cnt" data-to="5">0</span><span>m</span></div><div class="l">To set up your company</div></div>
-  </div>
-</div>
-
-<!-- SECURITY -->
-<section>
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Trust</div>
-      <h2>Your people data, properly walled off</h2>
-      <p>Multi-tenant done the boring, correct way — isolation enforced by the database, not by hoping the app remembers.</p>
-    </div>
-    <div class="sec-badges">
-      <div class="sec-badge reveal"><div class="ic"><svg class="ico"><use href="/assets/icons.svg#i-shield"/></svg></div><b>Row-level security</b><small>Every table filters by company in Postgres itself.</small></div>
-      <div class="sec-badge reveal d1"><div class="ic"><svg class="ico"><use href="/assets/icons.svg#i-lock"/></svg></div><b>Server-side salary math</b><small>Payroll is computed in a secured function, never in the browser.</small></div>
-      <div class="sec-badge reveal d2"><div class="ic"><svg class="ico"><use href="/assets/icons.svg#i-user"/></svg></div><b>Role-scoped access</b><small>Employees see only their own work; admins see their own company.</small></div>
-      <div class="sec-badge reveal d3"><div class="ic"><svg class="ico"><use href="/assets/icons.svg#i-bot"/></svg></div><b>AI off by default</b><small>Optional, gated per feature and company, with drafts a human always edits.</small></div>
-    </div>
+    <ol class="lp-steps">
+      <li><b>Request your workspace</b><span>Tell us about your team in the form below. We create your company workspace and email your admin login. Free, no card.</span></li>
+      <li><b>Add your people</b><span>Each employee gets department, designation and CTC, and their own login by email. They see their own dashboard from day one.</span></li>
+      <li><b>Run the day</b><span>Everyone marks attendance and logs their tasks. You approve leave. Payroll flows from what was already recorded.</span></li>
+    </ol>
+    <p class="lp-more"><a href="/how-it-works">See the full walkthrough</a></p>
   </div>
 </section>
 
 <!-- PRICING -->
-<section id="pricing" class="soft">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Pricing</div>
-      <h2>Start free — bring your whole team</h2>
-      <p>Request a company workspace at no cost and add every employee. No card, no setup fee.</p>
+<section class="lp-sec" id="pricing">
+  <div class="wrap lp-price">
+    <div class="lp-head">
+      <h2>Free to start. No per-employee charge.</h2>
+      <p>Request a workspace, add your whole team, and use attendance, leave, tasks, payroll and payslips. No setup fee, no card.</p>
+      <p>Want it set up for you? Say so in the form and we import your people, CTC, holiday calendar and leave policy. <a href="/pricing">What each plan includes</a></p>
     </div>
-    <div class="plans">
-      <div class="plan hi reveal">
-        <span class="badge">Start here</span>
-        <h3>Free workspace</h3>
-        <p class="who">For teams replacing spreadsheets today</p>
-        <div class="amt">₹0 <span>to start</span></div>
-        <ul>
-          <li>Unlimited employees, no per-head charge</li>
-          <li>Attendance, leave &amp; WFH</li>
-          <li>Daily task log &amp; insights</li>
-          <li>Monthly payroll &amp; payslips</li>
-          <li>Clients, projects, quotes &amp; invoices</li>
-          <li>One secure company workspace</li>
-        </ul>
-        <a class="btn btn-primary" href="/request-access" style="width:100%">Request your workspace →</a>
-      </div>
-      <div class="plan reveal d1">
-        <h3>Growing team</h3>
-        <p class="who">For teams that want it set up for them</p>
-        <div class="amt">Let's talk</div>
-        <ul>
-          <li>Everything in the free workspace</li>
-          <li>Guided setup with your existing data</li>
-          <li>Departments, designations &amp; CTC imported</li>
-          <li>Holiday calendar &amp; leave policy configured</li>
-          <li>Asset &amp; software registers set up</li>
-          <li>Optional AI drafting, switched on per feature</li>
-        </ul>
-        <a class="btn btn-outline" href="#talk-to-us" style="width:100%">Talk to us →</a>
-      </div>
+    <div class="lp-plan">
+      <div class="klabel">Free workspace</div>
+      <div class="lp-amt">&#8377;0 <span>to start</span></div>
+      <ul>
+        <li>Unlimited employees</li>
+        <li>Attendance, leave &amp; WFH</li>
+        <li>Daily task log &amp; insights</li>
+        <li>Monthly payroll &amp; payslips</li>
+        <li>Clients, projects, quotes &amp; invoices</li>
+        <li>One isolated company workspace</li>
+      </ul>
+      <a class="btn btn-primary" href="#request" style="width:100%">Request your workspace</a>
     </div>
-    <div style="text-align:center;margin-top:34px" class="reveal"><a class="btn btn-outline" href="/pricing">See what's included, module by module →</a></div>
   </div>
 </section>
 
 <!-- FAQ -->
-<section>
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Answers</div>
-      <h2>Frequently asked questions</h2>
-      <p>The things people ask us before they request a workspace.</p>
+<section class="lp-sec lp-white">
+  <div class="wrap lp-faq">
+    <div class="lp-head">
+      <h2>Questions people ask before they request a workspace.</h2>
     </div>
     <div class="faq">
       <details open><summary>What is Merik?</summary><p>Merik is an all-in-one workforce management platform that combines employee management, attendance tracking, leave management, payroll, daily task tracking, clients and invoicing, and asset tracking in a single secure company workspace. Each company gets its own isolated workspace, and employees get self-service access to their own attendance, leave, tasks and payslips.</p></details>
       <details><summary>Is Merik suitable for small businesses?</summary><p>Yes. Merik is built for small and growing businesses — typically 5 to 200 employees — that want to replace spreadsheets and multiple disconnected tools with one platform. The Merik team sets the workspace up for you at no cost — there is no IT project and no setup fee.</p></details>
-      <details><summary>Does Merik connect attendance to payroll?</summary><p>Yes. Attendance and leave data flow directly into monthly payroll, so gross pay, deductions and net pay are calculated from the days already recorded — without re-keying numbers between systems. All salary math runs on the server, never in the browser. <a href="/blog/attendance-to-payroll-automation">Read how that works →</a></p></details>
-      <details><summary>Can employees use Merik themselves?</summary><p>Yes. Employees get their own dashboard where they can mark attendance with geolocated check-in and check-out, request leave or work-from-home, log their daily tasks, keep personal notes and to-dos, and download their own payslips. <a href="/blog/employee-self-service-what-it-means">More on employee self-service →</a></p></details>
+      <details><summary>Does Merik connect attendance to payroll?</summary><p>Yes. Attendance and leave data flow directly into monthly payroll, so gross pay, deductions and net pay are calculated from the days already recorded — without re-keying numbers between systems. All salary math runs on the server, never in the browser.</p></details>
+      <details><summary>Can employees use Merik themselves?</summary><p>Yes. Employees get their own dashboard where they can mark attendance with geolocated check-in and check-out, request leave or work-from-home, log their daily tasks, keep personal notes and to-dos, and download their own payslips.</p></details>
       <details><summary>How much does Merik cost?</summary><p>Merik is free to start. Request a company workspace at no cost, add your whole team — there is no per-employee charge — and use attendance, leave, task tracking, payroll and payslips. There is no setup fee and no card required to begin.</p></details>
-      <details><summary>How long does it take to set up Merik?</summary><p>You request a workspace and the Merik team sets it up and emails your admin login; there is no IT project on your side. Once you have added your people, most teams are running daily attendance and task logging from the first day, and complete their first payroll run in the same month, because attendance data is captured from the start. <a href="/blog/spreadsheet-to-workforce-software-migration">See a full migration plan →</a></p></details>
-      <details><summary>Is my company data isolated from other companies?</summary><p>Yes. Merik is multi-tenant and every company gets one isolated workspace, enforced in the Postgres database by row-level security rather than only in application code. One company's users cannot read another company's rows. <a href="/blog/workforce-data-security-checklist">What to check in any HR tool →</a></p></details>
-      <details><summary>Does Merik work for remote and field teams?</summary><p>Yes. Employees check in and out from their own device and the location is captured and reverse-geocoded to a readable place name, so "present" means something verifiable for field staff. Work-from-home is a separate request type that is approved and recorded like leave. <a href="/blog/geolocation-attendance-field-teams">Attendance for field teams →</a></p></details>
-      <details><summary>Can Merik handle clients, projects and invoicing?</summary><p>Yes. Merik includes client records, projects per client, line-item quotes that convert into invoices, and project-level intelligence that rolls up the hours logged in the daily task log against each client and project. <a href="/blog/quote-to-invoice-workflow">See the quote-to-invoice flow →</a></p></details>
-      <details><summary>Does Merik use AI, and is it optional?</summary><p>Merik has an optional AI layer that can draft performance summaries and quotes for a human to edit. It is off unless enabled, gated per feature and per company with a monthly call cap, and drafts are always reviewed by a person before use. Core features work with AI switched off entirely. <a href="/blog/ai-in-hr-software-what-actually-helps">What AI actually helps with in HR →</a></p></details>
-      <details><summary>Can Merik monitor our websites and client sites?</summary><p>Yes. The Digital Operations module checks the websites, web apps and APIs you register — per client, if you run client properties — from the outside every few minutes: availability, response time, HTTP status and SSL expiry. Merik learns each site's normal behaviour and raises an early warning when it drifts, opens incidents assigned to the asset's owner, and produces monthly SLA reports and client-facing status pages. A one-line browser snippet also reports JavaScript errors from real visitors. <a href="/blog/proactive-application-monitoring">How proactive monitoring works →</a></p></details>
+      <details><summary>How long does it take to set up Merik?</summary><p>You request a workspace and the Merik team sets it up and emails your admin login; there is no IT project on your side. Once you have added your people, most teams are running daily attendance and task logging from the first day, and complete their first payroll run in the same month, because attendance data is captured from the start.</p></details>
     </div>
   </div>
 </section>
 
-<!-- BLOG TEASER -->
-<section class="soft">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">From the blog</div>
-      <h2>Guides for running your workforce</h2>
-      <p>Practical, no-fluff guides on attendance, payroll, leave, tasks, clients and HR.</p>
+<!-- REQUEST -->
+<section class="lp-sec" id="request">
+  <div class="wrap lp-req">
+    <div class="lp-head">
+      <h2>Request your workspace.</h2>
+      <p>Tell us about your team. A person reads it, sets the workspace up and emails your admin login, usually within one working day. Free, no card.</p>
+      <p>Prefer to talk first? <a href="/contact">Contact us</a>.</p>
     </div>
-    <div class="grid">
-      <a class="blog-card reveal" href="/blog/attendance-to-payroll-automation">
-        <img class="thumb" src="assets/images/blog/payroll.svg" alt="Attendance flowing into payroll" width="400" height="240">
-        <div class="bc-body"><span class="tag2">Payroll</span><h3>From attendance to payroll: stop re-keying numbers every month</h3><p>How connecting attendance and leave directly to payroll removes errors.</p></div>
-      </a>
-      <a class="blog-card reveal d1" href="/blog/geolocation-attendance-field-teams">
-        <img class="thumb" src="assets/images/blog/attendance.svg" alt="Geolocated attendance for field teams" width="400" height="240">
-        <div class="bc-body"><span class="tag2">Attendance</span><h3>Geolocation attendance for field and multi-site teams</h3><p>How to make "present" verifiable without a biometric device per site.</p></div>
-      </a>
-      <a class="blog-card reveal d2" href="/blog/project-profitability-from-task-hours">
-        <img class="thumb" src="assets/images/blog/clients.svg" alt="Project profitability from logged hours" width="400" height="240">
-        <div class="bc-body"><span class="tag2">Clients</span><h3>Working out project profitability from your task hours</h3><p>Turn the hours your team already logs into a per-project margin.</p></div>
-      </a>
-    </div>
-    <div style="text-align:center;margin-top:40px" class="reveal"><a class="btn btn-outline" href="/blog/">Read all 80 guides →</a></div>
-  </div>
-</section>
-
-<!-- MERIK INSIGHTS — monitoring & reliability cluster -->
-<section>
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Merik Insights</div>
-      <h2>Understand problems before they become incidents</h2>
-      <p>Practical guides on application monitoring, API reliability, frontend errors, backend failures, observability and proactive incident detection.</p>
-    </div>
-    <div class="grid">
-      <a class="blog-card reveal" href="/blog/proactive-application-monitoring">
-        <img class="thumb" src="assets/images/blog/monitoring.svg" alt="Early warning raised before an outage" width="400" height="240" loading="lazy">
-        <div class="bc-body"><span class="tag2">Monitoring</span><h3>What is proactive application monitoring?</h3><p>Detecting problems before users report them — baselines, anomalies and early warnings.</p></div>
-      </a>
-      <a class="blog-card reveal d1" href="/blog/api-failure-detection">
-        <img class="thumb" src="assets/images/blog/api.svg" alt="API latency degrading toward failure" width="400" height="240" loading="lazy">
-        <div class="bc-body"><span class="tag2">Reliability</span><h3>Detect API failures before your customers do</h3><p>APIs degrade before they die — latency drift, timeouts, error trickles. Monitoring that listens.</p></div>
-      </a>
-      <a class="blog-card reveal d2" href="/blog/frontend-error-monitoring">
-        <img class="thumb" src="assets/images/blog/errors.svg" alt="A browser error behind a healthy server response" width="400" height="240" loading="lazy">
-        <div class="bc-body"><span class="tag2">Errors</span><h3>Frontend errors: why users see problems first</h3><p>The server said 200. The page broke anyway. Seeing the failures uptime checks can't.</p></div>
-      </a>
-    </div>
-    <div style="text-align:center;margin-top:40px" class="reveal"><a class="btn btn-outline" href="/blog/">View all insights →</a></div>
-  </div>
-</section>
-
-<!-- TALK TO US -->
-<section id="talk-to-us">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Questions first?</div>
-      <h2>Talk to us about your team</h2>
-      <p>Tell us a bit about your business and we'll get your workspace set up for you.</p>
-    </div>
-    <div id="leadFormWrap" class="lead-form reveal">
+    <div id="leadFormWrap" class="lead-form">
       <form id="leadForm">
         <div class="grid2">
-          <div class="field"><label for="lf_company">Company name</label><input id="lf_company" required></div>
-          <div class="field"><label for="lf_name">Your name</label><input id="lf_name" required></div>
+          <div class="field"><label for="lf_company">Company name</label><input id="lf_company" required autocomplete="organization"></div>
+          <div class="field"><label for="lf_name">Your name</label><input id="lf_name" required autocomplete="name"></div>
         </div>
         <div class="grid2">
-          <div class="field"><label for="lf_email">Work email</label><input id="lf_email" type="email" required></div>
-          <div class="field"><label for="lf_phone">Phone (optional)</label><input id="lf_phone" type="tel"></div>
+          <div class="field"><label for="lf_email">Work email</label><input id="lf_email" type="email" required autocomplete="email"></div>
+          <div class="field"><label for="lf_phone">Phone (optional)</label><input id="lf_phone" type="tel" autocomplete="tel"></div>
         </div>
-        <div class="field"><label for="lf_msg">What are you looking for? (optional)</label><textarea id="lf_msg" rows="3" placeholder="Team size, what you want to track, anything else…"></textarea></div>
-        <button type="submit" class="btn btn-primary" style="width:100%">Request access →</button>
+        <div class="field"><label for="lf_msg">What are you looking for? (optional)</label><textarea id="lf_msg" rows="3" placeholder="Team size, what you want to track, anything else"></textarea></div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Request access</button>
         <div id="leadMsg" class="fmsg" role="status"></div>
       </form>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section class="soft">
-  <div class="wrap">
-    <div class="cta-wrap reveal">
-      <h2>Ready to run your workforce the simple way?</h2>
-      <p>Request your company workspace today and bring employees, attendance, leave, payroll and tasks together.</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" href="/request-access">Request your workspace →</a>
-        <a class="btn btn-ghost" href="/app/">Sign in</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
 <footer>
   <div class="wrap">
     <div class="foot">
@@ -927,14 +379,13 @@
 </footer>
 
 <div class="sticky-cta" id="stickyCta">
-  <a class="btn btn-outline" href="#talk-to-us">Talk to us</a>
-  <a class="btn btn-primary" href="/app/">Create workspace →</a>
+  <a class="btn btn-outline" href="/pricing">Pricing</a>
+  <a class="btn btn-primary" href="#request">Request your workspace</a>
 </div>
-<button class="to-top" id="toTop" aria-label="Back to top">↑</button>
+<button class="to-top" id="toTop" aria-label="Back to top">&uarr;</button>
 
 <script>
   document.getElementById('yr').textContent=new Date().getFullYear();
-
   /* ---- mobile nav ---- */
   var mb=document.getElementById('menuBtn'),nl=document.getElementById('navLinks');
   mb.addEventListener('click',function(){
@@ -942,10 +393,8 @@
     mb.setAttribute('aria-expanded',open?'true':'false');
   });
   nl.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nl.classList.remove('open');mb.setAttribute('aria-expanded','false');});});
-
   /* ---- scroll progress + sticky CTA + back to top ---- */
-  // NB: don't name this `top` — window.top is read-only, so `var top` silently
-  // keeps the Window object and every .classList call below blows up.
+  // NB: don't name this `top` — window.top is read-only.
   var bar=document.getElementById('progress'),sticky=document.getElementById('stickyCta'),toTopBtn=document.getElementById('toTop');
   function onScroll(){
     var h=document.documentElement,max=h.scrollHeight-h.clientHeight;
@@ -956,49 +405,6 @@
   }
   addEventListener('scroll',onScroll,{passive:true});onScroll();
   toTopBtn.addEventListener('click',function(){scrollTo({top:0,behavior:'smooth'});});
-
-  /* ---- scroll reveal (with a hard failsafe: never leave content hidden) ---- */
-  var reveals=document.querySelectorAll('.reveal');
-  function revealAll(){reveals.forEach(function(el){el.classList.add('in');});}
-  if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){
-      es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
-    },{rootMargin:'0px 0px -60px 0px',threshold:.08});
-    reveals.forEach(function(el){io.observe(el);});
-    setTimeout(revealAll,3000);   // observer never fired (throttled tab, etc.)
-  }else{revealAll();}
-
-  /* ---- generic tab switcher: hero shots, product tour, use cases ---- */
-  function tabs(sel,attr){
-    var btns=document.querySelectorAll(sel);
-    btns.forEach(function(b){
-      b.addEventListener('click',function(){
-        var id=b.getAttribute(attr);
-        btns.forEach(function(o){
-          o.setAttribute('aria-selected','false');
-          var p=document.getElementById(o.getAttribute(attr));
-          if(p)p.classList.remove('on');
-        });
-        b.setAttribute('aria-selected','true');
-        var panel=document.getElementById(id);
-        if(panel)panel.classList.add('on');
-        if(typeof gtag==='function')gtag('event','tab_view',{tab:id});
-      });
-    });
-  }
-  tabs('.shot-tabs button','data-shot');
-  tabs('.tour-btn','data-tour');
-  tabs('.use-tabs button','data-use');
-
-  /* ---- hero screenshots auto-advance until the visitor takes over ---- */
-  (function(){
-    var btns=Array.prototype.slice.call(document.querySelectorAll('.shot-tabs button')),i=0,timer;
-    if(!btns.length)return;
-    function stop(){clearInterval(timer);}
-    btns.forEach(function(b){b.addEventListener('click',stop);});
-    timer=setInterval(function(){i=(i+1)%btns.length;btns[i].click();},4200);
-  })();
-
   /* ---- before/after comparison slider ---- */
   (function(){
     var r=document.getElementById('cmpRange'),after=document.getElementById('cmpAfter'),h=document.getElementById('cmpHandle');
@@ -1010,28 +416,6 @@
     }
     r.addEventListener('input',paint);paint();
   })();
-
-  /* ---- count-up stats ---- */
-  (function(){
-    var seen=false;
-    var band=document.querySelector('.band');
-    if(!band)return;
-    new IntersectionObserver(function(es){
-      es.forEach(function(e){
-        if(!e.isIntersecting||seen)return;
-        seen=true;
-        document.querySelectorAll('.cnt').forEach(function(el){
-          var to=+el.getAttribute('data-to'),start=performance.now(),dur=1100;
-          (function step(now){
-            var p=Math.min((now-start)/dur,1);
-            el.textContent=Math.round(to*(1-Math.pow(1-p,3)));
-            if(p<1)requestAnimationFrame(step);
-          })(start);
-        });
-      });
-    },{threshold:.4}).observe(band);
-  })();
-
   /* ---- ROI calculator ----
      Estimate only: 75% of the stated admin hours are assumed removable, and a
      payslip correction is costed at 0.5h of the same admin rate. Every number
@@ -1046,10 +430,9 @@
       document.getElementById('oHours').textContent=hrs.value;
       document.getElementById('oRate').textContent=inr.format(rate.value);
       document.getElementById('oErr').textContent=err.value;
-
       var savedHrsMonth=+hrs.value*0.75 + (+err.value*0.5);
       var savedYear=Math.round(savedHrsMonth*12*(+rate.value));
-      document.getElementById('oYear').textContent='₹'+inr.format(savedYear);
+      document.getElementById('oYear').textContent='\u20B9'+inr.format(savedYear);
       document.getElementById('oHrsYear').textContent=Math.round(savedHrsMonth*12)+' hours';
       document.getElementById('oErrYear').textContent=(+err.value*12)+' corrections';
     }
@@ -1061,7 +444,6 @@
     });});
     calc();
   })();
-
   // Lead capture form — inserts into signup_requests (same table/flow the
   // app's "Request Access" screen uses) and pings the team by email.
   var sb=supabase.createClient('https://cohifrzskydnozpmieov.supabase.co','sb_publishable_-o5UbAkbstAxZRZ5Tqs6mA_sADPbnOP');
@@ -1089,7 +471,7 @@
       var res=await sb.from('signup_requests').insert(payload);
       if(res.error){
         msgEl.textContent=res.error.message; msgEl.className='fmsg err';
-        btn.disabled=false; btn.textContent='Request access →';
+        btn.disabled=false; btn.textContent='Request access';
         return;
       }
       if (typeof gtag === 'function') gtag('event', 'generate_lead', { form: 'homepage_talk_to_us' });

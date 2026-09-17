@@ -144,20 +144,11 @@
 
 <section style="padding-top:56px">
   <div class="wrap">
-    <div class="steps">
-      <div class="step">
-        <h3>Tell us about your team</h3>
-        <p>Company name, your name, a work email. Team size and what you want to track help us set things up sensibly, but they're optional.</p>
-      </div>
-      <div class="step">
-        <h3>We set up your workspace</h3>
-        <p>A person on the Merik team reviews the request, creates your isolated company workspace, and emails you the admin login.</p>
-      </div>
-      <div class="step">
-        <h3>Add your people and run a month</h3>
-        <p>Add employees, create their logins, and start marking attendance. Payroll reads the month you've already recorded.</p>
-      </div>
-    </div>
+    <ol class="lp-steps">
+      <li><b>Tell us about your team</b><span>Company name, your name, a work email. Team size and what you want to track help us set things up sensibly, but they're optional.</span></li>
+      <li><b>We set up your workspace</b><span>A person on the Merik team reviews the request, creates your isolated company workspace, and emails you the admin login.</span></li>
+      <li><b>Add your people and run a month</b><span>Add employees, create their logins, and start marking attendance. Payroll reads the month you've already recorded.</span></li>
+    </ol>
   </div>
 </section>
 
@@ -178,7 +169,7 @@
           <div class="field"><label for="lf_phone">Phone (optional)</label><input id="lf_phone" name="phone" type="tel" autocomplete="tel"></div>
         </div>
         <div class="field"><label for="lf_msg">Team size and what you want to track (optional)</label><textarea id="lf_msg" name="message" rows="3" placeholder="e.g. 18 people, attendance and payroll first, two client sites to monitor"></textarea></div>
-        <button type="submit" class="btn btn-primary" style="width:100%">Request access →</button>
+        <button type="submit" class="btn btn-primary" style="width:100%">Request access</button>
         <div id="leadMsg" class="fmsg" role="status"></div>
         <p style="font-size:12.5px;color:var(--muted);margin-top:12px;text-align:center">By submitting you agree to the <a href="/privacy" style="color:var(--brand)">privacy policy</a> and <a href="/terms" style="color:var(--brand)">terms</a>. Already have a workspace? <a href="/app/" style="color:var(--brand);font-weight:600">Sign in</a>.</p>
       </form>
@@ -269,7 +260,7 @@
     var res=await sb.from('signup_requests').insert(payload);
     if(res.error){
       msgEl.textContent=res.error.message; msgEl.className='fmsg err';
-      btn.disabled=false; btn.textContent='Request access →';
+      btn.disabled=false; btn.textContent='Request access';
       return;
     }
     if(typeof gtag==='function')gtag('event','request_access_submitted',{source:from||'(direct)'});

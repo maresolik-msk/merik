@@ -467,8 +467,8 @@ def build_post(p):
     <h2 id="merik">How Merik handles it</h2>
 {p["merik"]}
 
-    <p><a class="btn btn-primary" href="/request-access?from=/blog/{slug}">Request your workspace →</a></p>
-    <p style="margin-top:10px">Free, set up for you, every module included — <a href="/pricing" style="color:var(--brand);font-weight:600">see what the free workspace includes →</a></p>
+    <p><a class="btn btn-primary" href="/request-access?from=/blog/{slug}">Request your workspace</a></p>
+    <p style="margin-top:10px">Free, set up for you, every module included — <a href="/pricing" style="color:var(--brand);font-weight:600">see what the free workspace includes</a></p>
   </div>
 </section>
 
@@ -570,19 +570,6 @@ def build_index():
 
     </div>
     <p class="blog-empty" id="blogEmpty">No guides match that search. Try “payroll”, “monitoring” or “attendance”.</p>
-  </div>
-</section>
-
-<section class="features" style="padding-top:0">
-  <div class="wrap">
-    <div class="cta-wrap">
-      <h2>Run your workforce the simple way</h2>
-      <p>Request your free company workspace and bring employees, attendance, leave, payroll and tasks together.</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" href="/request-access?from=/blog/">Request your workspace →</a>
-        <a class="btn btn-ghost" href="/features">Explore features</a>
-      </div>
-    </div>
   </div>
 </section>
 
