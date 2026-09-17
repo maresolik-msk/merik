@@ -10,8 +10,11 @@ three roles, each with its own navigation and its own set of modules:
 | `admin` | The customer's HR/management | All tenant modules enabled for their org |
 | `employee` | The customer's staff | Their own work only ("My …" pages) |
 
-The super admin enables/disables whole modules per tenant (`orgs.modules`).
-Dashboard and Settings are always on; unchecking a module hides it from that
+The super admin enables/disables modules per tenant (`orgs.modules`): Attendance
+& Leave, Daily Task Log, Task Insights & Projects, Payroll & Performance, Client
+Management, Asset Management, Digital Operations. Two presets on the tenant form
+cover the common cases ("Everything", "Attendance + daily tasks"). Dashboard,
+Employees and Settings are always on; unchecking a module hides its pages from that
 tenant's admins and removes those views from their allowed set.
 
 ---

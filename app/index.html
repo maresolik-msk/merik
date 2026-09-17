@@ -1067,19 +1067,33 @@ const SUPER_GROUPS=[
 const EMP_GROUPS=[
  [null,[['mydash','<i class="fa-solid fa-gauge-high"></i>','My Dashboard']]],
  ['My Work',[['myupd','<i class="fa-solid fa-circle-check"></i>','Task Log'],['myatt','<i class="fa-solid fa-calendar-check"></i>','My Attendance'],['mywfh','<i class="fa-solid fa-house"></i>','WFH / Leave'],['mynotes','<i class="fa-solid fa-note-sticky"></i>','Notes & To-Do'],['myslip','<i class="fa-solid fa-money-bill-wave"></i>','My Payslips'],['myfb','<i class="fa-solid fa-comment-dots"></i>','Feedback']]]];
-// Tenant-enablable admin modules (map a nav group to a module key).
-const MODULES=[['employee','Employee Management'],['team','Team Management'],['task','Task Management'],['client','Client Management'],['asset','Asset Management'],['digitalops','Digital Operations']];
-const GROUP_MODULE={'Employee Management':'employee','Team Management':'team','Task Management':'task','Client Management':'client','Asset Management':'asset','Digital Operations':'digitalops'};
-let ALLOWED_VIEWS=null;
+// Tenant-enablable modules. Gated per menu item, not per group, so a tenant can
+// have Attendance and the Task Log without Payroll or Project Intelligence.
+// Dashboard, Employees, Settings and the employee's own pages are always on.
+const MODULES=[['team','Attendance & Leave'],['tasklog','Daily Task Log'],['insights','Task Insights & Projects'],['payroll','Payroll & Performance'],['client','Client Management'],['asset','Asset Management'],['digitalops','Digital Operations']];
+const VIEW_MODULE={att:'team',wfh:'team',hol:'team',myatt:'team',mywfh:'team',
+  mtr:'tasklog',task:'tasklog',myupd:'tasklog',insights:'insights',projint:'insights',pay:'payroll',perf:'payroll',myslip:'payroll',
+  cli:'client',prj:'client',prjfix:'client',quo:'client',inv:'client',asset:'asset',soft:'asset',
+  dops:'digitalops',warns:'digitalops',dopsrep:'digitalops',devact:'digitalops'};
+// Arrays saved before the split used 'employee' (= Employees + Payroll + Performance) and
+// 'task' (= Task Log + Insights + Projects). Neither key exists any more, so reading them as
+// the new keys is unambiguous; saving the tenant form rewrites the array in new keys.
+const MODULE_LEGACY={payroll:'employee',tasklog:'task',insights:'task'};
+const MODULE_PRESETS=[['all','Everything',MODULES.map(([k])=>k)],['basic','Attendance + daily tasks',['team','tasklog']]];
+function modOn(en,k){return !k||!en||en.includes(k)||(MODULE_LEGACY[k]?en.includes(MODULE_LEGACY[k]):false)}
+// Drop menu items whose module is off; drop groups left empty. en=null means all on.
+function navGroupsFor(groups,en){if(!en)return groups;
+  return groups.map(([g,items])=>[g,items.filter(([k])=>modOn(en,VIEW_MODULE[k]||null))]).filter(([,items])=>items.length)}
+let ALLOWED_VIEWS=null,HOME_VIEW='dash';
 function renderShell(){
   const role=ME.profile?.role;
   let groups=(role==='superadmin'?SUPER_GROUPS:role==='admin'?ADMIN_GROUPS:EMP_GROUPS);
-  // Hide admin modules the Merik super admin hasn't enabled for this tenant (null = all enabled).
-  if(role==='admin'){const en=Array.isArray(ME.org?.modules)?ME.org.modules:null;
-    if(en)groups=groups.filter(([label])=>!GROUP_MODULE[label]||en.includes(GROUP_MODULE[label]));
+  // Hide the modules the Merik super admin hasn't enabled for this tenant (null = all enabled).
+  if(role!=='superadmin'){const en=Array.isArray(ME.org?.modules)?ME.org.modules:null;
+    groups=navGroupsFor(groups,en);
     ALLOWED_VIEWS=new Set();groups.forEach(([,items])=>items.forEach(([k])=>ALLOWED_VIEWS.add(k)));
   } else ALLOWED_VIEWS=null;
-  const first=groups[0][1][0][0];
+  const first=groups[0][1][0][0];HOME_VIEW=first;
   const nm=ME.employee?.full_name||ME.user.email;
   const orgnm=esc(ME.org?.name||"Workspace");const logo=ME.org?.logo||LOGO;
   const gid=g=>'grp-'+g.toLowerCase().replace(/[^a-z]+/g,'-');
@@ -1151,7 +1165,7 @@ function filterNav(q){
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,suhealth,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,warns,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
-function go(v){if(ALLOWED_VIEWS&&v!=='dash'&&!ALLOWED_VIEWS.has(v))v='dash';VIEW=v;closeSide();
+function go(v){if(ALLOWED_VIEWS&&!ALLOWED_VIEWS.has(v))v=HOME_VIEW;VIEW=v;closeSide();
   document.querySelectorAll('#side a').forEach(a=>{a.classList.remove('act');a.removeAttribute('aria-current')});
   const el=$('nav-'+v);
   if(el){el.classList.add('act');el.setAttribute('aria-current','page');
@@ -4322,18 +4336,18 @@ async function mydash(){
     (SHEET_TODAY.length>5?`<div style="margin-top:6px"><a href="#" class="tl-sub" onclick="go('mynotes');return false">See all ${SHEET_TODAY.length} on your sheet ›</a></div>`:''):'';
 
   const slipRow=(slips||[])[0];
-  const canSlip=ME.employee.employment_type==='Full-time'&&slipRow;
+  const canSlip=ME.employee.employment_type==='Full-time'&&slipRow&&ALLOWED_VIEWS?.has('myslip');
   const launch=[
     // Not repeated when it is already the hero action.
-    (workday&&rec.entry_time&&!shared)?'':`<div><button class="btn sec wide" onclick="logToday()"><i class="fa-solid fa-pen-to-square"></i> ${shared?'Edit today’s update':'Log today’s update'}</button></div>`,
-    `<div><button class="btn sec wide" onclick="go('mywfh')"><i class="fa-solid fa-house"></i> Request WFH / Leave</button></div>`,
+    (workday&&rec.entry_time&&!shared)||!ALLOWED_VIEWS?.has('myupd')?'':`<div><button class="btn sec wide" onclick="logToday()"><i class="fa-solid fa-pen-to-square"></i> ${shared?'Edit today’s update':'Log today’s update'}</button></div>`,
+    ALLOWED_VIEWS?.has('mywfh')?`<div><button class="btn sec wide" onclick="go('mywfh')"><i class="fa-solid fa-house"></i> Request WFH / Leave</button></div>`:'',
     canSlip?`<div><button class="btn sec wide" onclick="slip('${ME.employee.id}',${slipRow.pay_year},${slipRow.pay_month})"><i class="fa-solid fa-file-invoice-dollar"></i> Payslip — ${MONTHS[slipRow.pay_month-1]}</button></div>`:''
   ].filter(Boolean).join('');
 
   // Only ever rendered when something is genuinely wrong. Usually neither shows.
   const warns=[
     prev&&prev.entry_time&&!prev.exit_time?`<div class="warnbar"><i class="fa-solid fa-clock"></i> You didn't check out on ${fmtDate(yest)} — ask your admin to correct it.</div>`:'',
-    pending?`<div class="warnbar"><i class="fa-solid fa-hourglass-half"></i> ${pending} leave request${pending>1?'s':''} awaiting approval. <a href="#" onclick="go('mywfh');return false">View ›</a></div>`:''
+    pending&&ALLOWED_VIEWS?.has('mywfh')?`<div class="warnbar"><i class="fa-solid fa-hourglass-half"></i> ${pending} leave request${pending>1?'s':''} awaiting approval. <a href="#" onclick="go('mywfh');return false">View ›</a></div>`:''
   ].filter(Boolean).join('');
 
   M(head+`<div class="card"><h3 style="margin-bottom:8px">${badge}</h3>
@@ -5262,6 +5276,7 @@ function suAddTenant(){
   const div=document.createElement('div');div.className='modal';div.innerHTML=`<div class="card"><h2>New Tenant</h2>
   <label>Company name</label><input id="ten_name" placeholder="Acme Inc.">
   <label>Plan (optional)</label><input id="ten_plan" placeholder="Free / Pro / Enterprise">
+  <label>Modules</label><select id="ten_preset">${MODULE_PRESETS.map(([id,l])=>`<option value="${id}">${l}</option>`).join('')}</select>
   <div class="warnbar" style="margin-top:12px">Optionally create the tenant's first admin login now.</div>
   <div class="row"><div><label>Admin email (optional)</label><input id="ten_email" type="email"></div><div><label>Admin password</label><input id="ten_pw" placeholder="min 6 chars"></div></div>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveNewTenant()">Create</button><button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
@@ -5269,7 +5284,8 @@ function suAddTenant(){
 }
 async function suSaveNewTenant(){
   const name=$('ten_name').value.trim();if(!name)return toast('Company name is required.');
-  const{data:org,error}=await sb.from('orgs').insert({name,plan:$('ten_plan').value.trim()||null}).select('id').single();
+  const modules=MODULE_PRESETS.find(([p])=>p===$('ten_preset').value)[2];
+  const{data:org,error}=await sb.from('orgs').insert({name,plan:$('ten_plan').value.trim()||null,modules}).select('id').single();
   if(error)return toast(saveErr(error));
   const email=$('ten_email').value.trim(),pw=$('ten_pw').value;
   if(email&&pw){if(pw.length<6)return toast('Admin password must be at least 6 characters.');
@@ -5286,13 +5302,16 @@ function suEditTenant(o){
   <label>GSTIN</label><input id="ten_gstin" value="${esc(o.gstin||'')}">
   <label>Address</label><textarea id="ten_address" rows="2">${esc(o.address||'')}</textarea>
   <label>Enabled modules <span style="color:#889;font-weight:400">— what this tenant can use</span></label>
-  <div id="ten_modules" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">${MODULES.map(([k,l])=>{const on=!Array.isArray(o.modules)||o.modules.includes(k);return `<label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;margin:0"><input type="checkbox" data-mk="${k}" ${on?'checked':''} style="width:16px;height:16px;margin:0"> ${l}</label>`;}).join('')}</div>
-  <p style="font-size:11.5px;color:#889;margin-top:4px">Dashboard &amp; Settings are always available. Unchecking a module hides it from this tenant's admins.</p>
+  <div style="display:flex;gap:6px;margin:4px 0 8px">${MODULE_PRESETS.map(([id,l])=>`<button type="button" class="btn sm sec" onclick="suModulePreset('${id}')">${l}</button>`).join('')}</div>
+  <div id="ten_modules" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">${MODULES.map(([k,l])=>{const on=modOn(Array.isArray(o.modules)?o.modules:null,k);return `<label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;margin:0"><input type="checkbox" data-mk="${k}" ${on?'checked':''} style="width:16px;height:16px;margin:0"> ${l}</label>`;}).join('')}</div>
+  <p style="font-size:11.5px;color:#889;margin-top:4px">Dashboard, Employees &amp; Settings are always available. Unchecking a module hides its pages from this tenant's admins and employees.</p>
   <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" onclick="suSaveTenant('${o.id}')">Save</button>
   <button class="btn warn" onclick="suDelTenant('${o.id}',${escArg(o.name)})">Delete tenant</button>
   <button class="btn sec" onclick="this.closest('.modal').remove()">Cancel</button></div></div>`;
   document.body.appendChild(div);
 }
+function suModulePreset(id){const keys=MODULE_PRESETS.find(([p])=>p===id)[2];
+  document.querySelectorAll('#ten_modules input').forEach(c=>c.checked=keys.includes(c.dataset.mk))}
 async function suSaveTenant(id){
   const modules=[...document.querySelectorAll('#ten_modules input:checked')].map(c=>c.dataset.mk);
   const o={name:$('ten_name').value.trim(),plan:$('ten_plan').value.trim()||null,status:$('ten_status').value,gstin:$('ten_gstin').value.trim()||null,address:$('ten_address').value.trim()||null,modules};
