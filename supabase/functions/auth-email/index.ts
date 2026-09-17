@@ -31,7 +31,7 @@ const COPY: Record<string, { subject: string; heading: string; lead: string; cta
   recovery: {
     subject: "Reset your Merik password",
     heading: "Reset your password",
-    lead: "We got a request to reset the password on your Merik account. Click below to choose a new one.",
+    lead: "Someone asked to reset the password on your Merik account. If that was you, choose a new one below. If not, your password stays as it is.",
     cta: "Set a new password",
   },
   signup: {
@@ -67,16 +67,25 @@ const FALLBACK = {
   cta: "Confirm",
 };
 
-function template(heading: string, lead: string, cta: string, link: string): string {
-  return `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#1b1b1f">
-  <img src="https://www.merik.in/assets/images/wordmark.png" alt="Merik" width="102" height="24" style="display:block;margin-bottom:28px">
-  <h1 style="font-size:20px;margin:0 0 12px">${heading}</h1>
-  <p style="font-size:15px;line-height:1.6;color:#55555f;margin:0 0 24px">${lead}</p>
-  <a href="${link}" style="display:inline-block;background:#CA3934;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:8px">${cta}</a>
-  <p style="font-size:13px;line-height:1.6;color:#8a8a94;margin:26px 0 0">If the button doesn't work, paste this into your browser:<br>
-    <a href="${link}" style="color:#CA3934;word-break:break-all">${link}</a></p>
-  <p style="font-size:13px;line-height:1.6;color:#8a8a94;margin:18px 0 0">If you didn't ask for this, you can ignore this email — nothing changes until the link is used.</p>
-</div>`;
+// Same frame as the credentials emails in review-signup (docs/DESIGN_SYSTEM.md):
+// Cloud Dancer ground, white card, red brand row. An empty link means "no
+// button" (the reauthentication code is typed back into the app instead).
+export function template(heading: string, lead: string, cta: string, link: string): string {
+  const F = "font-family:Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
+  const action = link
+    ? `<tr><td style="padding:0 28px 26px"><a href="${link}" style="display:inline-block;background:#CA3934;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:10px">${cta}</a></td></tr>
+<tr><td style="padding:0 28px 8px;font-size:13px;line-height:1.6;color:#767B85">If the button doesn't work, paste this into your browser:<br><a href="${link}" style="color:#CA3934;word-break:break-all">${link}</a></td></tr>
+<tr><td style="padding:10px 28px 28px;font-size:13px;line-height:1.6;color:#767B85">Didn't ask for this? Ignore this email. Nothing changes until the link is used.</td></tr>`
+    : `<tr><td style="padding:0 28px 28px;font-size:13px;line-height:1.6;color:#767B85">Didn't ask for this? Ignore this email and the code will expire on its own.</td></tr>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0EEE9"><tr><td align="center" style="padding:32px 20px">
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;${F};color:#110101;background:#ffffff;border-radius:12px;overflow:hidden">
+<tr><td style="background:#CA3934;padding:18px 28px"><img src="https://www.merik.in/assets/images/wordmark-badge.png" alt="Merik" width="112" height="35" style="display:block"></td></tr>
+<tr><td style="padding:30px 28px 0;font-size:23px;font-weight:700;letter-spacing:-.4px;line-height:1.25">${heading}</td></tr>
+<tr><td style="padding:10px 28px 24px;font-size:15px;line-height:1.6;color:#41454E">${lead}</td></tr>
+${action}
+</table>
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%"><tr><td style="padding:16px 8px 0;font-size:12px;color:#767B85;${F}">Merik &middot; www.merik.in</td></tr></table>
+</td></tr></table>`;
 }
 
 Deno.serve(async (req) => {
@@ -105,7 +114,7 @@ Deno.serve(async (req) => {
 
     // Reauthentication is a 6-digit code typed back into the app, not a link.
     const html = action === "reauthentication"
-      ? template("Confirm it's you", `Enter this code to continue: <b style="font-size:20px">${email_data.token}</b>`, "", "")
+      ? template("Confirm it's you", `Enter this code in Merik to continue:<br><b style="font-size:26px;letter-spacing:.12em;font-family:'SF Mono',Menlo,Consolas,monospace">${email_data.token}</b>`, "", "")
       : template(copy.heading, copy.lead, copy.cta, link);
 
     const client = new SMTPClient({
