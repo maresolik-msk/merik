@@ -1055,7 +1055,7 @@ async function submitSignup(){
     <h2>Request submitted</h2><div class="sub" style="margin-bottom:22px">Thanks, ${esc(o.contact_name)}! The Merik team will review your request for <b>${esc(o.company_name)}</b> and send your login credentials once approved.</div>
     <button class="btn sec auth-full" style="margin-top:0" onclick="renderLogin('login')">Back to sign in</button></div>`;
 }
-async function logout(){await sb.auth.signOut();ME=null;renderLogin()}
+async function logout(){liveUnsubscribe();await sb.auth.signOut();ME=null;renderLogin()}
 
 const ADMIN_GROUPS=[
  [null,[['dash','<i class="fa-solid fa-gauge-high"></i>','Dashboard']]],
@@ -1137,6 +1137,7 @@ function renderShell(){
   clearInterval(NOTIF_TIMER);
   NOTIFS=[];loadNotifs();
   NOTIF_TIMER=setInterval(()=>{if(ME)loadNotifs();else clearInterval(NOTIF_TIMER)},180000);
+  liveSubscribe();
   bindNotifDismiss();
   // Reopen where they left off — losing your place on every refresh is a small
   // insult that adds up over a working day.
@@ -1171,6 +1172,45 @@ function filterNav(q){
 function toggleSide(){const s=$('side'),o=$('overlay');if(!s)return;s.classList.toggle('open');o.classList.toggle('show',s.classList.contains('open'))}
 function closeSide(){const s=$('side'),o=$('overlay');if(s)s.classList.remove('open');if(o)o.classList.remove('show')}
 const VIEWS={dash,emp,att,mtr,hol,fb,adminfb,signups,suoverview,suanalytics,suhealth,sutenants,suusers,suann,suai,task,insights,projint,perf,wfh,pay,cli,prj,prjfix,quo,inv,asset,soft,dops,warns,dopsrep,devact,orgset,mydash,myupd,myatt,mywfh,mynotes,myfb,myslip};
+/* ---------- FRESHNESS ----------
+   Other people's changes used to show only after a reload. The current view now re-runs
+   quietly (no skeleton) when the tab regains focus, every 60 s, and on a Realtime change
+   in the tenant. Never while a modal is open, a field has focus, a table filter has text,
+   or a table is paged past page one: a refresh must not cost anyone their place. */
+let LAST_VIEW=null;
+// Every view is called by name from onclick strings, so wrapping the global binding
+// records the arguments of the last render (att('2026-09-10'), task(d), …).
+Object.keys(VIEWS).forEach(k=>{const orig=VIEWS[k];const w=function(...a){LAST_VIEW={fn:orig,args:a};return orig.apply(this,a)};VIEWS[k]=w;window[k]=w});
+function refreshView(){
+  if(!ME||!LAST_VIEW||document.hidden||VIEW==='dops'||VIEW==='warns')return;   // dops/warns run their own timers
+  if(document.querySelector('.modal'))return;
+  const ae=document.activeElement;if(ae&&ae.closest('#main')&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;
+  if([...document.querySelectorAll('.tfilter input')].some(i=>i.value.trim()))return;
+  if([...document.querySelectorAll('#main .pg-btn.on')].some(b=>b.dataset.p!=='0'))return;
+  Promise.resolve().then(()=>LAST_VIEW.fn(...LAST_VIEW.args)).catch(()=>{});
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshView()});
+window.addEventListener('focus',refreshView);
+setInterval(refreshView,60000);
+/* Realtime: one channel per session on the tables where someone else's change matters
+   within the minute. Row-level security scopes the events to rows this user can read.
+   Until the tables are in the publication (20260917_realtime_publication.sql) the
+   channel just stays quiet and the focus/60 s refresh carries the load. */
+let LIVE=null,liveTimer=null;
+const LIVE_TABLES=['wfh_leave','task_updates','attendance','incidents','feedback'];
+async function liveSubscribe(){
+  if(LIVE)return;
+  // On a page load that restores a session, supabase-js has not yet handed the user's
+  // token to the socket when the shell renders; a channel joined on the public key
+  // sees nothing through RLS and stays silent for the whole session. Set it first.
+  const{data:{session}}=await sb.auth.getSession();if(!session||LIVE)return;
+  sb.realtime.setAuth(session.access_token);
+  let ch=sb.channel('merik-live');
+  LIVE_TABLES.forEach(t=>{ch=ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{
+    clearTimeout(liveTimer);liveTimer=setTimeout(()=>{refreshView();loadNotifs()},800)})});
+  LIVE=ch.subscribe();
+}
+function liveUnsubscribe(){if(LIVE){try{sb.removeChannel(LIVE)}catch(e){}LIVE=null}}
 function go(v){if(ALLOWED_VIEWS&&!ALLOWED_VIEWS.has(v))v=HOME_VIEW;VIEW=v;closeSide();
   document.querySelectorAll('#side a').forEach(a=>{a.classList.remove('act');a.removeAttribute('aria-current')});
   const el=$('nav-'+v);
