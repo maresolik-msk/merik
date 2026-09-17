@@ -18,12 +18,12 @@
    --orange names below are LEGACY ALIASES kept only so the hundreds of existing
    var(--navy) usages rebrand at once. Write new code against --brand/--ink. */
 :root{
-  --brand:#D93A31;--brand-d:#BC2E26;--brand-soft:#FCEEEC;
-  --bg:#F7F6F3;--card:#ffffff;--line:#ECECEC;--ink:#15161A;--body:#41454E;--muted:#767B85;
-  --surface:#F7F6F3;              /* warm tint for headers, tab rails, zebra rows */
+  --brand:#CA3934;--brand-d:#B0302C;--cloud:#F0EEE9;--brand-soft:#FCEEEC;
+  --bg:var(--cloud);--card:#ffffff;--line:#ECECEC;--ink:#15161A;--body:#41454E;--muted:#767B85;
+  --surface:var(--cloud);              /* warm tint for headers, tab rails, zebra rows */
   --green:#1E8449;--amber:#B45309;--red:#C0392B;--radius:10px;
   --input:#CFCBC3;--destructive:#8E1F17;--shadow-card:0 1px 2px rgba(0,0,0,.035);
-  --sidebar:#17181C;--sidebar-2:#1F2024;  /* ink-dark nav, not navy */
+  --sidebar:#110101;--sidebar-2:#1A0B0B;  /* ink-dark nav, not navy */
   --radius-sm:8px;
   /* legacy aliases — do not use in new code */
   --navy:var(--ink);--deep:var(--brand);--mid:var(--brand);--lblue:var(--brand-soft);--orange:var(--brand);
@@ -33,7 +33,7 @@
 /* ============ DARK THEME ============ */
 :root[data-theme="dark"]{
   --bg:#141416;--card:#1C1C20;--line:#2C2C31;--ink:#F2F1EE;--body:#C9C8C4;--muted:#94938E;
-  --surface:#232327;--brand-soft:rgba(217,58,49,.16);--sidebar:#0F0F11;--sidebar-2:#17171A;--input:#3A3B42;--destructive:#E88079;
+  --surface:#232327;--brand-soft:rgba(202,57,52,.16);--sidebar:#110101;--sidebar-2:#1A0B0B;--input:#3A3B42;--destructive:#E88079;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4);--shadow-lg:0 22px 55px rgba(0,0,0,.55);
 }
 [data-theme="dark"] h1,[data-theme="dark"] h2,[data-theme="dark"] h3{color:var(--ink)}
@@ -83,7 +83,7 @@ button{cursor:pointer;font-family:inherit}
 
 /* ---- Forms ---- */
 input,select,textarea{padding:9px 11px;border:1px solid var(--input);border-radius:10px;font-size:13.5px;width:100%;font-family:inherit;color:var(--ink);background:#fff;transition:border-color .12s ease,box-shadow .12s ease}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 2px rgba(217,58,49,.35)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 2px rgba(202,57,52,.35)}
 input::placeholder,textarea::placeholder{color:var(--muted)}
 label{font-size:11px;font-weight:600;color:var(--muted);display:block;margin:10px 0 5px;letter-spacing:.06em;text-transform:uppercase}
 
@@ -117,15 +117,15 @@ tbody tr:hover td{background:var(--surface)}
 .nx-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .nx-datepill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--body);padding:9px 14px;border-radius:11px;font-weight:600;font-size:13.5px;white-space:nowrap}
 [data-theme="dark"] .nx-datepill{color:var(--ink)}
-.nx-quick{background:var(--orange);color:#fff;border:none;padding:10px 18px;border-radius:11px;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 6px 16px rgba(217,58,49,.28);transition:background .12s ease,transform .12s ease}
+.nx-quick{background:var(--orange);color:#fff;border:none;padding:10px 18px;border-radius:11px;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 6px 16px rgba(202,57,52,.28);transition:background .12s ease,transform .12s ease}
 .nx-quick:hover{background:#BC2E26;transform:translateY(-1px)}
 .nx-cardhead{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
 .nx-cardhead .grow{flex:1;min-width:0}
 .nx-ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;background:#FCEEEC;color:var(--orange);flex:none}
-[data-theme="dark"] .nx-ico{background:rgba(217,58,49,.16)}
+[data-theme="dark"] .nx-ico{background:rgba(202,57,52,.16)}
 .nx-cardhead .t{font-weight:700;color:var(--navy);font-size:16px}
 .nx-cardhead .s{font-size:12.5px;color:var(--muted);margin-top:1px}
-.nx-btn-brand{background:var(--orange);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(217,58,49,.26);transition:background .12s ease,transform .12s ease}
+.nx-btn-brand{background:var(--orange);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(202,57,52,.26);transition:background .12s ease,transform .12s ease}
 .nx-btn-brand:hover{background:#BC2E26;transform:translateY(-1px)}
 .nx-sheetbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
 .nx-sheetbar label{margin-top:0}
@@ -153,16 +153,16 @@ tbody tr:hover td{background:var(--surface)}
 #side .navscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:8px}
 #side .navscroll::-webkit-scrollbar-track{background:transparent}
 #side .navscroll{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
-#side .brand{display:flex;flex:none;align-items:center;gap:11px;padding:20px 18px;font-size:17px;font-weight:700;letter-spacing:-.2px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#side .brand{display:flex;flex:none;align-items:center;gap:11px;padding:16px 18px;background:var(--brand);font-size:17px;font-weight:700;letter-spacing:-.2px;border-bottom:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #side .brand img{height:32px;border-radius:8px;flex:none}
-#side .brand img.wm{height:22px;width:auto;border-radius:0}
-#side .brand img.mk{display:none}
+#side .brand img.wm{height:30px;width:auto;border-radius:0;display:block}
+#side .brand img.mk{display:none;width:40px;height:40px;border-radius:50%}
 /* Nav search — 25 items in one list is a scroll hunt without it */
 .navfind{position:relative;margin:12px 12px 4px}
 .navfind i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#7e7d78;font-size:12px;pointer-events:none}
 .navfind input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#fff;padding:8px 10px 8px 32px;border-radius:9px;font-size:13px;margin:0}
 .navfind input::placeholder{color:#807f7a}
-.navfind input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(217,58,49,.22);background:rgba(255,255,255,.09)}
+.navfind input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(202,57,52,.22);background:rgba(255,255,255,.09)}
 /* Collapsible group header */
 #side .navscroll>a{color:#F2F1EE;font-weight:600}
 #side .navscroll>a .ic{color:#C9C7C1}
@@ -184,9 +184,9 @@ tbody tr:hover td{background:var(--surface)}
 #side a .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #side a:hover{background:rgba(255,255,255,.06);color:#fff}
 #side a:hover .ic{color:#c9c7c1}
-#side a.act{background:rgba(217,58,49,.2);color:#fff;font-weight:600;box-shadow:none;position:relative}
+#side a.act{background:var(--cloud);color:#110101;font-weight:600;box-shadow:none;position:relative}
 #side a.act::before{content:"";position:absolute;left:-12px;top:6px;bottom:6px;width:4px;border-radius:0 4px 4px 0;background:var(--brand)}
-#side a.act .ic{color:#fff}
+#side a.act .ic{color:var(--brand)}
 #side a:focus-visible,#side .grp:focus-visible{outline:2px solid #fff;outline-offset:-2px}
 #side .sep{display:none}
 #side .navempty{color:#807f7a;font-size:12.5px;text-align:center;padding:18px 12px}
@@ -239,18 +239,18 @@ tbody tr:hover td{background:var(--surface)}
 @media(max-width:768px){.nf-panel{position:fixed;left:12px;right:12px;bottom:78px;width:auto;max-width:none}}
 #main{flex:1;padding:26px 30px;overflow-y:auto;overflow-x:hidden;height:100vh}
 /* ---- Mobile top bar + drawer ---- */
-#topbar{display:none;align-items:center;gap:12px;height:56px;padding:0 14px;background:var(--sidebar);color:#fff;position:fixed;top:0;left:0;right:0;z-index:60;box-shadow:0 2px 10px rgba(0,0,0,.25)}
-#topbar #hamb{background:rgba(255,255,255,.1);border:none;color:#fff;width:40px;height:40px;border-radius:10px;font-size:18px;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:none;padding:0}
+#topbar{display:none;align-items:center;gap:12px;height:56px;padding:0 14px;background:var(--brand);color:#fff;position:fixed;top:0;left:0;right:0;z-index:60;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+#topbar #hamb{background:rgba(255,255,255,.18);border:none;color:#fff;width:40px;height:40px;border-radius:10px;font-size:18px;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:none;padding:0}
 #topbar img{height:28px;border-radius:6px}
-#topbar img.tb-wm{height:20px;width:auto;border-radius:0}
+#topbar img.tb-wm{height:30px;width:auto;border-radius:6px;display:block}
 #topbar .tb-name{font-weight:700;font-size:16px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #overlay{display:none;position:fixed;inset:0;background:rgba(20,20,25,.5);z-index:55}
 #side .side-close{display:none}
 @media (min-width:769px){
 #side{transition:width .18s ease}
 #side .brand{position:relative}
-#side .side-mini{margin-left:auto;background:rgba(255,255,255,.08);border:0;color:#C9C7C1;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;flex:none}
-#side .side-mini:hover{background:rgba(255,255,255,.14);color:#fff}
+#side .side-mini{margin-left:auto;background:rgba(255,255,255,.18);border:0;color:#fff;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;flex:none}
+#side .side-mini:hover{background:rgba(255,255,255,.3);color:#fff}
 body.nav-mini #side{width:68px}
 body.nav-mini #side .brand{flex-direction:column;gap:10px;padding:14px 0}
 body.nav-mini #side .brand .side-mini{margin:0}
@@ -421,7 +421,7 @@ label span{text-transform:none;letter-spacing:0;font-weight:400}
 /* ---- Auth (login / signup) ---- */
 .auth-wrap{min-height:100vh;display:flex;align-items:stretch;background:var(--surface)}
 .auth-brand{flex:1;background:linear-gradient(150deg,#15161A 0%,#231F1F 52%,var(--brand-d) 100%);color:#fff;padding:56px 48px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
-.auth-brand:before{content:"";position:absolute;top:-120px;right:-120px;width:340px;height:340px;border-radius:50%;background:rgba(217,58,49,.22)}
+.auth-brand:before{content:"";position:absolute;top:-120px;right:-120px;width:340px;height:340px;border-radius:50%;background:rgba(202,57,52,.22)}
 .auth-brand:after{content:"";position:absolute;bottom:-140px;left:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.06)}
 .auth-brand .inner{position:relative;z-index:1;max-width:440px}
 .auth-brand h1{color:#fff;font-size:38px;line-height:1.15;letter-spacing:-.6px;margin:18px 0 14px}
@@ -1267,11 +1267,11 @@ function renderShell(){
   const gid=g=>'grp-'+g.toLowerCase().replace(/[^a-z]+/g,'-');
   $('root').innerHTML=`<div id="app">
   <div id="topbar" class="noprint"><button id="hamb" onclick="toggleSide()" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
-  <img class="tb-wm" src="../assets/images/wordmark-white.png" alt="Merik"></div>
+  <img class="tb-wm" src="../assets/images/wordmark-badge.png" alt="Merik"></div>
   <div id="overlay" onclick="closeSide()"></div>
   <nav id="side" aria-label="Main">
   <button class="side-close" onclick="closeSide()" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
-  <div class="brand"><img class="wm" src="../assets/images/wordmark-white.png" alt="Merik"><img class="mk" src="${logo}" alt="Merik"><button class="side-mini" onclick="toggleMini()" title="Collapse menu" aria-label="Collapse menu"><i class="fa-solid fa-angles-left"></i></button></div>
+  <div class="brand"><img class="wm" src="../assets/images/wordmark-badge.png" alt="Merik"><img class="mk" src="../assets/images/mark-badge.png" alt="Merik"><button class="side-mini" onclick="toggleMini()" title="Collapse menu" aria-label="Collapse menu"><i class="fa-solid fa-angles-left"></i></button></div>
   <div class="navfind"><i class="fa-solid fa-magnifying-glass"></i>
     <input type="search" id="navq" placeholder="Search menu…" aria-label="Search menu" oninput="filterNav(this.value)"></div>
   <div class="navscroll">
