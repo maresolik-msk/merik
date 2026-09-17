@@ -143,4 +143,4 @@ choice is stored per browser under `merik-theme`.
 | Labels, inputs | the `label` and `input,select,textarea` rules |
 | Status colours | `.badge` and the `.st*` classes |
 | KPI tiles | `tile()` and the `.kpi-tile / .klabel / .kval / .ksub` rules |
-| Marketing site | `assets/css/site.css`; its header and footer come from `scripts/site_chrome.py` |
+| Marketing site | `assets/css/site.css` (`--brand`, `--brand-d`, `--soft` = Cloud Dancer, `rgba(202,57,52` tints); its header and footer come from `scripts/site_chrome.py`; the `theme-color` meta lives in `scripts/gen_blog.py`, `scripts/gen_glossary.py` and each hand-written page |

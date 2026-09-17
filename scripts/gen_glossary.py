@@ -98,7 +98,7 @@ def build():
 <meta name="keywords" content="payroll glossary India, HR terms explained, what is CTC, what is LOP, gross vs net salary, earned leave meaning, leave encashment meaning, full and final settlement">
 <meta name="author" content="Merik">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
-<meta name="theme-color" content="#D93A31">
+<meta name="theme-color" content="#CA3934">
 <link rel="canonical" href="{SITE}/glossary">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32.png">
 <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
