@@ -99,6 +99,46 @@
         "@type": "Answer",
         "text": "You request a workspace and the Merik team sets it up and emails your admin login; there is no IT project on your side. Once you have added your people, most teams are running daily attendance and task logging from the first day, and complete their first payroll run in the same month, because attendance data is captured from the start."
       }
+    },
+    {
+      "@type": "Question",
+      "name": "Is my company data isolated from other companies?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Merik is multi-tenant and every company gets one isolated workspace, enforced in the Postgres database by row-level security rather than only in application code. One company's users cannot read another company's rows."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Merik work for remote and field teams?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Employees check in and out from their own device and the location is captured and reverse-geocoded to a readable place name, so \"present\" means something verifiable for field staff. Work-from-home is a separate request type that is approved and recorded like leave."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Merik handle clients, projects and invoicing?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Merik includes client records, projects per client, line-item quotes that convert into invoices, and project-level intelligence that rolls up the hours logged in the daily task log against each client and project."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Merik use AI, and is it optional?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Merik has an optional AI layer that can draft performance summaries and quotes for a human to edit. It is off unless enabled, gated per feature and per company with a monthly call cap, and drafts are always reviewed by a person before use. Core features work with AI switched off entirely."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Merik monitor our websites and client sites?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The Digital Operations module checks the websites, web apps and APIs you register — per client, if you run client properties — from the outside every few minutes: availability, response time, HTTP status and SSL expiry. Merik learns each site's normal behaviour and raises an early warning when it drifts, opens incidents assigned to the asset's owner, and produces monthly SLA reports and client-facing status pages. A one-line browser snippet also reports JavaScript errors from real visitors."
+      }
     }
   ]
 }
@@ -131,7 +171,8 @@
 <section class="lp-hero">
   <div class="wrap lp-hero-grid">
     <div class="lp-hero-txt">
-      <h1>Run your team without the spreadsheets.</h1>
+      <p class="lp-kicker">HR + Attendance + Payroll + Tasks. One workspace.</p>
+      <h1>Run your entire workforce without spreadsheets.</h1>
       <p class="lp-lead">Employees, attendance, leave, payroll, daily tasks, clients and assets in one company workspace. The numbers you record on Monday are the numbers payroll uses on the 30th.</p>
       <div class="lp-cta">
         <a class="btn btn-primary" href="#request">Request your workspace</a>
@@ -178,8 +219,19 @@
   </div>
 </section>
 
+<!-- ANSWER BOX (AEO) -->
+<section class="lp-sec lp-tight">
+  <div class="wrap">
+    <div class="answer-box">
+      <h2>What is Merik?</h2>
+      <p><b>Merik is an all-in-one workforce management platform for small and growing businesses.</b> It combines employee management, attendance tracking, leave and work-from-home requests, monthly payroll and payslips, daily task tracking, client and project management, quotes and invoices, asset tracking — and Digital Operations, which watches the websites and APIs you run and warns you before they fail — in one secure company workspace.</p>
+      <p>Every company gets an isolated workspace enforced at the database level. Employees get self-service — they mark their own attendance, request leave, log daily work and download payslips — so HR stops being the bottleneck for routine requests. Merik is free to start, and a workspace takes under five minutes to create.</p>
+    </div>
+  </div>
+</section>
+
 <!-- WHAT YOU GET -->
-<section class="lp-sec">
+<section class="lp-sec" id="features">
   <div class="wrap">
     <div class="lp-head">
       <h2>Five things your team does every day, in one workspace.</h2>
@@ -192,12 +244,40 @@
       <li><svg class="ico"><use href="/assets/icons.svg#i-circle-check"/></svg><b>Daily tasks</b><span>What everyone worked on, the hours and the blockers, per client and project.</span></li>
       <li><svg class="ico"><use href="/assets/icons.svg#i-receipt"/></svg><b>Clients &amp; invoices</b><span>Projects, quotes that turn into invoices, and the hours behind each one.</span></li>
     </ul>
-    <p class="lp-more">Also assets and software, performance reviews and website monitoring. <a href="/modules">See every module</a></p>
+    <div class="lp-head" style="margin-top:64px"><h2>Everything in one place.</h2><p>From the day someone joins to the day payroll runs, without switching tools or re-typing numbers.</p></div>
+    <div class="frows">
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-users"/></svg></div><h3>Employee management</h3><p>One source of truth for departments, designations, salary history and documents — with per-employee detail pages, login provisioning and clean offboarding.</p><ul><li>Directory</li><li>CTC history</li><li>Documents</li><li>Offboarding</li></ul></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-calendar-check"/></svg></div><h3>Attendance that payroll can trust</h3><p>Geolocated check-in and check-out, late marks, half-days and a live company-wide view — captured once, on the day, by the person it belongs to.</p></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-building"/></svg></div><h3>Leave &amp; WFH</h3><p>Requests with date ranges, one-tap approval, and paid vs unpaid tracked separately so month-end stays accurate.</p></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-banknote"/></svg></div><h3>Payroll &amp; payslips</h3><p>Monthly runs computed on the server from attendance already recorded. Payslips generated and emailed in bulk.</p></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-circle-check"/></svg></div><h3>Daily task log</h3><p>Time spent, status, blockers and proof links per client and project — with CSV export and full-text search.</p></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-bar-chart"/></svg></div><h3>Task insights &amp; project intelligence</h3><p>Per-project rollups, contributor breakdowns and a time estimator that learns from your own history — it backtests its own weights against tasks whose real duration you already know, instead of guessing.</p><ul><li>Estimate vs actual</li><li>Project stages</li><li>Contributor mix</li><li>Sparklines</li></ul></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-receipt"/></svg></div><h3>Clients, quotes &amp; invoices</h3><p>Client records, projects per client, line-item quotes that convert straight into invoices — and the hours your team logged sitting right next to them.</p><ul><li>Clients</li><li>Projects</li><li>Quotes</li><li>Invoices</li></ul></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-laptop"/></svg></div><h3>Assets &amp; software</h3><p>Hardware register with assignment history, plus software seats and monthly spend per tool.</p></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-star"/></svg></div><h3>Performance reviews</h3><p>Monthly reviews grounded in the task log and attendance the employee already filed.</p></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-lock"/></svg></div><h3>Isolated workspaces</h3><p>One workspace per company, enforced by row-level security in Postgres — not just in app code.</p></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-radio-tower"/></svg></div><h3>Digital Operations — sites &amp; APIs, watched</h3><p>Register the websites and APIs you run — yours or your clients' — and Merik checks them from the outside every few minutes: uptime, response time, SSL expiry. Incidents open automatically, assigned to whoever owns the asset, with the deploy that landed just before shown on the timeline.</p><ul><li>Uptime checks</li><li>SSL expiry</li><li>Auto-assigned incidents</li><li>SLA reports</li></ul></article>
+      <article><div class="ficon"><svg class="ico"><use href="/assets/icons.svg#i-bell-ring"/></svg></div><h3>Early warnings, before the outage</h3><p>Merik learns each site's normal — latency, error rate, browser errors — and warns when behaviour drifts well outside it, with a risk score, a confidence score and the evidence. One warning per problem, not twenty alerts. A browser snippet catches the JavaScript errors uptime checks can't see.</p><ul><li>Measured baselines</li><li>Risk + confidence</li><li>Browser errors</li><li>Status pages</li></ul></article>
+    </div>
+    <p class="lp-more"><a href="/features">Explore all features</a> <span class="sep">&middot;</span> <a href="/modules">See every module</a></p>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="lp-sec lp-white" id="use-cases">
+  <div class="wrap">
+    <div class="lp-head"><h2>Built for how your team actually works.</h2></div>
+    <ul class="lp-uses">
+      <li><b>Agencies &amp; studios</b><h3>Every hour ties back to a client</h3><p>Your team logs daily work against a client and project, so you can finally answer "did that retainer make money?" without rebuilding a timesheet from memory. Quotes convert into invoices, and project rollups show where the hours actually went.</p><ul><li>✓ Hours per client, project and person</li><li>✓ Quote → invoice in one flow</li><li>✓ Estimate vs actual on every task</li></ul></li>
+      <li><b>Offices &amp; back-office</b><h3>Month-end stops being a fire drill</h3><p>Attendance, leave and holidays feed one payroll run. Nobody re-types a register into a salary sheet, and every payslip traces back to dated entries you can show an employee who disagrees.</p><ul><li>✓ Payable days computed from real attendance</li><li>✓ Bulk payslip generation and email</li><li>✓ Paid vs unpaid leave kept separate</li></ul></li>
+      <li><b>Field &amp; multi-site teams</b><h3>"Present" means something you can verify</h3><p>Staff check in from their own phone and the location is captured and turned into a readable place name. You see who started where, without buying a biometric device for every site.</p><ul><li>✓ Geolocated check-in and check-out</li><li>✓ Reverse-geocoded place names, not raw coordinates</li><li>✓ Late marks and half-days by rule, not by argument</li></ul></li>
+      <li><b>Remote &amp; hybrid</b><h3>Visibility without hovering</h3><p>A daily task log with time spent, blockers and proof links gives you the same signal as a standup — without the standing meeting. Work-from-home is a request type that's approved and recorded, not an unwritten arrangement.</p><ul><li>✓ Async daily updates, written once</li><li>✓ Blockers surfaced the day they happen</li><li>✓ WFH approved and reflected in attendance</li></ul></li>
+    </ul>
   </div>
 </section>
 
 <!-- THE DIFFERENCE -->
-<section class="lp-sec lp-white">
+<section class="lp-sec">
   <div class="wrap">
     <div class="lp-head">
       <h2>The month-end you have now, and the one you could have.</h2>
@@ -233,7 +313,7 @@
 </section>
 
 <!-- COST -->
-<section class="lp-sec" id="calculator">
+<section class="lp-sec lp-white" id="calculator">
   <div class="wrap">
     <div class="lp-head">
       <h2>What is month-end admin costing you?</h2>
@@ -274,7 +354,7 @@
 </section>
 
 <!-- STEPS -->
-<section class="lp-sec lp-white">
+<section class="lp-sec" id="how">
   <div class="wrap">
     <div class="lp-head">
       <h2>Up and running in three steps. No IT project.</h2>
@@ -285,6 +365,20 @@
       <li><b>Run the day</b><span>Everyone marks attendance and logs their tasks. You approve leave. Payroll flows from what was already recorded.</span></li>
     </ol>
     <p class="lp-more"><a href="/how-it-works">See the full walkthrough</a></p>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section class="lp-sec lp-white" id="trust">
+  <div class="wrap">
+    <div class="lp-head"><h2>Your people data, properly walled off.</h2><p>Multi-tenant done the boring, correct way: isolation enforced by the database, not by hoping the app remembers.</p></div>
+    <ul class="lp-mods lp-four">
+      <li><svg class="ico"><use href="/assets/icons.svg#i-lock"/></svg><b>Row-level security</b><span>Every table filters by company in Postgres itself.</span></li>
+      <li><svg class="ico"><use href="/assets/icons.svg#i-shield"/></svg><b>Server-side salary math</b><span>Payroll is computed in a secured function, never in the browser.</span></li>
+      <li><svg class="ico"><use href="/assets/icons.svg#i-user"/></svg><b>Role-scoped access</b><span>Employees see only their own work; admins see their own company.</span></li>
+      <li><svg class="ico"><use href="/assets/icons.svg#i-bot"/></svg><b>AI off by default</b><span>Optional, gated per feature and company, with drafts a human always edits.</span></li>
+    </ul>
+    <p class="lp-more"><a href="/security">How Merik keeps company data separate</a></p>
   </div>
 </section>
 
@@ -316,24 +410,51 @@
 <section class="lp-sec lp-white">
   <div class="wrap lp-faq">
     <div class="lp-head">
-      <h2>Questions people ask before they request a workspace.</h2>
+      <h2>Frequently asked questions.</h2><p>The things people ask us before they request a workspace.</p>
     </div>
     <div class="faq">
       <details open><summary>What is Merik?</summary><p>Merik is an all-in-one workforce management platform that combines employee management, attendance tracking, leave management, payroll, daily task tracking, clients and invoicing, and asset tracking in a single secure company workspace. Each company gets its own isolated workspace, and employees get self-service access to their own attendance, leave, tasks and payslips.</p></details>
       <details><summary>Is Merik suitable for small businesses?</summary><p>Yes. Merik is built for small and growing businesses — typically 5 to 200 employees — that want to replace spreadsheets and multiple disconnected tools with one platform. The Merik team sets the workspace up for you at no cost — there is no IT project and no setup fee.</p></details>
-      <details><summary>Does Merik connect attendance to payroll?</summary><p>Yes. Attendance and leave data flow directly into monthly payroll, so gross pay, deductions and net pay are calculated from the days already recorded — without re-keying numbers between systems. All salary math runs on the server, never in the browser.</p></details>
-      <details><summary>Can employees use Merik themselves?</summary><p>Yes. Employees get their own dashboard where they can mark attendance with geolocated check-in and check-out, request leave or work-from-home, log their daily tasks, keep personal notes and to-dos, and download their own payslips.</p></details>
+      <details><summary>Does Merik connect attendance to payroll?</summary><p>Yes. Attendance and leave data flow directly into monthly payroll, so gross pay, deductions and net pay are calculated from the days already recorded — without re-keying numbers between systems. All salary math runs on the server, never in the browser. <a href="/blog/attendance-to-payroll-automation">Read how that works →</a></p></details>
+      <details><summary>Can employees use Merik themselves?</summary><p>Yes. Employees get their own dashboard where they can mark attendance with geolocated check-in and check-out, request leave or work-from-home, log their daily tasks, keep personal notes and to-dos, and download their own payslips. <a href="/blog/employee-self-service-what-it-means">More on employee self-service →</a></p></details>
       <details><summary>How much does Merik cost?</summary><p>Merik is free to start. Request a company workspace at no cost, add your whole team — there is no per-employee charge — and use attendance, leave, task tracking, payroll and payslips. There is no setup fee and no card required to begin.</p></details>
-      <details><summary>How long does it take to set up Merik?</summary><p>You request a workspace and the Merik team sets it up and emails your admin login; there is no IT project on your side. Once you have added your people, most teams are running daily attendance and task logging from the first day, and complete their first payroll run in the same month, because attendance data is captured from the start.</p></details>
+      <details><summary>How long does it take to set up Merik?</summary><p>You request a workspace and the Merik team sets it up and emails your admin login; there is no IT project on your side. Once you have added your people, most teams are running daily attendance and task logging from the first day, and complete their first payroll run in the same month, because attendance data is captured from the start. <a href="/blog/spreadsheet-to-workforce-software-migration">See a full migration plan →</a></p></details>
+      <details><summary>Is my company data isolated from other companies?</summary><p>Yes. Merik is multi-tenant and every company gets one isolated workspace, enforced in the Postgres database by row-level security rather than only in application code. One company's users cannot read another company's rows. <a href="/blog/workforce-data-security-checklist">What to check in any HR tool →</a></p></details>
+      <details><summary>Does Merik work for remote and field teams?</summary><p>Yes. Employees check in and out from their own device and the location is captured and reverse-geocoded to a readable place name, so "present" means something verifiable for field staff. Work-from-home is a separate request type that is approved and recorded like leave. <a href="/blog/geolocation-attendance-field-teams">Attendance for field teams →</a></p></details>
+      <details><summary>Can Merik handle clients, projects and invoicing?</summary><p>Yes. Merik includes client records, projects per client, line-item quotes that convert into invoices, and project-level intelligence that rolls up the hours logged in the daily task log against each client and project. <a href="/blog/quote-to-invoice-workflow">See the quote-to-invoice flow →</a></p></details>
+      <details><summary>Does Merik use AI, and is it optional?</summary><p>Merik has an optional AI layer that can draft performance summaries and quotes for a human to edit. It is off unless enabled, gated per feature and per company with a monthly call cap, and drafts are always reviewed by a person before use. Core features work with AI switched off entirely. <a href="/blog/ai-in-hr-software-what-actually-helps">What AI actually helps with in HR →</a></p></details>
+      <details><summary>Can Merik monitor our websites and client sites?</summary><p>Yes. The Digital Operations module checks the websites, web apps and APIs you register — per client, if you run client properties — from the outside every few minutes: availability, response time, HTTP status and SSL expiry. Merik learns each site's normal behaviour and raises an early warning when it drifts, opens incidents assigned to the asset's owner, and produces monthly SLA reports and client-facing status pages. A one-line browser snippet also reports JavaScript errors from real visitors. <a href="/blog/proactive-application-monitoring">How proactive monitoring works →</a></p></details>
+    
     </div>
   </div>
 </section>
 
+<!-- GUIDES -->
+<section class="lp-sec" id="guides">
+  <div class="wrap">
+    <div class="lp-head"><h2>Guides for running your workforce.</h2><p>Practical, no-fluff guides on attendance, payroll, leave, tasks, clients and HR.</p></div>
+    <ul class="lp-guides">
+      <li><span class="tag2">Payroll</span><a href="/blog/attendance-to-payroll-automation">From attendance to payroll: stop re-keying numbers every month</a><p>How connecting attendance and leave directly to payroll removes errors.</p></li>
+      <li><span class="tag2">Attendance</span><a href="/blog/geolocation-attendance-field-teams">Geolocation attendance for field and multi-site teams</a><p>How to make "present" verifiable without a biometric device per site.</p></li>
+      <li><span class="tag2">Clients</span><a href="/blog/project-profitability-from-task-hours">Working out project profitability from your task hours</a><p>Turn the hours your team already logs into a per-project margin.</p></li>
+    </ul>
+    <p class="lp-more"><a href="/blog/">Read all 80 guides</a></p>
+    <div class="lp-head" style="margin-top:64px"><h2>Understand problems before they become incidents.</h2><p>Guides on application monitoring, API reliability, frontend errors, observability and proactive incident detection.</p></div>
+    <ul class="lp-guides">
+      <li><span class="tag2">Monitoring</span><a href="/blog/proactive-application-monitoring">What is proactive application monitoring?</a><p>Detecting problems before users report them: baselines, anomalies and early warnings.</p></li>
+      <li><span class="tag2">Reliability</span><a href="/blog/api-failure-detection">Detect API failures before your customers do</a><p>APIs degrade before they die: latency drift, timeouts, error trickles. Monitoring that listens.</p></li>
+      <li><span class="tag2">Errors</span><a href="/blog/frontend-error-monitoring">Frontend errors: why users see problems first</a><p>The server said 200. The page broke anyway. Seeing the failures uptime checks can't.</p></li>
+    </ul>
+    <p class="lp-more"><a href="/blog/">View all insights</a></p>
+  </div>
+</section>
+
 <!-- REQUEST -->
-<section class="lp-sec" id="request">
+<section class="lp-sec lp-white" id="request">
+  <span id="talk-to-us"></span>
   <div class="wrap lp-req">
     <div class="lp-head">
-      <h2>Request your workspace.</h2>
+      <h2>Talk to us about your team.</h2>
       <p>Tell us about your team. A person reads it, sets the workspace up and emails your admin login, usually within one working day. Free, no card.</p>
       <p>Prefer to talk first? <a href="/contact">Contact us</a>.</p>
     </div>
