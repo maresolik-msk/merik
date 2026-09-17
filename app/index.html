@@ -153,7 +153,7 @@ tbody tr:hover td{background:var(--surface)}
 #side .navscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:8px}
 #side .navscroll::-webkit-scrollbar-track{background:transparent}
 #side .navscroll{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
-#side .brand{display:flex;align-items:center;gap:11px;padding:20px 18px;font-size:17px;font-weight:700;letter-spacing:-.2px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#side .brand{display:flex;flex:none;align-items:center;gap:11px;padding:20px 18px;font-size:17px;font-weight:700;letter-spacing:-.2px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #side .brand img{height:32px;border-radius:8px;flex:none}
 /* Nav search — 25 items in one list is a scroll hunt without it */
 .navfind{position:relative;margin:12px 12px 4px}
@@ -162,7 +162,16 @@ tbody tr:hover td{background:var(--surface)}
 .navfind input::placeholder{color:#807f7a}
 .navfind input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(217,58,49,.22);background:rgba(255,255,255,.09)}
 /* Collapsible group header */
-#side .grp{display:flex;align-items:center;gap:7px;width:calc(100% - 24px);margin:12px 12px 2px;padding:6px 10px;font-size:10.5px;font-weight:700;letter-spacing:1.3px;color:#88867f;text-transform:uppercase;background:none;border:none;border-radius:8px;text-align:left;transition:color .12s ease,background .12s ease}
+#side .navscroll>a{color:#F2F1EE;font-weight:600}
+#side .navscroll>a .ic{color:#C9C7C1}
+#side .grpitems a{padding-left:26px;font-size:13px;color:#BDBBB4}
+#side .grpitems a .ic{font-size:13px;width:18px}
+#side .grpitems a .ic i{font-size:13px}
+#side .grp.has-act{color:#F0A9A2}
+#side .grp.has-act::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand);margin-left:6px;order:2}
+#side .grp.has-act .caret{order:3}
+#side .navscroll .grp:last-of-type{border-top:1px solid rgba(255,255,255,.08);margin-top:18px;padding-top:12px;border-radius:0;width:calc(100% - 24px)}
+#side .grp{display:flex;align-items:center;gap:7px;width:calc(100% - 24px);margin:16px 12px 4px;padding:6px 10px;font-size:10.5px;font-weight:700;letter-spacing:1.3px;color:#88867f;text-transform:uppercase;background:none;border:none;border-radius:8px;text-align:left;transition:color .12s ease,background .12s ease}
 #side .grp:hover{color:#c9c7c1;background:rgba(255,255,255,.05)}
 #side .grp .caret{margin-left:auto;font-size:9px;transition:transform .18s ease;opacity:.7}
 #side .grp[aria-expanded="false"] .caret{transform:rotate(-90deg)}
@@ -173,9 +182,9 @@ tbody tr:hover td{background:var(--surface)}
 #side a .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #side a:hover{background:rgba(255,255,255,.06);color:#fff}
 #side a:hover .ic{color:#c9c7c1}
-#side a.act{background:rgba(255,255,255,.06);color:var(--brand);font-weight:600;box-shadow:none;position:relative}
-#side a.act::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:4px;height:26px;border-radius:0 4px 4px 0;background:var(--brand)}
-#side a.act .ic{color:var(--brand)}
+#side a.act{background:rgba(217,58,49,.2);color:#fff;font-weight:600;box-shadow:none;position:relative}
+#side a.act::before{content:"";position:absolute;left:-12px;top:6px;bottom:6px;width:4px;border-radius:0 4px 4px 0;background:var(--brand)}
+#side a.act .ic{color:#fff}
 #side a:focus-visible,#side .grp:focus-visible{outline:2px solid #fff;outline-offset:-2px}
 #side .sep{display:none}
 #side .navempty{color:#807f7a;font-size:12.5px;text-align:center;padding:18px 12px}
@@ -190,6 +199,20 @@ tbody tr:hover td{background:var(--surface)}
 #side .ufoot .out:focus-visible{outline:2px solid #fff;outline-offset:2px}
 /* ---- Notifications bell + panel ---- */
 .nf-wrap{position:relative;flex:none}
+.prof-wrap{flex:1;min-width:0}
+.prof{display:flex;align-items:center;gap:11px;width:100%;background:none;border:0;color:inherit;text-align:left;padding:4px 6px 4px 4px;margin:-4px 0;border-radius:9px;cursor:pointer;font:inherit}
+.prof:hover{background:rgba(255,255,255,.06)}
+.prof .who{display:block;flex:1;min-width:0}.prof .nm,.prof .rl{display:block}
+.prof-panel{padding:16px}
+.prof-head{display:flex;align-items:center;gap:12px}
+.prof-panel .av.big{width:42px;height:42px;font-size:17px}
+.prof-nm{font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prof-em{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prof-meta{display:flex;align-items:center;gap:8px;margin:12px 0 4px;font-size:12.5px;color:var(--muted)}
+.prof-panel label{margin-top:14px}
+.prof-panel .themesw{background:var(--surface);margin:0;border:1px solid var(--line)}
+.prof-panel .themesw button{color:var(--muted)}
+.prof-panel .themesw button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow-card)}
 .nf-dot{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--brand);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sidebar-2);line-height:1}
 /* display:flex outranks the UA rule behind the hidden attribute, so an empty
    badge would sit there reading "0". */
@@ -220,6 +243,27 @@ tbody tr:hover td{background:var(--surface)}
 #topbar .tb-name{font-weight:700;font-size:16px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #overlay{display:none;position:fixed;inset:0;background:rgba(20,20,25,.5);z-index:55}
 #side .side-close{display:none}
+@media (min-width:769px){
+#side{transition:width .18s ease}
+#side .brand{position:relative}
+#side .side-mini{margin-left:auto;background:rgba(255,255,255,.08);border:0;color:#C9C7C1;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;flex:none}
+#side .side-mini:hover{background:rgba(255,255,255,.14);color:#fff}
+body.nav-mini #side{width:68px}
+body.nav-mini #side .brand{flex-direction:column;gap:10px;padding:14px 0}
+body.nav-mini #side .brand .side-mini{margin:0}
+body.nav-mini #side .side-mini i{transform:rotate(180deg)}
+body.nav-mini #side .brand-nm,body.nav-mini #side .navfind,body.nav-mini #side a .lbl,body.nav-mini #side .grp,body.nav-mini #side .ufoot .who,body.nav-mini #side .navempty{display:none}
+body.nav-mini #side .grpitems[hidden]{display:block}
+body.nav-mini #side .grpitems{border-top:1px solid rgba(255,255,255,.08);margin:8px 0 0;padding:6px 12px 0}
+body.nav-mini #side a{justify-content:center;padding:10px 0;margin:2px 12px}
+body.nav-mini #side .grpitems a{padding-left:0;margin:2px 0}
+body.nav-mini #side a .ic{width:auto;font-size:16px}
+body.nav-mini #side a .ic i{font-size:16px}
+body.nav-mini #side .ufoot{flex-direction:column;gap:8px;padding:12px 8px}
+body.nav-mini #side .prof{justify-content:center;padding:4px;margin:0}
+body.nav-mini #side .nf-panel{left:0}
+}
+@media (max-width:768px){#side .side-mini{display:none}}
 @media(max-width:768px){
   #topbar{display:flex}
   #overlay.show{display:block}
@@ -891,7 +935,7 @@ function paintNotifBadge(){
 }
 function toggleNotifs(){
   const p=$('notifpanel');if(!p)return;
-  const open=p.hidden;p.hidden=!open;
+  const open=p.hidden;closeProfile();p.hidden=!open;
   $('notifbtn').setAttribute('aria-expanded',open);
   if(open){renderNotifs();loadNotifs().then(renderNotifs)}
 }
@@ -916,6 +960,8 @@ function openNotif(i){
   markNotifsRead();closeNotifs();
   if(n.view)go(n.view);
 }
+function toggleProfile(){const p=$('profpanel');if(!p)return;const open=p.hidden;closeNotifs();p.hidden=!open;$('profbtn').setAttribute('aria-expanded',open)}
+function closeProfile(){const p=$('profpanel');if(p&&!p.hidden){p.hidden=true;$('profbtn').setAttribute('aria-expanded','false')}}
 function closeNotifs(){
   const p=$('notifpanel');if(!p||p.hidden)return;
   p.hidden=true;const b=$('notifbtn');if(b)b.setAttribute('aria-expanded','false');
@@ -924,10 +970,11 @@ function closeNotifs(){
 let NOTIF_BOUND=false;
 function bindNotifDismiss(){
   if(NOTIF_BOUND)return;NOTIF_BOUND=true;
-  document.addEventListener('click',e=>{if(!e.target.closest('.nf-wrap'))closeNotifs()});
+  document.addEventListener('click',e=>{if(!e.target.closest('.nf-wrap')){closeNotifs();closeProfile()}});
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
-    const p=$('notifpanel');if(p&&!p.hidden){closeNotifs();$('notifbtn').focus()}});
+    const p=$('notifpanel');if(p&&!p.hidden){closeNotifs();$('notifbtn').focus()}
+    const q=$('profpanel');if(q&&!q.hidden){closeProfile();$('profbtn').focus()}});
 }
 let BOOTING=false;
 /* ---------- PASSWORD EYE ----------
@@ -1173,12 +1220,12 @@ function renderShell(){
   <div id="overlay" onclick="closeSide()"></div>
   <nav id="side" aria-label="Main">
   <button class="side-close" onclick="closeSide()" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
-  <div class="brand"><img src="${logo}" alt="">${orgnm}</div>
+  <div class="brand"><img src="${logo}" alt=""><span class="brand-nm">${orgnm}</span><button class="side-mini" onclick="toggleMini()" title="Collapse menu" aria-label="Collapse menu"><i class="fa-solid fa-angles-left"></i></button></div>
   <div class="navfind"><i class="fa-solid fa-magnifying-glass"></i>
     <input type="search" id="navq" placeholder="Search menu…" aria-label="Search menu" oninput="filterNav(this.value)"></div>
   <div class="navscroll">
   ${groups.map(([g,items])=>{
-    const body=items.map(([k,ic,l])=>`<a href="#" id="nav-${k}" data-lbl="${esc(l.toLowerCase())}" onclick="go('${k}');return false"><span class="ic">${ic}</span><span class="lbl">${l}</span></a>`).join('');
+    const body=items.map(([k,ic,l])=>`<a href="#" id="nav-${k}" data-lbl="${esc(l.toLowerCase())}" title="${esc(l)}" onclick="go('${k}');return false"><span class="ic">${ic}</span><span class="lbl">${l}</span></a>`).join('');
     if(!g)return body;
     const open=navGroupOpen(g);
     return `<button class="grp" aria-expanded="${open}" aria-controls="${gid(g)}" onclick="toggleGroup(this,${escArg(g)})">${g}<i class="fa-solid fa-chevron-down caret"></i></button>
@@ -1186,9 +1233,16 @@ function renderShell(){
   }).join('')}
   <div class="navempty" id="navempty" hidden>No menu item matches.</div>
   </div>
-  ${themeSwitch()}
-  <div class="ufoot"><div class="av">${esc(nm[0].toUpperCase())}</div>
-  <div class="who"><div class="nm" title="${esc(nm)}">${esc(nm)}</div><div class="rl">${ME.profile?.role}</div></div>
+  <div class="ufoot"><div class="nf-wrap prof-wrap">
+  <button class="prof" id="profbtn" onclick="toggleProfile()" aria-haspopup="true" aria-expanded="false" aria-label="Profile and settings">
+    <span class="av">${esc(nm[0].toUpperCase())}</span>
+    <span class="who"><span class="nm" title="${esc(nm)}">${esc(nm)}</span><span class="rl">${ME.profile?.role}</span></span></button>
+  <div class="nf-panel prof-panel" id="profpanel" role="dialog" aria-label="Profile and settings" hidden>
+    <div class="prof-head"><span class="av big">${esc(nm[0].toUpperCase())}</span><div style="min-width:0"><div class="prof-nm">${esc(nm)}</div><div class="prof-em">${esc(ME.user.email||'')}</div></div></div>
+    <div class="prof-meta"><span class="badge stH">${esc(ME.profile?.role||'')}</span><span>${orgnm}</span></div>
+    <label>Appearance</label>${themeSwitch()}
+    <button class="btn sec" style="width:100%;margin-top:14px" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>
+  </div></div>
   <div class="nf-wrap">
     <button class="out" id="notifbtn" onclick="toggleNotifs()" title="Notifications"
       aria-label="Notifications" aria-expanded="false" aria-haspopup="true"><i class="fa-solid fa-bell"></i>
@@ -1197,6 +1251,7 @@ function renderShell(){
   </div>
   <button class="out" onclick="logout()" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-right-from-bracket"></i></button></div>
   </nav><main id="main"></main></div>`;
+  try{if(localStorage.getItem(NAV_MINI)){document.body.classList.add('nav-mini');const b=document.querySelector('.side-mini');b.title='Expand menu';b.setAttribute('aria-label',b.title)}}catch(e){}
   // Poll so an approval that lands mid-session is noticed without a refresh.
   clearInterval(NOTIF_TIMER);
   NOTIFS=[];loadNotifs();
@@ -1211,6 +1266,11 @@ function renderShell(){
   go(start);applyTheme();
 }
 const NAV_COLLAPSED='merik.nav.collapsed';
+// Desktop only: fold the sidebar to an icon rail. Labels become tooltips, groups become dividers.
+const NAV_MINI='merik.nav.mini';
+function toggleMini(){const on=!document.body.classList.contains('nav-mini');document.body.classList.toggle('nav-mini',on);
+  const b=document.querySelector('.side-mini');if(b){b.title=on?'Expand menu':'Collapse menu';b.setAttribute('aria-label',b.title)}
+  try{localStorage.setItem(NAV_MINI,on?'1':'')}catch(e){}}
 function navCollapsed(){try{return JSON.parse(localStorage.getItem(NAV_COLLAPSED)||'[]')}catch(e){return[]}}
 function navGroupOpen(g){return !navCollapsed().includes(g)}
 function toggleGroup(btn,g){
@@ -1282,6 +1342,7 @@ function go(v){if(ALLOWED_VIEWS&&!ALLOWED_VIEWS.has(v))v=HOME_VIEW;VIEW=v;closeS
     // Never leave the active item hidden inside a group the user collapsed.
     const body=el.closest('.grpitems');
     if(body&&body.hidden){body.hidden=false;const b=document.querySelector(`[aria-controls="${body.id}"]`);if(b)toggleGroup(b,b.textContent.trim())}}
+  document.querySelectorAll('#side .grp').forEach(b=>b.classList.toggle('has-act',!!$(b.getAttribute('aria-controls'))?.querySelector('a.act')));
   try{localStorage.setItem('merik.view',v)}catch(e){}
   const fn=VIEWS[v];if(!fn)return;
   M(viewLoading());                                  // instant feedback, every view
