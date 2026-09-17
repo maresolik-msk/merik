@@ -34,6 +34,23 @@ actually use went without it.
 Backend work goes in `supabase/` — `migrations/` for schema, `functions/` for
 anything privileged or scheduled.
 
+`supabase/schema.sql` is a schema-only snapshot of the live database: every
+table, policy, function and trigger in `public`, no rows. The core tables
+(profiles, orgs, employees, attendance, payroll, task_updates, …) were created
+in the Supabase dashboard before migrations existed, so this file is the only
+place their definitions and row-level-security policies can be read and
+reviewed. It is a snapshot, not something `supabase db push` applies. Refresh
+it after any change made outside `migrations/`:
+
+```bash
+read -s PGPASSWORD; export PGPASSWORD   # the database password from Project Settings → Database
+/opt/homebrew/opt/libpq/bin/pg_dump "postgresql://postgres.cohifrzskydnozpmieov@aws-1-ap-south-1.pooler.supabase.com:5432/postgres" --schema-only --schema=public --no-owner -f supabase/schema.sql
+unset PGPASSWORD
+```
+
+`pg_dump` must be at least the server's major version (17 today); Homebrew's
+`libpq` package provides one.
+
 ## Running locally
 
 It's a static site — open the files directly or serve the folder:
