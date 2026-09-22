@@ -20,6 +20,7 @@ import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { verifySignature } from "./verify.ts";
 import { serverReport } from "../_shared/report.ts";
+import { REPLY_TO, textOf } from "../_shared/mail.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -131,7 +132,9 @@ Deno.serve(async (req) => {
     await client.send({
       from: Deno.env.get("SMTP_FROM") || Deno.env.get("SMTP_USER")!,
       to,
+      replyTo: REPLY_TO,
       subject: copy.subject,
+      content: textOf(html),
       html,
     });
     await client.close();

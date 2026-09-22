@@ -20,6 +20,7 @@
 //   attachments?: [{ filename: string, contentType?: string, content_base64: string }]
 // }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { REPLY_TO, textOf } from "../_shared/mail.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const cors = {
@@ -127,8 +128,9 @@ Deno.serve(async (req) => {
     await client.send({
       from: Deno.env.get("SMTP_FROM") || Deno.env.get("SMTP_USER")!,
       to,
+      replyTo: REPLY_TO,
       subject,
-      content: text || undefined,
+      content: text || (html ? textOf(html) : undefined),
       html: html || undefined,
       attachments: mailAttachments,
     });

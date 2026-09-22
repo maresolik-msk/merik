@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+import { REPLY_TO, textOf } from '../_shared/mail.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -55,7 +56,9 @@ async function sendWelcomeEmail(to: string, companyName: string, password: strin
     await client.send({
       from: Deno.env.get('SMTP_FROM') || user,
       to,
+      replyTo: REPLY_TO,
       subject: `Welcome to Merik: your ${companyName} admin login`,
+      content: textOf(welcomeHtml(contactName, companyName, to, password)),
       html: welcomeHtml(contactName, companyName, to, password),
     });
     await client.close();

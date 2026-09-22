@@ -11,6 +11,7 @@
 // the last ten minutes, so this cannot be used to email arbitrary addresses.
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { REPLY_TO, textOf } from '../_shared/mail.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -95,7 +96,9 @@ Deno.serve(async (req) => {
         await client.send({
           from: Deno.env.get('SMTP_FROM') || user,
           to: email,
+          replyTo: REPLY_TO,
           subject: `We got your request for ${company}`,
+          content: textOf(ackHtml(contact, company, email)),
           html: ackHtml(contact, company, email),
         });
       }
